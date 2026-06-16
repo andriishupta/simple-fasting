@@ -1,12 +1,11 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useEffect, useState } from 'react';
 
-import AppTabs from '@/components/app-tabs';
-import { refreshSettingsSnapshot, useAppColorScheme } from '@/features/settings/settings';
 import { refreshFastSnapshots } from '@/features/fast/fasting';
+import { refreshSettingsSnapshot, useAppColorScheme } from '@/features/settings/settings';
 import { initializeAppStorage } from '@/storage/storage-migrations';
 
-export default function TabLayout() {
+export default function RootLayout() {
   const [, forceRenderAfterStorageInit] = useState(0);
   const colorScheme = useAppColorScheme();
 
@@ -19,7 +18,10 @@ export default function TabLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AppTabs />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="history/[id]" />
+      </Stack>
     </ThemeProvider>
   );
 }

@@ -1,0 +1,160 @@
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+
+import { ScreenScaffold } from '@/components/screen-scaffold';
+import { ThemedText } from '@/components/themed-text';
+import { Spacing } from '@/constants/theme';
+import {
+  deleteFastSession,
+  formatDuration,
+  getFastSession,
+  useHistoryState,
+} from '@/features/fast/fasting';
+import { type FastSession } from '@/storage/app-storage';
+import { useTheme } from '@/hooks/use-theme';
+
+export default function HistoryDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  useHistoryState();
+  const session = typeof id === 'string' ? getFastSession(id) : undefined;
+
+  if (session === undefined) {
+    return (
+      <ScreenScaffold title="Fast Details" eyebrow="History">
+        <ThemedText>Fast not found.</ThemedText>
+        <ActionButton label="Back to History" onPress={() => router.replace('/history')} />
+      </ScreenScaffold>
+    );
+  }
+
+  return (
+    <ScreenScaffold title="Fast Details" eyebrow="History">
+      <DetailContent session={session} />
+    </ScreenScaffold>
+  );
+}
+
+function DetailContent({ session }: { session: FastSession }) {
+  const endedAt = session.endedAt === null ? Date.now() : new Date(session.endedAt).getTime();
+  const durationSeconds = Math.max(
+    0,
+    Math.floor((endedAt - new Date(session.startedAt).getTime()) / 1000),
+  );
+  const deleteSession = (): void => {
+    Alert.alert('Delete fast?', 'This removes the session from local history.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          deleteFastSession(session.id);
+          router.replace('/history');
+        },
+      },
+    ]);
+  };
+
+  return (
+    <View style={styles.content}>
+      <View style={styles.summary}>
+        <ThemedText type="title" style={styles.duration}>
+          {formatDuration(durationSeconds)}
+        </ThemedText>
+        <ThemedText themeColor="textSecondary">
+          {session.goalDurationHours} hour goal · {session.status}
+        </ThemedText>
+      </View>
+
+      <DetailRow label="Started" value={new Date(session.startedAt).toLocaleString()} />
+      <DetailRow
+        label="Ended"
+        value={session.endedAt === null ? 'Not ended' : new Date(session.endedAt).toLocaleString()}
+      />
+      <DetailRow label="Goal" value={`${session.goalDurationHours} hours`} />
+      <DetailRow label="Reason" value={session.reason ?? 'None'} />
+      <DetailRow label="Created" value={new Date(session.createdAt).toLocaleString()} />
+      <DetailRow label="Updated" value={new Date(session.updatedAt).toLocaleString()} />
+
+      <View style={styles.actions}>
+        <ActionButton label="Back" onPress={() => router.back()} />
+        <ActionButton label="Delete" destructive onPress={deleteSession} />
+      </View>
+    </View>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  const theme = useTheme();
+
+  return (
+    <View style={[styles.row, { borderColor: theme.backgroundSelected }]}>
+      <ThemedText type="small" themeColor="textSecondary">
+        {label}
+      </ThemedText>
+      <ThemedText>{value}</ThemedText>
+    </View>
+  );
+}
+
+function ActionButton({
+  label,
+  destructive = false,
+  onPress,
+}: {
+  label: string;
+  destructive?: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.button,
+        { backgroundColor: destructive ? '#D92D20' : theme.accent },
+        pressed && styles.pressed,
+      ]}>
+      <ThemedText type="smallBold" style={styles.buttonText}>
+        {label}
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: {
+    gap: Spacing.three,
+  },
+  summary: {
+    gap: Spacing.one,
+  },
+  duration: {
+    textAlign: 'center',
+  },
+  row: {
+    gap: Spacing.one,
+    borderWidth: 1,
+    borderRadius: Spacing.two,
+    padding: Spacing.three,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  button: {
+    minHeight: 48,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.four,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+  },
+  pressed: {
+    opacity: 0.72,
+  },
+});

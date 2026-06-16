@@ -1,4 +1,5 @@
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
+import { router } from 'expo-router';
 
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
@@ -41,7 +42,9 @@ function HistoryItem({ session }: { session: FastSession }) {
     0,
     Math.floor((endedAt - new Date(session.startedAt).getTime()) / 1000),
   );
-  const deleteSession = (): void => {
+  const deleteSession = (event?: GestureResponderEvent): void => {
+    event?.stopPropagation();
+
     Alert.alert('Delete fast?', 'This removes the session from local history.', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -53,7 +56,14 @@ function HistoryItem({ session }: { session: FastSession }) {
   };
 
   return (
-    <View style={[styles.item, { borderColor: theme.backgroundSelected }]}>
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => router.push(`/history/${session.id}`)}
+      style={({ pressed }) => [
+        styles.item,
+        { borderColor: theme.backgroundSelected },
+        pressed && styles.pressed,
+      ]}>
       <View style={styles.itemText}>
         <ThemedText type="smallBold">{formatDuration(durationSeconds)}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
@@ -73,7 +83,7 @@ function HistoryItem({ session }: { session: FastSession }) {
           Delete
         </ThemedText>
       </Pressable>
-    </View>
+    </Pressable>
   );
 }
 
