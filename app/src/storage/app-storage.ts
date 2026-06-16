@@ -1,6 +1,7 @@
 import { createMMKV, type Configuration } from 'react-native-mmkv';
 
 export enum StorageKey {
+  Metadata = 'metadata',
   Settings = 'settings',
   ActiveFast = 'activeFast',
   History = 'history',
@@ -34,7 +35,29 @@ export enum FastStatus {
   Cancelled = 'cancelled',
 }
 
+export enum GoalKind {
+  Duration = 'duration',
+}
+
 export type Timestamp = string;
+
+export type StorageMetadata = {
+  schemaVersion: StorageSchemaVersion.V1;
+  appVersion: string;
+  expoVersion: string;
+  initializedAt: Timestamp;
+  updatedAt: Timestamp;
+};
+
+export type FastingGoal = {
+  id: string;
+  kind: GoalKind.Duration;
+  name: string;
+  targetDurationHours: number;
+  isDefault: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
 
 export type NotificationSettings = {
   fastEndReminderEnabled: boolean;
@@ -53,7 +76,7 @@ export type AppSettings = {
   schemaVersion: StorageSchemaVersion.V1;
   themePreference: ThemePreference;
   accentColorName: AccentColorName;
-  defaultFastDurationHours: number;
+  goals: readonly FastingGoal[];
   notifications: NotificationSettings;
   widgets: WidgetSettings;
   updatedAt: Timestamp;
@@ -96,6 +119,7 @@ export type GraphCacheState = {
 };
 
 export type AppStorageValueMap = {
+  [StorageKey.Metadata]: StorageMetadata;
   [StorageKey.Settings]: AppSettings;
   [StorageKey.ActiveFast]: ActiveFastState;
   [StorageKey.History]: HistoryState;
@@ -122,14 +146,61 @@ export type AppStorage = {
   contains: (key: StorageKey) => boolean;
   query: <Keys extends readonly StorageKey[]>(keys: Keys) => StorageQueryResult<Keys>;
   list: () => readonly StoredEntry[];
+  subscribe: (onValueChanged: (key: StorageKey) => void) => () => void;
   clear: () => void;
 };
+
+export const createDefaultGoals = (createdAt: Timestamp): readonly FastingGoal[] => [
+  {
+    id: 'goal-14-hours',
+    kind: GoalKind.Duration,
+    name: '14 hours',
+    targetDurationHours: 14,
+    isDefault: false,
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: 'goal-16-hours',
+    kind: GoalKind.Duration,
+    name: '16 hours',
+    targetDurationHours: 16,
+    isDefault: true,
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: 'goal-18-hours',
+    kind: GoalKind.Duration,
+    name: '18 hours',
+    targetDurationHours: 18,
+    isDefault: false,
+    createdAt,
+    updatedAt: createdAt,
+  },
+];
+
+export const createDefaultStorageMetadata = ({
+  appVersion,
+  expoVersion,
+  initializedAt,
+}: {
+  appVersion: string;
+  expoVersion: string;
+  initializedAt: Timestamp;
+}): StorageMetadata => ({
+  schemaVersion: StorageSchemaVersion.V1,
+  appVersion,
+  expoVersion,
+  initializedAt,
+  updatedAt: initializedAt,
+});
 
 export const createDefaultAppSettings = (updatedAt: Timestamp): AppSettings => ({
   schemaVersion: StorageSchemaVersion.V1,
   themePreference: ThemePreference.System,
   accentColorName: AccentColorName.Blue,
-  defaultFastDurationHours: 16,
+  goals: createDefaultGoals(updatedAt),
   notifications: {
     fastEndReminderEnabled: true,
     dailyReminderEnabled: false,
@@ -170,6 +241,11 @@ export const createEmptyGraphCacheState = (updatedAt: Timestamp): GraphCacheStat
 });
 
 export const createInitialAppStorageState = (updatedAt: Timestamp): AppStorageValueMap => ({
+  [StorageKey.Metadata]: createDefaultStorageMetadata({
+    appVersion: '0.0.0',
+    expoVersion: 'unknown',
+    initializedAt: updatedAt,
+  }),
   [StorageKey.Settings]: createDefaultAppSettings(updatedAt),
   [StorageKey.ActiveFast]: createEmptyActiveFastState(updatedAt),
   [StorageKey.History]: createEmptyHistoryState(updatedAt),
@@ -184,6 +260,7 @@ const appStorageConfiguration: Configuration = {
 const storage = createMMKV(appStorageConfiguration);
 
 const storageKeys = [
+  StorageKey.Metadata,
   StorageKey.Settings,
   StorageKey.ActiveFast,
   StorageKey.History,
@@ -227,6 +304,16 @@ export const createAppStorage = (): AppStorage => ({
 
       return value === undefined ? [] : [{ key, value } as StoredEntry];
     }),
+
+  subscribe: (onValueChanged) => {
+    const listener = storage.addOnValueChangedListener((key) => {
+      if (storageKeys.includes(key as StorageKey)) {
+        onValueChanged(key as StorageKey);
+      }
+    });
+
+    return () => listener.remove();
+  },
 
   clear: () => storage.clearAll(),
 });

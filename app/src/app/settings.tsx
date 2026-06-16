@@ -1,74 +1,87 @@
-import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
 
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import {
+  setAccentColorName,
+  setDefaultGoal,
+  setThemePreference,
+  updateNotificationSettings,
+  updateWidgetSettings,
+  useSettings,
+} from '@/repositories/settings-repository';
+import {
+  accentColorLabels,
+  accentColorValues,
+  selectDefaultGoal,
+} from '@/selectors/settings-selectors';
+import { AccentColorName, ThemePreference, type FastingGoal } from '@/storage/app-storage';
 import { useTheme } from '@/hooks/use-theme';
 
-type ThemePreference = 'System' | 'Light' | 'Dark';
-type DurationGoal = '12 h' | '14 h' | '16 h' | '18 h';
+const themeOptions = [
+  { label: 'System', value: ThemePreference.System },
+  { label: 'Light', value: ThemePreference.Light },
+  { label: 'Dark', value: ThemePreference.Dark },
+] as const;
 
-type AccentColor = {
-  name: string;
-  value: string;
-};
-
-const accentColors: AccentColor[] = [
-  { name: 'Red', value: '#EF4444' },
-  { name: 'Orange', value: '#F97316' },
-  { name: 'Amber', value: '#F59E0B' },
-  { name: 'Green', value: '#22C55E' },
-  { name: 'Teal', value: '#14B8A6' },
-  { name: 'Blue', value: '#3B82F6' },
-  { name: 'Purple', value: '#8B5CF6' },
-  { name: 'Pink', value: '#EC4899' },
-];
+const accentOptions = [
+  AccentColorName.Red,
+  AccentColorName.Orange,
+  AccentColorName.Amber,
+  AccentColorName.Green,
+  AccentColorName.Teal,
+  AccentColorName.Blue,
+  AccentColorName.Purple,
+  AccentColorName.Pink,
+] as const;
 
 export default function SettingsScreen() {
-  const [themePreference, setThemePreference] = useState<ThemePreference>('System');
-  const [durationGoal, setDurationGoal] = useState<DurationGoal>('16 h');
-  const [accentColor, setAccentColor] = useState(accentColors[5]);
-  const [fastEndReminder, setFastEndReminder] = useState(true);
-  const [dailyReminder, setDailyReminder] = useState(false);
-  const [homeWidgets, setHomeWidgets] = useState(true);
-  const [platformActivity, setPlatformActivity] = useState(false);
-  const [androidOngoingNotification, setAndroidOngoingNotification] = useState(false);
+  const settings = useSettings();
+  const defaultGoal = selectDefaultGoal(settings);
 
   return (
     <ScreenScaffold title="Settings" eyebrow="App preferences">
       <SettingsSection title="Appearance">
         <SegmentedControl
           label="Theme"
-          values={['System', 'Light', 'Dark']}
-          selectedValue={themePreference}
+          values={themeOptions}
+          selectedValue={settings.themePreference}
           onSelect={setThemePreference}
         />
-        <AccentPicker selectedAccent={accentColor} onSelect={setAccentColor} />
+        <AccentPicker
+          selectedAccentName={settings.accentColorName}
+          onSelect={setAccentColorName}
+        />
       </SettingsSection>
 
       <SettingsSection title="Goals">
-        <SegmentedControl
-          label="Default fast"
-          values={['12 h', '14 h', '16 h', '18 h']}
-          selectedValue={durationGoal}
-          onSelect={setDurationGoal}
-        />
+        <GoalPicker goals={settings.goals} selectedGoal={defaultGoal} onSelect={setDefaultGoal} />
       </SettingsSection>
 
       <SettingsSection title="Notifications">
         <SettingsSwitch
           title="Fast end reminder"
           description="Local notification when the goal is reached."
-          value={fastEndReminder}
-          onValueChange={setFastEndReminder}
+          value={settings.notifications.fastEndReminderEnabled}
+          onValueChange={(fastEndReminderEnabled) =>
+            updateNotificationSettings((notifications) => ({
+              ...notifications,
+              fastEndReminderEnabled,
+            }))
+          }
         />
         <SettingsSwitch
           title="Daily fasting reminder"
           description="A local reminder to start your regular fast."
-          value={dailyReminder}
-          onValueChange={setDailyReminder}
+          value={settings.notifications.dailyReminderEnabled}
+          onValueChange={(dailyReminderEnabled) =>
+            updateNotificationSettings((notifications) => ({
+              ...notifications,
+              dailyReminderEnabled,
+            }))
+          }
         />
       </SettingsSection>
 
@@ -76,22 +89,50 @@ export default function SettingsScreen() {
         <SettingsSwitch
           title="Home Screen widgets"
           description="Keep active fast and recent fast summaries available outside the app."
-          value={homeWidgets}
-          onValueChange={setHomeWidgets}
+          value={settings.widgets.homeScreenWidgetsEnabled}
+          onValueChange={(homeScreenWidgetsEnabled) =>
+            updateWidgetSettings((widgets) => ({
+              ...widgets,
+              homeScreenWidgetsEnabled,
+            }))
+          }
         />
         {Platform.OS === 'ios' ? (
-          <SettingsSwitch
-            title="Live Activities and Dynamic Island"
-            description="Show an active fast on supported iPhone surfaces."
-            value={platformActivity}
-            onValueChange={setPlatformActivity}
-          />
+          <>
+            <SettingsSwitch
+              title="Live Activities"
+              description="Show an active fast on supported iPhone surfaces."
+              value={settings.widgets.liveActivitiesEnabled}
+              onValueChange={(liveActivitiesEnabled) =>
+                updateWidgetSettings((widgets) => ({
+                  ...widgets,
+                  liveActivitiesEnabled,
+                }))
+              }
+            />
+            <SettingsSwitch
+              title="Dynamic Island"
+              description="Show the active fast on supported iPhone models."
+              value={settings.widgets.dynamicIslandEnabled}
+              onValueChange={(dynamicIslandEnabled) =>
+                updateWidgetSettings((widgets) => ({
+                  ...widgets,
+                  dynamicIslandEnabled,
+                }))
+              }
+            />
+          </>
         ) : (
           <SettingsSwitch
             title="Android ongoing notification"
             description="Show the active fast as an ongoing local notification."
-            value={androidOngoingNotification}
-            onValueChange={setAndroidOngoingNotification}
+            value={settings.widgets.androidOngoingNotificationEnabled}
+            onValueChange={(androidOngoingNotificationEnabled) =>
+              updateWidgetSettings((widgets) => ({
+                ...widgets,
+                androidOngoingNotificationEnabled,
+              }))
+            }
           />
         )}
       </SettingsSection>
@@ -121,27 +162,53 @@ function SettingsSection({ title, children }: { title: string; children: React.R
   );
 }
 
-function SegmentedControl<T extends string>({
+function SegmentedControl<Value extends string>({
   label,
   values,
   selectedValue,
   onSelect,
 }: {
   label: string;
-  values: readonly T[];
-  selectedValue: T;
-  onSelect: (value: T) => void;
+  values: readonly { label: string; value: Value }[];
+  selectedValue: Value;
+  onSelect: (value: Value) => void;
 }) {
   return (
     <ThemedView style={styles.controlGroup}>
       <ThemedText type="smallBold">{label}</ThemedText>
       <View style={styles.segmentedRow}>
-        {values.map((value) => (
+        {values.map((option) => (
           <SegmentButton
-            key={value}
-            label={value}
-            selected={value === selectedValue}
-            onPress={() => onSelect(value)}
+            key={option.value}
+            label={option.label}
+            selected={option.value === selectedValue}
+            onPress={() => onSelect(option.value)}
+          />
+        ))}
+      </View>
+    </ThemedView>
+  );
+}
+
+function GoalPicker({
+  goals,
+  selectedGoal,
+  onSelect,
+}: {
+  goals: readonly FastingGoal[];
+  selectedGoal: FastingGoal;
+  onSelect: (goalId: string) => void;
+}) {
+  return (
+    <ThemedView style={styles.controlGroup}>
+      <ThemedText type="smallBold">Default fast</ThemedText>
+      <View style={styles.segmentedRow}>
+        {goals.map((goal) => (
+          <SegmentButton
+            key={goal.id}
+            label={goal.name}
+            selected={goal.id === selectedGoal.id}
+            onPress={() => onSelect(goal.id)}
           />
         ))}
       </View>
@@ -167,7 +234,7 @@ function SegmentButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.segmentButton,
-        { borderColor: selected ? theme.text : theme.backgroundSelected },
+        { borderColor: selected ? theme.accent : theme.backgroundSelected },
         selected && { backgroundColor: theme.backgroundSelected },
         pressed && styles.pressed,
       ]}>
@@ -179,11 +246,11 @@ function SegmentButton({
 }
 
 function AccentPicker({
-  selectedAccent,
+  selectedAccentName,
   onSelect,
 }: {
-  selectedAccent: AccentColor;
-  onSelect: (accent: AccentColor) => void;
+  selectedAccentName: AccentColorName;
+  onSelect: (accentColorName: AccentColorName) => void;
 }) {
   const theme = useTheme();
 
@@ -191,24 +258,29 @@ function AccentPicker({
     <ThemedView style={styles.controlGroup}>
       <ThemedText type="smallBold">Accent color</ThemedText>
       <View style={styles.accentGrid}>
-        {accentColors.map((accent) => {
-          const selected = accent.value === selectedAccent.value;
+        {accentOptions.map((accentName) => {
+          const selected = accentName === selectedAccentName;
 
           return (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${accent.name} accent`}
+              accessibilityLabel={`${accentColorLabels[accentName]} accent`}
               accessibilityState={{ selected }}
-              key={accent.value}
-              onPress={() => onSelect(accent)}
+              key={accentName}
+              onPress={() => onSelect(accentName)}
               style={({ pressed }) => [
                 styles.accentButton,
-                { borderColor: selected ? theme.text : theme.backgroundSelected },
+                { borderColor: selected ? theme.accent : theme.backgroundSelected },
                 pressed && styles.pressed,
               ]}>
-              <View style={[styles.accentSwatch, { backgroundColor: accent.value }]} />
+              <View
+                style={[
+                  styles.accentSwatch,
+                  { backgroundColor: accentColorValues[accentName] },
+                ]}
+              />
               <ThemedText type="small" themeColor={selected ? 'text' : 'textSecondary'}>
-                {accent.name}
+                {accentColorLabels[accentName]}
               </ThemedText>
             </Pressable>
           );
@@ -229,11 +301,20 @@ function SettingsSwitch({
   value: boolean;
   onValueChange: (value: boolean) => void;
 }) {
+  const theme = useTheme();
+
   return (
     <SettingsRow
       title={title}
       description={description}
-      trailing={<Switch value={value} onValueChange={onValueChange} />}
+      trailing={
+        <Switch
+          value={value}
+          onValueChange={onValueChange}
+          trackColor={{ true: theme.accent }}
+          thumbColor={Platform.OS === 'android' && value ? theme.background : undefined}
+        />
+      }
     />
   );
 }
