@@ -152,6 +152,15 @@ export type AppStorage = {
 
 export const createDefaultGoals = (createdAt: Timestamp): readonly FastingGoal[] => [
   {
+    id: 'goal-12-hours',
+    kind: GoalKind.Duration,
+    name: '12 hours',
+    targetDurationHours: 12,
+    isDefault: false,
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
     id: 'goal-14-hours',
     kind: GoalKind.Duration,
     name: '14 hours',

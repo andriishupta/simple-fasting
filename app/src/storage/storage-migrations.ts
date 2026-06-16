@@ -10,6 +10,7 @@ import {
   StorageKey,
   StorageSchemaVersion,
   type AppSettings,
+  type FastingGoal,
   type StorageMetadata,
   type Timestamp,
 } from '@/storage/app-storage';
@@ -50,15 +51,21 @@ const migrateSettingsToV1 = (
   timestamp: Timestamp,
 ): AppSettings => {
   const defaultSettings = createDefaultAppSettings(timestamp);
+  const goals: readonly FastingGoal[] =
+    settings?.goals === undefined || settings.goals.length === 0
+      ? defaultSettings.goals
+      : [
+          ...settings.goals,
+          ...defaultSettings.goals.filter(
+            (defaultGoal) => !settings.goals.some((goal) => goal.id === defaultGoal.id),
+          ),
+        ];
 
   return {
     ...defaultSettings,
     ...settings,
     schemaVersion: StorageSchemaVersion.V1,
-    goals:
-      settings?.goals === undefined || settings.goals.length === 0
-        ? defaultSettings.goals
-        : settings.goals,
+    goals,
     updatedAt: settings?.updatedAt ?? timestamp,
   };
 };

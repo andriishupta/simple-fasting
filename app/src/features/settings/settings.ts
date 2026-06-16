@@ -1,5 +1,8 @@
 import { useSyncExternalStore } from 'react';
-import { useColorScheme, type ColorSchemeName } from 'react-native';
+import { Linking, Platform, Share, useColorScheme, type ColorSchemeName } from 'react-native';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as WebBrowser from 'expo-web-browser';
 
 import {
   appStorage,
@@ -14,6 +17,11 @@ import {
   type ThemePreference as ThemePreferenceType,
   type WidgetSettings,
 } from '@/storage/app-storage';
+
+export enum SettingsExportFormat {
+  Json = 'json',
+  Csv = 'csv',
+}
 
 const now = (): string => new Date().toISOString();
 
@@ -99,6 +107,12 @@ export const updateNotificationSettings = (
     updatedAt: now(),
   }));
 
+export const setDailyReminderTime = (dailyReminderTime: string): AppSettings =>
+  updateNotificationSettings((notifications) => ({
+    ...notifications,
+    dailyReminderTime,
+  }));
+
 export const updateWidgetSettings = (
   update: (widgets: WidgetSettings) => WidgetSettings,
 ): AppSettings =>
@@ -151,4 +165,134 @@ export const useAppColorScheme = (): 'light' | 'dark' => {
     themePreference: settings.themePreference,
     systemColorScheme,
   });
+};
+
+const createExportFilename = (format: SettingsExportFormat): string =>
+  `simple-fasting-export-${new Date().toISOString().slice(0, 10)}.${format}`;
+
+const escapeCsvValue = (value: string | number | null): string => {
+  const text = value === null ? '' : String(value);
+
+  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+};
+
+const createHistoryCsv = (): string => {
+  const history = appStorage.get(StorageKey.History);
+  const rows = history?.sessions ?? [];
+  const header = [
+    'id',
+    'status',
+    'startedAt',
+    'endedAt',
+    'goalDurationHours',
+    'reason',
+    'createdAt',
+    'updatedAt',
+  ];
+  const body = rows.map((session) =>
+    [
+      session.id,
+      session.status,
+      session.startedAt,
+      session.endedAt,
+      session.goalDurationHours,
+      session.reason,
+      session.createdAt,
+      session.updatedAt,
+    ]
+      .map(escapeCsvValue)
+      .join(','),
+  );
+
+  return [header.join(','), ...body].join('\n');
+};
+
+const createJsonExport = (): string =>
+  JSON.stringify(
+    {
+      exportedAt: now(),
+      data: appStorage.query([
+        StorageKey.Metadata,
+        StorageKey.Settings,
+        StorageKey.ActiveFast,
+        StorageKey.History,
+        StorageKey.GraphCache,
+      ]),
+    },
+    null,
+    2,
+  );
+
+const createExportContent = (format: SettingsExportFormat): string =>
+  format === SettingsExportFormat.Json ? createJsonExport() : createHistoryCsv();
+
+const shareTextFallback = async ({
+  content,
+  filename,
+}: {
+  content: string;
+  filename: string;
+}): Promise<void> => {
+  await Share.share({
+    title: filename,
+    message: content,
+  });
+};
+
+export const shareDataExport = async (format: SettingsExportFormat): Promise<void> => {
+  const filename = createExportFilename(format);
+  const content = createExportContent(format);
+  const file = new File(Paths.cache, filename);
+
+  if (Platform.OS === 'web') {
+    await shareTextFallback({ content, filename });
+    return;
+  }
+
+  file.create({ overwrite: true });
+  file.write(content);
+
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(file.uri, {
+      dialogTitle: 'Export Simple Fasting data',
+      mimeType: format === SettingsExportFormat.Json ? 'application/json' : 'text/csv',
+      UTI: format === SettingsExportFormat.Json ? 'public.json' : 'public.comma-separated-values-text',
+    });
+    return;
+  }
+
+  await shareTextFallback({ content, filename });
+};
+
+export const requestLocalNotificationPermission = async (): Promise<boolean> => {
+  if (Platform.OS === 'web') {
+    return false;
+  }
+
+  const Notifications = await import('expo-notifications');
+
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('fasting-reminders', {
+      name: 'Fasting reminders',
+      importance: Notifications.AndroidImportance.DEFAULT,
+    });
+  }
+
+  const existingPermissions = await Notifications.getPermissionsAsync();
+
+  if (existingPermissions.granted) {
+    return true;
+  }
+
+  const requestedPermissions = await Notifications.requestPermissionsAsync();
+
+  return requestedPermissions.granted;
+};
+
+export const openPrivacyPolicy = async (): Promise<void> => {
+  await WebBrowser.openBrowserAsync('https://simple-fasting.app/privacy');
+};
+
+export const openSupportEmail = async (): Promise<void> => {
+  await Linking.openURL('mailto:support@simple-fasting.app');
 };

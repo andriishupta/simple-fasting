@@ -1,4 +1,4 @@
-import { Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
 
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
@@ -14,6 +14,12 @@ import {
   getDefaultGoal,
   accentColorLabels,
   accentColorValues,
+  openPrivacyPolicy,
+  openSupportEmail,
+  requestLocalNotificationPermission,
+  setDailyReminderTime,
+  shareDataExport,
+  SettingsExportFormat,
 } from '@/features/settings/settings';
 import { AccentColorName, ThemePreference, type FastingGoal } from '@/storage/app-storage';
 import { useTheme } from '@/hooks/use-theme';
@@ -35,9 +41,78 @@ const accentOptions = [
   AccentColorName.Pink,
 ] as const;
 
+const reminderTimeOptions = [
+  { label: '18:00', value: '18:00' },
+  { label: '19:00', value: '19:00' },
+  { label: '20:00', value: '20:00' },
+  { label: '21:00', value: '21:00' },
+] as const;
+
 export default function SettingsScreen() {
   const settings = useSettings();
   const defaultGoal = getDefaultGoal(settings);
+  const setFastEndReminderEnabled = async (fastEndReminderEnabled: boolean): Promise<void> => {
+    if (fastEndReminderEnabled && !(await requestLocalNotificationPermission())) {
+      Alert.alert(
+        'Notifications are off',
+        'Enable notifications in system settings to use fasting reminders.',
+      );
+      return;
+    }
+
+    updateNotificationSettings((notifications) => ({
+      ...notifications,
+      fastEndReminderEnabled,
+    }));
+  };
+  const setDailyReminderEnabled = async (dailyReminderEnabled: boolean): Promise<void> => {
+    if (dailyReminderEnabled && !(await requestLocalNotificationPermission())) {
+      Alert.alert(
+        'Notifications are off',
+        'Enable notifications in system settings to use daily reminders.',
+      );
+      return;
+    }
+
+    updateNotificationSettings((notifications) => ({
+      ...notifications,
+      dailyReminderEnabled,
+      dailyReminderTime:
+        dailyReminderEnabled && notifications.dailyReminderTime === null
+          ? '20:00'
+          : notifications.dailyReminderTime,
+    }));
+  };
+  const setAndroidOngoingNotificationEnabled = async (
+    androidOngoingNotificationEnabled: boolean,
+  ): Promise<void> => {
+    if (androidOngoingNotificationEnabled && !(await requestLocalNotificationPermission())) {
+      Alert.alert(
+        'Notifications are off',
+        'Enable notifications in system settings to show an ongoing fasting notification.',
+      );
+      return;
+    }
+
+    updateWidgetSettings((widgets) => ({
+      ...widgets,
+      androidOngoingNotificationEnabled,
+    }));
+  };
+  const exportData = async (format: SettingsExportFormat): Promise<void> => {
+    try {
+      await shareDataExport(format);
+    } catch {
+      Alert.alert('Export failed', 'The export file could not be created.');
+    }
+  };
+  const openExternalAction = async (action: () => Promise<void>): Promise<void> => {
+    try {
+      await action();
+    } catch {
+      Alert.alert('Unable to open link', 'Please try again later.');
+    }
+  };
 
   return (
     <ScreenScaffold title="Settings" eyebrow="App preferences">
@@ -63,24 +138,22 @@ export default function SettingsScreen() {
           title="Fast end reminder"
           description="Local notification when the goal is reached."
           value={settings.notifications.fastEndReminderEnabled}
-          onValueChange={(fastEndReminderEnabled) =>
-            updateNotificationSettings((notifications) => ({
-              ...notifications,
-              fastEndReminderEnabled,
-            }))
-          }
+          onValueChange={setFastEndReminderEnabled}
         />
         <SettingsSwitch
           title="Daily fasting reminder"
           description="A local reminder to start your regular fast."
           value={settings.notifications.dailyReminderEnabled}
-          onValueChange={(dailyReminderEnabled) =>
-            updateNotificationSettings((notifications) => ({
-              ...notifications,
-              dailyReminderEnabled,
-            }))
-          }
+          onValueChange={setDailyReminderEnabled}
         />
+        {settings.notifications.dailyReminderEnabled && (
+          <SegmentedControl
+            label="Reminder time"
+            values={reminderTimeOptions}
+            selectedValue={settings.notifications.dailyReminderTime ?? '20:00'}
+            onSelect={setDailyReminderTime}
+          />
+        )}
       </SettingsSection>
 
       <SettingsSection title="Widgets">
@@ -105,6 +178,9 @@ export default function SettingsScreen() {
                 updateWidgetSettings((widgets) => ({
                   ...widgets,
                   liveActivitiesEnabled,
+                  dynamicIslandEnabled: liveActivitiesEnabled
+                    ? widgets.dynamicIslandEnabled
+                    : false,
                 }))
               }
             />
@@ -115,6 +191,9 @@ export default function SettingsScreen() {
               onValueChange={(dynamicIslandEnabled) =>
                 updateWidgetSettings((widgets) => ({
                   ...widgets,
+                  liveActivitiesEnabled: dynamicIslandEnabled
+                    ? true
+                    : widgets.liveActivitiesEnabled,
                   dynamicIslandEnabled,
                 }))
               }
@@ -125,19 +204,32 @@ export default function SettingsScreen() {
             title="Android ongoing notification"
             description="Show the active fast as an ongoing local notification."
             value={settings.widgets.androidOngoingNotificationEnabled}
-            onValueChange={(androidOngoingNotificationEnabled) =>
-              updateWidgetSettings((widgets) => ({
-                ...widgets,
-                androidOngoingNotificationEnabled,
-              }))
-            }
+            onValueChange={setAndroidOngoingNotificationEnabled}
           />
         )}
       </SettingsSection>
 
       <SettingsSection title="Data and support">
-        <SettingsRow title="Export data" description="JSON and CSV export will live here." />
-        <SettingsRow title="Privacy Policy" description="Local-first, no account, no tracking." />
+        <SettingsActionRow
+          title="Export JSON"
+          description="Share a local backup of settings and fasting data."
+          onPress={() => exportData(SettingsExportFormat.Json)}
+        />
+        <SettingsActionRow
+          title="Export CSV"
+          description="Share completed fasting history as a spreadsheet-friendly file."
+          onPress={() => exportData(SettingsExportFormat.Csv)}
+        />
+        <SettingsActionRow
+          title="Privacy Policy"
+          description="Local-first, no account, no tracking."
+          onPress={() => openExternalAction(openPrivacyPolicy)}
+        />
+        <SettingsActionRow
+          title="Support"
+          description="Open an email to contact support."
+          onPress={() => openExternalAction(openSupportEmail)}
+        />
         <SettingsRow
           title="Support Creator"
           description="Future optional donation support, not part of core v1 functionality."
@@ -314,6 +406,29 @@ function SettingsSwitch({
         />
       }
     />
+  );
+}
+
+function SettingsActionRow({
+  title,
+  description,
+  onPress,
+}: {
+  title: string;
+  description: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => pressed && styles.pressed}>
+      <SettingsRow
+        title={title}
+        description={description}
+        trailing={<ThemedText themeColor="accent">Open</ThemedText>}
+      />
+    </Pressable>
   );
 }
 
