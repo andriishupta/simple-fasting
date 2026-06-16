@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 
 import AppTabs from '@/components/app-tabs';
 import { refreshSettingsSnapshot, useAppColorScheme } from '@/features/settings/settings';
+import { refreshFastSnapshots } from '@/features/fast/fasting';
 import { initializeAppStorage } from '@/storage/storage-migrations';
 
 export default function TabLayout() {
@@ -12,6 +13,7 @@ export default function TabLayout() {
   useEffect(() => {
     initializeAppStorage();
     refreshSettingsSnapshot();
+    refreshFastSnapshots();
     forceRenderAfterStorageInit((value) => value + 1);
   }, []);
 

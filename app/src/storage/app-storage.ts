@@ -96,6 +96,7 @@ export type FastSession = {
 export type ActiveFastState = {
   schemaVersion: StorageSchemaVersion.V1;
   session: FastSession | null;
+  fastEndNotificationId: string | null;
   updatedAt: Timestamp;
 };
 
@@ -227,6 +228,7 @@ export const createDefaultAppSettings = (updatedAt: Timestamp): AppSettings => (
 export const createEmptyActiveFastState = (updatedAt: Timestamp): ActiveFastState => ({
   schemaVersion: StorageSchemaVersion.V1,
   session: null,
+  fastEndNotificationId: null,
   updatedAt,
 });
 

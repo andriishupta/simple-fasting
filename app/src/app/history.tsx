@@ -1,13 +1,104 @@
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
+import { Spacing } from '@/constants/theme';
+import {
+  deleteFastSession,
+  formatDuration,
+  useHistoryState,
+} from '@/features/fast/fasting';
+import { type FastSession } from '@/storage/app-storage';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function HistoryScreen() {
+  const historyState = useHistoryState();
+
   return (
     <ScreenScaffold title="History" eyebrow="Completed fasts">
-      <ThemedText>No fasting history yet.</ThemedText>
-      <ThemedText themeColor="textSecondary">
-        Completed sessions will appear here before statistics and export are added.
-      </ThemedText>
+      {historyState.sessions.length === 0 ? (
+        <>
+          <ThemedText>No fasting history yet.</ThemedText>
+          <ThemedText themeColor="textSecondary">
+            Completed sessions will appear here after you end a fast.
+          </ThemedText>
+        </>
+      ) : (
+        <View style={styles.list}>
+          {historyState.sessions.map((session) => (
+            <HistoryItem key={session.id} session={session} />
+          ))}
+        </View>
+      )}
     </ScreenScaffold>
   );
 }
+
+function HistoryItem({ session }: { session: FastSession }) {
+  const theme = useTheme();
+  const endedAt = session.endedAt === null ? Date.now() : new Date(session.endedAt).getTime();
+  const durationSeconds = Math.max(
+    0,
+    Math.floor((endedAt - new Date(session.startedAt).getTime()) / 1000),
+  );
+  const deleteSession = (): void => {
+    Alert.alert('Delete fast?', 'This removes the session from local history.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => deleteFastSession(session.id),
+      },
+    ]);
+  };
+
+  return (
+    <View style={[styles.item, { borderColor: theme.backgroundSelected }]}>
+      <View style={styles.itemText}>
+        <ThemedText type="smallBold">{formatDuration(durationSeconds)}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {new Date(session.startedAt).toLocaleDateString()} · {session.goalDurationHours} hour goal
+        </ThemedText>
+        {session.reason !== null && (
+          <ThemedText type="small" themeColor="textSecondary">
+            {session.reason}
+          </ThemedText>
+        )}
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        onPress={deleteSession}
+        style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}>
+        <ThemedText type="small" themeColor="textSecondary">
+          Delete
+        </ThemedText>
+      </Pressable>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  list: {
+    gap: Spacing.two,
+  },
+  item: {
+    minHeight: 76,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    borderWidth: 1,
+    borderRadius: Spacing.two,
+    padding: Spacing.three,
+  },
+  itemText: {
+    flex: 1,
+    gap: Spacing.one,
+  },
+  deleteButton: {
+    minHeight: 40,
+    justifyContent: 'center',
+  },
+  pressed: {
+    opacity: 0.72,
+  },
+});

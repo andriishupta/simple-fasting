@@ -9,6 +9,7 @@ import {
   createEmptyHistoryState,
   StorageKey,
   StorageSchemaVersion,
+  type ActiveFastState,
   type AppSettings,
   type FastingGoal,
   type StorageMetadata,
@@ -70,6 +71,17 @@ const migrateSettingsToV1 = (
   };
 };
 
+const migrateActiveFastToV1 = (
+  activeFast: ActiveFastState | undefined,
+  timestamp: Timestamp,
+): ActiveFastState => ({
+  ...createEmptyActiveFastState(timestamp),
+  ...activeFast,
+  schemaVersion: StorageSchemaVersion.V1,
+  fastEndNotificationId: activeFast?.fastEndNotificationId ?? null,
+  updatedAt: activeFast?.updatedAt ?? timestamp,
+});
+
 export const initializeAppStorage = (): void => {
   const timestamp = now();
 
@@ -85,7 +97,7 @@ export const initializeAppStorage = (): void => {
 
   appStorage.insert(
     StorageKey.ActiveFast,
-    appStorage.getOrDefault(StorageKey.ActiveFast, createEmptyActiveFastState(timestamp)),
+    migrateActiveFastToV1(appStorage.get(StorageKey.ActiveFast), timestamp),
   );
 
   appStorage.insert(
