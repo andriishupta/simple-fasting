@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "Simple Fasting",
+    "slug": "simple-fasting",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "app",
+    "scheme": "simple-fasting",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
@@ -28,7 +28,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 76,
           "android": {
             "image": "./assets/images/splash-icon.png",
             "imageWidth": 76
