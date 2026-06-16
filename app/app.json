@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Simple Fasting",
-    "slug": "simple-fasting",
+    "slug": "simple-fasting-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -41,6 +41,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "bde3ec07-6159-4be2-aa8d-fda6ee15e207"
+      }
+    },
+    "owner": "simple-fasting"
   }
 }

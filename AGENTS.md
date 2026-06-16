@@ -251,6 +251,12 @@ Requirements:
 - Explicit types
 - No unused code
 - No dead dependencies
+- Prefer functional style code.
+- Prefer immutable data updates over mutation.
+- Prefer explicit values over implicit behavior.
+- Prefer `type` aliases over `interface` unless declaration merging or class contracts are required.
+- Use `enum` for stable closed sets that are persisted, displayed, or shared across modules.
+- Avoid custom DTO layers unless they remove a real boundary mismatch.
 
 Avoid `any` unless absolutely necessary.
 
