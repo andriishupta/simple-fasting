@@ -8,7 +8,7 @@ import {
   deleteFastSession,
   formatDuration,
   useHistoryState,
-} from '@/features/fast/fasting';
+} from '@/storage/fasting-storage';
 import { type FastSession } from '@/storage/app-storage';
 import { useTheme } from '@/hooks/use-theme';
 

@@ -123,33 +123,33 @@ If platform differences exist:
 Prefer:
 
 ```text
-features/
+app/
 storage/
 utils/
 components/
 ```
 
-Organize code by feature first, not by technical type.
+Organize code by route first, not by technical type.
 
 Examples:
 
 ```text
-features/settings/
-features/fast/
-features/history/
+app/(tabs)/settings.tsx
+app/(tabs)/history.tsx
+app/history/[id].tsx
 ```
 
-Routes can stay in:
+Routes are the feature boundary.
 
-```text
-app/
-```
+Route-specific behavior, selectors, services, and components should live with the route that uses them.
 
 Shared UI primitives can stay in:
 
 ```text
 components/
 ```
+
+Reusable graph primitives, buttons, text wrappers, and layout helpers belong in `components/` only when they are useful across routes.
 
 Generic app storage primitives can stay in:
 
@@ -166,6 +166,7 @@ utils/
 Avoid:
 
 ```text
+features/
 selectors/
 services/
 feature-components/
@@ -177,7 +178,15 @@ shared/
 
 when they become type-based buckets or vague catch-all folders.
 
-Do not create separate global folders for selectors, services, or feature components.
+Do not create separate global folders for features, selectors, services, or feature components.
+
+If code is reusable, put it in a clear shared place such as:
+
+```text
+components/
+storage/
+utils/
+```
 
 Avoid repository-pattern layers unless there is a real boundary or complexity that justifies them.
 

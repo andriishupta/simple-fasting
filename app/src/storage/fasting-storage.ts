@@ -11,7 +11,7 @@ import {
   type FastSession,
   type HistoryState,
 } from '@/storage/app-storage';
-import { getSettings } from '@/features/settings/settings';
+import { getSettings } from '@/storage/settings-storage';
 
 const now = (): string => new Date().toISOString();
 

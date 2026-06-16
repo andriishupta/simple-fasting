@@ -1,8 +1,8 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useEffect, useState } from 'react';
 
-import { refreshFastSnapshots } from '@/features/fast/fasting';
-import { refreshSettingsSnapshot, useAppColorScheme } from '@/features/settings/settings';
+import { refreshFastSnapshots } from '@/storage/fasting-storage';
+import { refreshSettingsSnapshot, useAppColorScheme } from '@/storage/settings-storage';
 import { initializeAppStorage } from '@/storage/storage-migrations';
 
 export default function RootLayout() {

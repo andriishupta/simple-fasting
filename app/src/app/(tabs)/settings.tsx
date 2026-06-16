@@ -20,7 +20,7 @@ import {
   setDailyReminderTime,
   shareDataExport,
   SettingsExportFormat,
-} from '@/features/settings/settings';
+} from '@/storage/settings-storage';
 import { AccentColorName, ThemePreference, type FastingGoal } from '@/storage/app-storage';
 import { useTheme } from '@/hooks/use-theme';
 

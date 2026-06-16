@@ -12,8 +12,8 @@ import {
   getGoalSeconds,
   startFast,
   useActiveFastState,
-} from '@/features/fast/fasting';
-import { getDefaultGoal, useSettings } from '@/features/settings/settings';
+} from '@/storage/fasting-storage';
+import { getDefaultGoal, useSettings } from '@/storage/settings-storage';
 import { type FastingGoal } from '@/storage/app-storage';
 import { useTheme } from '@/hooks/use-theme';
 
