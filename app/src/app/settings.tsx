@@ -11,12 +11,10 @@ import {
   updateNotificationSettings,
   updateWidgetSettings,
   useSettings,
-} from '@/storage/settings-storage';
-import {
+  getDefaultGoal,
   accentColorLabels,
   accentColorValues,
-  selectDefaultGoal,
-} from '@/selectors/settings-selectors';
+} from '@/features/settings/settings';
 import { AccentColorName, ThemePreference, type FastingGoal } from '@/storage/app-storage';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -39,7 +37,7 @@ const accentOptions = [
 
 export default function SettingsScreen() {
   const settings = useSettings();
-  const defaultGoal = selectDefaultGoal(settings);
+  const defaultGoal = getDefaultGoal(settings);
 
   return (
     <ScreenScaffold title="Settings" eyebrow="App preferences">

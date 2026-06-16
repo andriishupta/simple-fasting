@@ -2,8 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import AppTabs from '@/components/app-tabs';
-import { useAppColorScheme } from '@/hooks/use-app-color-scheme';
-import { refreshSettingsSnapshot } from '@/storage/settings-storage';
+import { refreshSettingsSnapshot, useAppColorScheme } from '@/features/settings/settings';
 import { initializeAppStorage } from '@/storage/storage-migrations';
 
 export default function TabLayout() {

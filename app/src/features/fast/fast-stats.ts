@@ -20,11 +20,11 @@ const getDurationHours = (session: FastSession): number => {
   );
 };
 
-export const selectCompletedSessions = (history: HistoryState): readonly FastSession[] =>
+export const getCompletedSessions = (history: HistoryState): readonly FastSession[] =>
   history.sessions.filter((session) => session.status === FastStatus.Completed);
 
-export const selectFastingStats = (history: HistoryState): FastingStats => {
-  const completedSessions = selectCompletedSessions(history);
+export const getFastingStats = (history: HistoryState): FastingStats => {
+  const completedSessions = getCompletedSessions(history);
   const durations = completedSessions.map(getDurationHours);
   const totalHours = durations.reduce((total, duration) => total + duration, 0);
   const completedCount = completedSessions.length;

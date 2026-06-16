@@ -124,23 +124,60 @@ Prefer:
 
 ```text
 features/
-components/
-hooks/
 storage/
-services/
+utils/
+components/
+```
+
+Organize code by feature first, not by technical type.
+
+Examples:
+
+```text
+features/settings/
+features/fast/
+features/history/
+```
+
+Routes can stay in:
+
+```text
+app/
+```
+
+Shared UI primitives can stay in:
+
+```text
+components/
+```
+
+Generic app storage primitives can stay in:
+
+```text
+storage/
+```
+
+Truly reusable helpers can stay in:
+
+```text
 utils/
 ```
 
 Avoid:
 
 ```text
+selectors/
+services/
+feature-components/
 helpers/
 misc/
 common/
 shared/
 ```
 
-when names become vague.
+when they become type-based buckets or vague catch-all folders.
+
+Do not create separate global folders for selectors, services, or feature components.
 
 Avoid repository-pattern layers unless there is a real boundary or complexity that justifies them.
 
