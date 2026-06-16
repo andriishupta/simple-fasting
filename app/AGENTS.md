@@ -63,6 +63,7 @@ Preferred:
 
 - Expo SDK features
 - Expo-compatible packages
+- Well-maintained third-party packages with clear value
 
 Avoid native code whenever possible.
 
@@ -75,7 +76,8 @@ Before introducing any library:
 1. Check Expo SDK
 2. Check Expo official package
 3. Check Expo-compatible package
-4. Only then consider native solutions
+4. Check whether a straightforward local implementation is simpler
+5. Only then consider native solutions
 
 Prefer:
 
@@ -91,6 +93,10 @@ Avoid ejecting.
 Avoid custom native code.
 
 Avoid config plugins unless required.
+
+Avoid installing random or obscure packages for a single small function.
+
+Prefer straightforward app code over package-driven indirection when the feature is simple.
 
 ---
 
@@ -331,10 +337,17 @@ Before adding a dependency:
 
 1. Is it already solvable with Expo?
 2. Is it solvable with existing dependencies?
-3. Is the package actively maintained?
-4. Is the package worth future maintenance cost?
+3. Is a direct implementation small and clearer?
+4. Is the package known, actively maintained, and Expo-compatible?
+5. Is the package worth future maintenance cost?
 
 Prefer fewer dependencies.
+
+Use good third-party packages when they remove meaningful complexity.
+
+Do not add unknown packages for one utility function, small formatting logic, or simple UI behavior.
+
+Keep implementation straightforward unless a dependency clearly improves reliability or platform support.
 
 ---
 
