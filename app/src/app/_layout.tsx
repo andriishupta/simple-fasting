@@ -3,15 +3,17 @@ import { useEffect, useState } from 'react';
 
 import AppTabs from '@/components/app-tabs';
 import { useAppColorScheme } from '@/hooks/use-app-color-scheme';
-import { initializeStorage } from '@/repositories/storage-repository';
+import { refreshSettingsSnapshot } from '@/storage/settings-storage';
+import { initializeAppStorage } from '@/storage/storage-migrations';
 
 export default function TabLayout() {
-  const [, setStorageInitialized] = useState(false);
+  const [, forceRenderAfterStorageInit] = useState(0);
   const colorScheme = useAppColorScheme();
 
   useEffect(() => {
-    initializeStorage();
-    setStorageInitialized(true);
+    initializeAppStorage();
+    refreshSettingsSnapshot();
+    forceRenderAfterStorageInit((value) => value + 1);
   }, []);
 
   return (

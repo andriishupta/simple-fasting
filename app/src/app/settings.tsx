@@ -11,7 +11,7 @@ import {
   updateNotificationSettings,
   updateWidgetSettings,
   useSettings,
-} from '@/repositories/settings-repository';
+} from '@/storage/settings-storage';
 import {
   accentColorLabels,
   accentColorValues,

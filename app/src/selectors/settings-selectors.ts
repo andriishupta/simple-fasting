@@ -1,4 +1,4 @@
-import { useColorScheme, type ColorSchemeName } from 'react-native';
+import type { ColorSchemeName } from 'react-native';
 
 import {
   AccentColorName,
@@ -51,13 +51,4 @@ export const selectEffectiveColorScheme = ({
   }
 
   return systemColorScheme === 'dark' ? 'dark' : 'light';
-};
-
-export const useEffectiveColorScheme = (settings: AppSettings): 'light' | 'dark' => {
-  const systemColorScheme = useColorScheme();
-
-  return selectEffectiveColorScheme({
-    themePreference: settings.themePreference,
-    systemColorScheme,
-  });
 };

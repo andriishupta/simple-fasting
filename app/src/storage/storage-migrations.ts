@@ -48,16 +48,20 @@ const mergeRuntimeMetadata = (
 const migrateSettingsToV1 = (
   settings: AppSettings | undefined,
   timestamp: Timestamp,
-): AppSettings => ({
-  ...createDefaultAppSettings(timestamp),
-  ...settings,
-  schemaVersion: StorageSchemaVersion.V1,
-  goals:
-    settings?.goals === undefined || settings.goals.length === 0
-      ? createDefaultAppSettings(timestamp).goals
-      : settings.goals,
-  updatedAt: settings?.updatedAt ?? timestamp,
-});
+): AppSettings => {
+  const defaultSettings = createDefaultAppSettings(timestamp);
+
+  return {
+    ...defaultSettings,
+    ...settings,
+    schemaVersion: StorageSchemaVersion.V1,
+    goals:
+      settings?.goals === undefined || settings.goals.length === 0
+        ? defaultSettings.goals
+        : settings.goals,
+    updatedAt: settings?.updatedAt ?? timestamp,
+  };
+};
 
 export const initializeAppStorage = (): void => {
   const timestamp = now();

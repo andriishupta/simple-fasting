@@ -142,6 +142,10 @@ shared/
 
 when names become vague.
 
+Avoid repository-pattern layers unless there is a real boundary or complexity that justifies them.
+
+Prefer direct storage/services functions with clear names for this app.
+
 Structure should remain understandable to a new developer.
 
 ---

@@ -1,8 +1,14 @@
-import { useSettings } from '@/repositories/settings-repository';
-import { useEffectiveColorScheme } from '@/selectors/settings-selectors';
+import { useColorScheme } from 'react-native';
+
+import { selectEffectiveColorScheme } from '@/selectors/settings-selectors';
+import { useSettings } from '@/storage/settings-storage';
 
 export const useAppColorScheme = (): 'light' | 'dark' => {
   const settings = useSettings();
+  const systemColorScheme = useColorScheme();
 
-  return useEffectiveColorScheme(settings);
+  return selectEffectiveColorScheme({
+    themePreference: settings.themePreference,
+    systemColorScheme,
+  });
 };

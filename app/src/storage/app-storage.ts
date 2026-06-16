@@ -240,18 +240,6 @@ export const createEmptyGraphCacheState = (updatedAt: Timestamp): GraphCacheStat
   updatedAt,
 });
 
-export const createInitialAppStorageState = (updatedAt: Timestamp): AppStorageValueMap => ({
-  [StorageKey.Metadata]: createDefaultStorageMetadata({
-    appVersion: '0.0.0',
-    expoVersion: 'unknown',
-    initializedAt: updatedAt,
-  }),
-  [StorageKey.Settings]: createDefaultAppSettings(updatedAt),
-  [StorageKey.ActiveFast]: createEmptyActiveFastState(updatedAt),
-  [StorageKey.History]: createEmptyHistoryState(updatedAt),
-  [StorageKey.GraphCache]: createEmptyGraphCacheState(updatedAt),
-});
-
 const appStorageConfiguration: Configuration = {
   id: 'simple-fasting',
   compareBeforeSet: true,

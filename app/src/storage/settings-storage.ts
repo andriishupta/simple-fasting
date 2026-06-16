@@ -6,7 +6,6 @@ import {
   StorageKey,
   type AccentColorName,
   type AppSettings,
-  type FastingGoal,
   type NotificationSettings,
   type ThemePreference,
   type WidgetSettings,
@@ -62,13 +61,6 @@ export const setDefaultGoal = (goalId: string): AppSettings =>
       isDefault: goal.id === goalId,
       updatedAt: goal.id === goalId ? now() : goal.updatedAt,
     })),
-    updatedAt: now(),
-  }));
-
-export const setGoals = (goals: readonly FastingGoal[]): AppSettings =>
-  updateSettings((settings) => ({
-    ...settings,
-    goals,
     updatedAt: now(),
   }));
 
