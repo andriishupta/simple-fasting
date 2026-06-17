@@ -51,9 +51,9 @@ type GraphData = {
 
 const dayMilliseconds = 24 * 60 * 60 * 1000;
 const dataViews: readonly { label: string; value: DataView }[] = [
-  { label: 'History', value: 'history' },
   { label: 'Stats', value: 'stats' },
   { label: 'Graphs', value: 'graphs' },
+  { label: 'History', value: 'history' },
 ];
 
 const getDayKey = (date: Date): string => date.toISOString().slice(0, 10);
@@ -238,11 +238,21 @@ const formatGraphHours = (hours: number): string => `${formatHours(hours)}h`;
 const formatGraphCount = (value: number): string => `${value}`;
 
 export default function DataScreen() {
+  return (
+    <ScreenScaffold title="Data" eyebrow="History and trends">
+      <DataPanel showActiveFast />
+    </ScreenScaffold>
+  );
+}
+
+export function DataPanel({ showActiveFast = false }: { showActiveFast?: boolean }) {
   const historyState = useHistoryState();
   const activeFastState = useActiveFastState();
-  const [selectedView, setSelectedView] = useState<DataView>('history');
+  const [selectedView, setSelectedView] = useState<DataView>('stats');
   const [currentTime, setCurrentTime] = useState(() => Date.now());
-  const hasData = activeFastState.session !== null || historyState.sessions.length > 0;
+  const activeSession = showActiveFast ? activeFastState.session : null;
+  const hasActiveFast = activeSession !== null;
+  const hasData = hasActiveFast || historyState.sessions.length > 0;
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
@@ -251,12 +261,12 @@ export default function DataScreen() {
   }, []);
 
   return (
-    <ScreenScaffold title="Data" eyebrow="History and trends">
+    <>
       <DataViewPicker selectedView={selectedView} onSelect={setSelectedView} />
       {hasData ? (
         <>
-          {activeFastState.session !== null && (
-            <ActiveHistoryItem session={activeFastState.session} currentTime={currentTime} />
+          {hasActiveFast && (
+            <ActiveHistoryItem session={activeSession} currentTime={currentTime} />
           )}
           {selectedView === 'history' && <HistoryList sessions={historyState.sessions} />}
           {selectedView === 'stats' && <StatsPanel history={historyState} />}
@@ -266,11 +276,11 @@ export default function DataScreen() {
         <FeedbackState
           kind="empty"
           title="No fasting data yet"
-          description="Start a fast to build history, stats, and graphs."
+          description="Start a fast to build stats, graphs, and history."
           action={{ label: 'Start a Fast', onPress: () => router.push('/') }}
         />
       )}
-    </ScreenScaffold>
+    </>
   );
 }
 

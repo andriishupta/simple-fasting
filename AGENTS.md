@@ -42,22 +42,22 @@ docs/
 Current documents:
 
 ```text
-01-Simple_Fasting_Implementation_Spec_v1.docx
-02_Simple_Fasting_Task_Breakdown_Execution_Plan.docx
-03_Simple_Fasting_Release_Deployment_Guide.docx
-04_Future_Evolution_and_Versioning_Strategy.docx
+01-product-specification.md
+02-execution-plan.md
+03-release-deployment-guide.md
+04-future-roadmap.md
 ```
 
 Use this reference table to choose the right document before starting work:
 
 | Task type                                                                                                                         | Primary document                                       | Use when                                                                                 |
 | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| General product behavior, feature requirements, architecture, UX, privacy, data model, widgets, notifications, app store metadata | `01-Simple_Fasting_Implementation_Spec_v1.docx`        | You need the broad source of truth or are implementing v1 app behavior.                  |
-| Implementation sequencing, task breakdown, epic scope, development order                                                          | `02_Simple_Fasting_Task_Breakdown_Execution_Plan.docx` | You need to decide what to build next or keep work aligned with the execution plan.      |
-| Release, deployment, platform setup, store preparation, EAS, TestFlight, Google Play, testing strategy                            | `03_Simple_Fasting_Release_Deployment_Guide.docx`      | You are changing deployment, release, platform configuration, or store-facing materials. |
-| Future roadmap, versioning, migrations beyond v1, sync, accounts, health integrations, premium features                           | `04_Future_Evolution_and_Versioning_Strategy.docx`     | You are evaluating whether a requested feature belongs now or is a future-version item.  |
+| General product behavior, feature requirements, architecture, UX, privacy, data model, widgets, notifications, app store metadata | `01-product-specification.md` | You need the broad source of truth or are implementing v1 app behavior.                  |
+| Implementation sequencing, task breakdown, epic scope, development order                                                          | `02-execution-plan.md`        | You need to decide what to build next or keep work aligned with the execution plan.      |
+| Release, deployment, platform setup, store preparation, EAS, TestFlight, Google Play, testing strategy                            | `03-release-deployment-guide.md` | You are changing deployment, release, platform configuration, or store-facing materials. |
+| Future roadmap, versioning, migrations beyond v1, sync, accounts, health integrations, premium features                           | `04-future-roadmap.md`        | You are evaluating whether a requested feature belongs now or is a future-version item.  |
 
-When unsure, start with `01-Simple_Fasting_Implementation_Spec_v1.docx`, then consult the more specific document if the work is about execution order, deployment, or future evolution.
+When unsure, start with `01-product-specification.md`, then consult the more specific document if the work is about execution order, deployment, or future evolution.
 
 Documentation is the source of truth.
 
@@ -341,7 +341,7 @@ Every dependency increases maintenance cost.
 Future roadmap items are documented in:
 
 ```text
-04_Future_Evolution_and_Versioning_Strategy.docx
+04-future-roadmap.md
 ```
 
 Do not implement roadmap items unless requested.

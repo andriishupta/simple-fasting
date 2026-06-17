@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
 
 import { AppButton } from '@/components/app-button';
 import { FeedbackState } from '@/components/feedback-state';
@@ -7,6 +8,7 @@ import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { DataPanel } from '@/app/(tabs)/history';
 import {
   cancelFast,
   endFast,
@@ -30,18 +32,40 @@ const parsePositiveInteger = (value: string): number => {
   return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : 0;
 };
 
+const getInitialGoalId = (goals: readonly FastingGoal[], lastUsedGoalDurationHours: number): string =>
+  goals.find((goal) => goal.targetDurationHours === lastUsedGoalDurationHours)?.id ?? customGoalId;
+
+const getCustomDays = (goalDurationHours: number): string =>
+  `${Math.floor(goalDurationHours / 24)}`;
+
+const getCustomHours = (goalDurationHours: number): string => `${goalDurationHours % 24}`;
+
 export default function HomeScreen() {
   const settings = useSettings();
   const activeFastState = useActiveFastState();
   const theme = useTheme();
   const defaultGoal = getDefaultGoal(settings);
-  const [selectedGoalId, setSelectedGoalId] = useState(defaultGoal.id);
-  const [customDays, setCustomDays] = useState('0');
-  const [customHours, setCustomHours] = useState('16');
+  const [selectedGoalId, setSelectedGoalId] = useState(() =>
+    getInitialGoalId(settings.goals, settings.lastUsedGoalDurationHours),
+  );
+  const [customDays, setCustomDays] = useState(() =>
+    getCustomDays(settings.lastUsedGoalDurationHours),
+  );
+  const [customHours, setCustomHours] = useState(() =>
+    getCustomHours(settings.lastUsedGoalDurationHours),
+  );
   const [reason, setReason] = useState('');
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [operationError, setOperationError] = useState<string | null>(null);
   const activeSession = activeFastState.session;
+  const fastEndReminderAt =
+    activeSession !== null &&
+    activeFastState.fastEndNotificationId !== null &&
+    settings.notifications.fastEndReminderEnabled
+      ? new Date(
+          new Date(activeSession.startedAt).getTime() + activeSession.goalDurationHours * 3_600_000,
+        )
+      : null;
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
@@ -83,8 +107,12 @@ export default function HomeScreen() {
   };
   const endActiveFast = async (): Promise<void> => {
     try {
-      await endFast();
+      const completedSession = await endFast();
       setOperationError(null);
+
+      if (completedSession !== null) {
+        router.push(`/history/${completedSession.id}?edit=1`);
+      }
     } catch {
       setOperationError('The fast could not be ended. Your active fast is still saved locally.');
       Alert.alert('Unable to end fast', 'Please try again.');
@@ -107,7 +135,10 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScreenScaffold title="Fast" eyebrow="Current fast">
+    <ScreenScaffold
+      title="Fast"
+      eyebrow="Current fast"
+      action={<HeaderIcon label="Settings" onPress={() => router.push('/settings')} />}>
       {activeSession === null ? (
         <ThemedView style={styles.section}>
           {operationError !== null && (
@@ -189,10 +220,25 @@ export default function HomeScreen() {
             elapsedSeconds={getElapsedSeconds(activeSession, currentTime)}
             goalSeconds={getGoalSeconds(activeSession)}
             onCancel={cancelActiveFast}
+            fastEndReminderAt={fastEndReminderAt}
           />
         </>
       )}
+      <ThemedView style={styles.section}>
+        <ThemedText type="smallBold" themeColor="textSecondary">
+          Data
+        </ThemedText>
+        <DataPanel />
+      </ThemedView>
     </ScreenScaffold>
+  );
+}
+
+function HeaderIcon({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress}>
+      <ThemedText type="subtitle">⚙</ThemedText>
+    </Pressable>
   );
 }
 
@@ -205,6 +251,7 @@ function ActiveFastPanel({
   goalSeconds,
   onEnd,
   onCancel,
+  fastEndReminderAt,
 }: {
   currentTime: number;
   goalName: string;
@@ -214,6 +261,7 @@ function ActiveFastPanel({
   goalSeconds: number;
   onEnd: () => void;
   onCancel: () => void;
+  fastEndReminderAt: Date | null;
 }) {
   const progress = Math.min(1, elapsedSeconds / goalSeconds);
   const remainingSeconds = Math.max(0, goalSeconds - elapsedSeconds);
@@ -239,6 +287,11 @@ function ActiveFastPanel({
       {elapsedSeconds >= goalSeconds && (
         <ThemedText type="smallBold" themeColor="accent">
           Goal reached
+        </ThemedText>
+      )}
+      {fastEndReminderAt !== null && (
+        <ThemedText type="small" themeColor="textSecondary">
+          Fast end reminder at {fastEndReminderAt.toLocaleString()}
         </ThemedText>
       )}
       <View style={styles.actions}>

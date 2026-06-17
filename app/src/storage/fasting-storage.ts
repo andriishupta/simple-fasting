@@ -14,6 +14,7 @@ import {
   cancelDailyReminderNotification,
   getSettings,
   reconcileDailyReminderNotification,
+  setLastUsedGoalDurationHours,
 } from '@/storage/settings-storage';
 import {
   cancelScheduledNotification,
@@ -83,6 +84,7 @@ export const startFast = async ({
     session,
     enabled: settings.notifications.fastEndReminderEnabled,
   });
+  setLastUsedGoalDurationHours(goalDurationHours);
   await cancelDailyReminderNotification();
 
   return saveActiveFastState({

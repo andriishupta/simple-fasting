@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { Linking, Platform, Share, useColorScheme, type ColorSchemeName } from 'react-native';
+import { Linking, Platform, Share, type ColorSchemeName } from 'react-native';
 import Constants from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -203,14 +203,10 @@ export const setAccentColorName = (accentColorName: AccentColorNameType): AppSet
     updatedAt: now(),
   }));
 
-export const setDefaultGoal = (goalId: string): AppSettings =>
+export const setLastUsedGoalDurationHours = (lastUsedGoalDurationHours: number): AppSettings =>
   updateSettings((settings) => ({
     ...settings,
-    goals: settings.goals.map((goal) => ({
-      ...goal,
-      isDefault: goal.id === goalId,
-      updatedAt: goal.id === goalId ? now() : goal.updatedAt,
-    })),
+    lastUsedGoalDurationHours,
     updatedAt: now(),
   }));
 
@@ -288,7 +284,9 @@ export const updateWidgetSettings = (
   }));
 
 export const getDefaultGoal = (settings: AppSettings): FastingGoal =>
-  settings.goals.find((goal) => goal.isDefault) ?? settings.goals[0];
+  settings.goals.find((goal) => goal.targetDurationHours === settings.lastUsedGoalDurationHours) ??
+  settings.goals.find((goal) => goal.isDefault) ??
+  settings.goals[0];
 
 export const getAccentPalette = ({
   accentColorName,
@@ -326,16 +324,6 @@ const subscribeToSettings = (onStoreChange: () => void): (() => void) =>
 
 export const useSettings = (): AppSettings =>
   useSyncExternalStore(subscribeToSettings, getSettings, getSettings);
-
-export const useAppColorScheme = (): 'light' | 'dark' => {
-  const settings = useSettings();
-  const systemColorScheme = useColorScheme();
-
-  return getEffectiveColorScheme({
-    themePreference: settings.themePreference,
-    systemColorScheme,
-  });
-};
 
 const createExportFilename = (format: SettingsExportFormat): string =>
   `simple-fasting-export-${new Date().toISOString().slice(0, 10)}.${format}`;

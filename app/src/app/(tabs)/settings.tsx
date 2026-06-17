@@ -1,4 +1,5 @@
 import { Alert, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { router } from 'expo-router';
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
@@ -10,12 +11,10 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import {
   setAccentColorName,
-  setDefaultGoal,
   setThemePreference,
   updateNotificationSettingsAndSchedule,
   updateWidgetSettings,
   useSettings,
-  getDefaultGoal,
   accentColorLabels,
   accentColorValues,
   getAppVersionLabel,
@@ -32,7 +31,7 @@ import {
   shareDataExport,
   SettingsExportFormat,
 } from '@/storage/settings-storage';
-import { AccentColorName, ThemePreference, type FastingGoal } from '@/storage/app-storage';
+import { AccentColorName, ThemePreference } from '@/storage/app-storage';
 import { useTheme } from '@/hooks/use-theme';
 import { reconcileActiveFastEndNotification } from '@/storage/fasting-storage';
 
@@ -61,7 +60,6 @@ const dateToTime = (date: Date): string =>
 
 export default function SettingsScreen() {
   const settings = useSettings();
-  const defaultGoal = getDefaultGoal(settings);
   const runNotificationUpdate = async (update: () => Promise<void>): Promise<void> => {
     try {
       await update();
@@ -138,7 +136,16 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScreenScaffold title="Settings" eyebrow="App preferences">
+    <ScreenScaffold
+      title="Settings"
+      eyebrow="App preferences"
+      action={
+        <Pressable accessibilityRole="button" onPress={() => router.back()}>
+          <ThemedText type="smallBold" themeColor="accent">
+            Done
+          </ThemedText>
+        </Pressable>
+      }>
       <SettingsSection title="Appearance">
         <SegmentedControl
           label="Theme"
@@ -150,10 +157,6 @@ export default function SettingsScreen() {
           selectedAccentName={settings.accentColorName}
           onSelect={setAccentColorName}
         />
-      </SettingsSection>
-
-      <SettingsSection title="Goals">
-        <GoalPicker goals={settings.goals} selectedGoal={defaultGoal} onSelect={setDefaultGoal} />
       </SettingsSection>
 
       <SettingsSection title="Notifications">
@@ -367,42 +370,6 @@ function TimePicker({
         display={Platform.OS === 'ios' ? 'spinner' : 'default'}
         value={timeToDate(value)}
         onChange={updateTime}
-      />
-    </ThemedView>
-  );
-}
-
-function GoalPicker({
-  goals,
-  selectedGoal,
-  onSelect,
-}: {
-  goals: readonly FastingGoal[];
-  selectedGoal: FastingGoal;
-  onSelect: (goalId: string) => void;
-}) {
-  const theme = useTheme();
-  const selectedIndex = Math.max(
-    0,
-    goals.findIndex((goal) => goal.id === selectedGoal.id),
-  );
-  const selectGoal = (selectedLabel: string): void => {
-    const goal = goals.find((goalOption) => goalOption.name === selectedLabel);
-
-    if (goal !== undefined) {
-      onSelect(goal.id);
-    }
-  };
-
-  return (
-    <ThemedView style={styles.controlGroup}>
-      <ThemedText type="smallBold">Default fast</ThemedText>
-      <ExpoSegmentedControl
-        values={goals.map((goal) => goal.name)}
-        selectedIndex={selectedIndex}
-        onValueChange={selectGoal}
-        tintColor={theme.accent}
-        style={styles.nativeSegmentedControl}
       />
     </ThemedView>
   );

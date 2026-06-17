@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FeedbackState } from '@/components/feedback-state';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { AppThemeProvider, useAppThemeColorScheme } from '@/hooks/use-theme';
 import { appStorage } from '@/storage/app-storage';
 import {
   reconcileActiveFastEndNotification,
@@ -14,7 +15,6 @@ import {
 import {
   reconcileDailyReminderNotification,
   refreshSettingsSnapshot,
-  useAppColorScheme,
 } from '@/storage/settings-storage';
 import { configureLocalNotificationBehavior } from '@/storage/notification-storage';
 import { initializeAppStorage } from '@/storage/storage-migrations';
@@ -25,8 +25,16 @@ type StartupState =
   | { status: 'error'; message: string };
 
 export default function RootLayout() {
+  return (
+    <AppThemeProvider>
+      <RootLayoutContent />
+    </AppThemeProvider>
+  );
+}
+
+function RootLayoutContent() {
   const [startupState, setStartupState] = useState<StartupState>({ status: 'loading' });
-  const colorScheme = useAppColorScheme();
+  const colorScheme = useAppThemeColorScheme();
 
   const initializeStorage = (): void => {
     try {

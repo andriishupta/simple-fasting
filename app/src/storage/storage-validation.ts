@@ -139,6 +139,9 @@ export const repairSettings = (
       ? value.accentColorName
       : defaults.accentColorName,
     goals: normalizeGoals(value.goals, defaults.goals, timestamp),
+    lastUsedGoalDurationHours: isPositiveNumber(value.lastUsedGoalDurationHours)
+      ? value.lastUsedGoalDurationHours
+      : defaults.lastUsedGoalDurationHours,
     notifications: {
       fastEndReminderEnabled: isBoolean(notifications.fastEndReminderEnabled)
         ? notifications.fastEndReminderEnabled

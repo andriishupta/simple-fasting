@@ -478,7 +478,7 @@ Assume repository is public.
 Future roadmap exists in:
 
 ```text
-/docs/04-future-roadmap.docx
+/docs/04-future-roadmap.md
 ```
 
 Do not implement future roadmap items unless requested.

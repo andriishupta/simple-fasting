@@ -78,6 +78,7 @@ export type AppSettings = {
   themePreference: ThemePreference;
   accentColorName: AccentColorName;
   goals: readonly FastingGoal[];
+  lastUsedGoalDurationHours: number;
   notifications: NotificationSettings;
   widgets: WidgetSettings;
   updatedAt: Timestamp;
@@ -214,6 +215,7 @@ export const createDefaultAppSettings = (updatedAt: Timestamp): AppSettings => (
   themePreference: ThemePreference.System,
   accentColorName: AccentColorName.Blue,
   goals: createDefaultGoals(updatedAt),
+  lastUsedGoalDurationHours: 16,
   notifications: {
     fastEndReminderEnabled: true,
     dailyReminderEnabled: false,

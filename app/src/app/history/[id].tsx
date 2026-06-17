@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { Alert, StyleSheet, TextInput, View, type KeyboardTypeOptions } from 'react-native';
+import {
+  Alert,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+  type KeyboardTypeOptions,
+} from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { AppButton } from '@/components/app-button';
@@ -17,7 +24,8 @@ import {
   updateFastSession,
   useHistoryState,
 } from '@/storage/fasting-storage';
-import { type FastSession } from '@/storage/app-storage';
+import { type FastSession, type FastingGoal } from '@/storage/app-storage';
+import { useSettings } from '@/storage/settings-storage';
 
 type EditState = {
   startedAt: string;
@@ -26,6 +34,7 @@ type EditState = {
   reason: string;
 };
 
+const customGoalId = 'custom-duration';
 const maxGoalDurationHours = 40 * 24;
 
 const toDateTimeInputValue = (timestamp: string | null): string => {
@@ -64,7 +73,7 @@ const createEditState = (session: FastSession): EditState => ({
 });
 
 export default function HistoryDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, edit } = useLocalSearchParams<{ id: string; edit?: string }>();
   useHistoryState();
   const session = typeof id === 'string' ? getFastSession(id) : undefined;
 
@@ -83,15 +92,25 @@ export default function HistoryDetailScreen() {
 
   return (
     <ScreenScaffold title="Fast Details" eyebrow="History">
-      <DetailContent session={session} />
+      <DetailContent session={session} shouldStartEditing={edit === '1'} />
     </ScreenScaffold>
   );
 }
 
-function DetailContent({ session }: { session: FastSession }) {
-  const [isEditing, setIsEditing] = useState(false);
+function DetailContent({
+  session,
+  shouldStartEditing,
+}: {
+  session: FastSession;
+  shouldStartEditing: boolean;
+}) {
+  const settings = useSettings();
+  const [isEditing, setIsEditing] = useState(shouldStartEditing);
   const [editState, setEditState] = useState<EditState>(() => createEditState(session));
   const [editError, setEditError] = useState<string | null>(null);
+  const selectedGoalId =
+    settings.goals.find((goal) => `${goal.targetDurationHours}` === editState.goalDurationHours)
+      ?.id ?? customGoalId;
 
   const deleteSession = (): void => {
     Alert.alert('Delete fast?', 'This removes the session from local history.', [
@@ -205,17 +224,38 @@ function DetailContent({ session }: { session: FastSession }) {
             placeholder="Leave empty if not ended"
             onChangeText={(endedAt) => setEditState((state) => ({ ...state, endedAt }))}
           />
-          <EditField
-            label="Goal hours"
-            value={editState.goalDurationHours}
-            keyboardType="number-pad"
-            onChangeText={(goalDurationHours) =>
-              setEditState((state) => ({
-                ...state,
-                goalDurationHours: goalDurationHours.replaceAll(/\D/g, ''),
-              }))
-            }
+          <GoalPicker
+            goals={settings.goals}
+            selectedGoalId={selectedGoalId}
+            onSelect={(goalId) => {
+              if (goalId === customGoalId) {
+                setEditState((state) => ({ ...state, goalDurationHours: '' }));
+                return;
+              }
+
+              const goal = settings.goals.find((goalOption) => goalOption.id === goalId);
+
+              if (goal !== undefined) {
+                setEditState((state) => ({
+                  ...state,
+                  goalDurationHours: `${goal.targetDurationHours}`,
+                }));
+              }
+            }}
           />
+          {selectedGoalId === customGoalId && (
+            <EditField
+              label="Custom goal hours"
+              value={editState.goalDurationHours}
+              keyboardType="number-pad"
+              onChangeText={(goalDurationHours) =>
+                setEditState((state) => ({
+                  ...state,
+                  goalDurationHours: goalDurationHours.replaceAll(/\D/g, ''),
+                }))
+              }
+            />
+          )}
           <EditField
             label="Reason"
             value={editState.reason}
@@ -235,6 +275,63 @@ function DetailContent({ session }: { session: FastSession }) {
         <AppButton label="Delete" onPress={deleteSession} variant="danger" fullWidth />
       </View>
     </View>
+  );
+}
+
+function GoalPicker({
+  goals,
+  selectedGoalId,
+  onSelect,
+}: {
+  goals: readonly FastingGoal[];
+  selectedGoalId: string;
+  onSelect: (goalId: string) => void;
+}) {
+  return (
+    <View style={styles.goalRow}>
+      {goals.map((goal) => (
+        <GoalButton
+          key={goal.id}
+          label={goal.name}
+          selected={goal.id === selectedGoalId}
+          onPress={() => onSelect(goal.id)}
+        />
+      ))}
+      <GoalButton
+        label="Custom"
+        selected={selectedGoalId === customGoalId}
+        onPress={() => onSelect(customGoalId)}
+      />
+    </View>
+  );
+}
+
+function GoalButton({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.goalButton,
+        { borderColor: selected ? theme.accentBorder : theme.backgroundSelected },
+        selected && { backgroundColor: theme.accentBackground },
+        pressed && styles.pressed,
+      ]}>
+      <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textSecondary'}>
+        {label}
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -316,5 +413,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
+  },
+  goalRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  goalButton: {
+    minHeight: 40,
+    minWidth: 86,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.three,
+  },
+  pressed: {
+    opacity: 0.72,
   },
 });
