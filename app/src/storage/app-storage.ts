@@ -29,6 +29,12 @@ export enum AccentColorName {
   Pink = 'pink',
 }
 
+export enum DataViewPreference {
+  Stats = 'stats',
+  Graphs = 'graphs',
+  History = 'history',
+}
+
 export enum FastStatus {
   Active = 'active',
   Completed = 'completed',
@@ -79,6 +85,7 @@ export type AppSettings = {
   accentColorName: AccentColorName;
   goals: readonly FastingGoal[];
   lastUsedGoalDurationHours: number;
+  dataViewPreference: DataViewPreference;
   notifications: NotificationSettings;
   widgets: WidgetSettings;
   updatedAt: Timestamp;
@@ -216,6 +223,7 @@ export const createDefaultAppSettings = (updatedAt: Timestamp): AppSettings => (
   accentColorName: AccentColorName.Blue,
   goals: createDefaultGoals(updatedAt),
   lastUsedGoalDurationHours: 16,
+  dataViewPreference: DataViewPreference.Stats,
   notifications: {
     fastEndReminderEnabled: true,
     dailyReminderEnabled: false,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
 import { router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 
 import { AppSurface } from '@/components/app-surface';
 import {
@@ -25,10 +26,16 @@ import {
   useActiveFastState,
   useHistoryState,
 } from '@/storage/fasting-storage';
-import { FastStatus, type FastSession, type HistoryState } from '@/storage/app-storage';
+import {
+  DataViewPreference,
+  FastStatus,
+  type FastSession,
+  type HistoryState,
+} from '@/storage/app-storage';
 import { useTheme } from '@/hooks/use-theme';
+import { setDataViewPreference, useSettings } from '@/storage/settings-storage';
 
-type DataView = 'history' | 'stats' | 'graphs';
+type DataView = DataViewPreference;
 
 type FastingStats = {
   currentStreakDays: number;
@@ -51,9 +58,9 @@ type GraphData = {
 
 const dayMilliseconds = 24 * 60 * 60 * 1000;
 const dataViews: readonly { label: string; value: DataView }[] = [
-  { label: 'Stats', value: 'stats' },
-  { label: 'Graphs', value: 'graphs' },
-  { label: 'History', value: 'history' },
+  { label: 'Stats', value: DataViewPreference.Stats },
+  { label: 'Graphs', value: DataViewPreference.Graphs },
+  { label: 'History', value: DataViewPreference.History },
 ];
 
 const getDayKey = (date: Date): string => date.toISOString().slice(0, 10);
@@ -237,6 +244,12 @@ const formatGraphHours = (hours: number): string => `${formatHours(hours)}h`;
 
 const formatGraphCount = (value: number): string => `${value}`;
 
+const formatLocaleDateTime = (timestamp: string): string =>
+  new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(timestamp));
+
 export default function DataScreen() {
   return (
     <ScreenScaffold title="Data" eyebrow="History and trends">
@@ -248,7 +261,8 @@ export default function DataScreen() {
 export function DataPanel({ showActiveFast = false }: { showActiveFast?: boolean }) {
   const historyState = useHistoryState();
   const activeFastState = useActiveFastState();
-  const [selectedView, setSelectedView] = useState<DataView>('stats');
+  const settings = useSettings();
+  const [selectedView, setSelectedView] = useState<DataView>(settings.dataViewPreference);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const activeSession = showActiveFast ? activeFastState.session : null;
   const hasActiveFast = activeSession !== null;
@@ -259,18 +273,27 @@ export function DataPanel({ showActiveFast = false }: { showActiveFast?: boolean
 
     return () => clearInterval(interval);
   }, []);
+  const selectDataView = (view: DataView): void => {
+    setSelectedView(view);
+
+    if (view !== settings.dataViewPreference) {
+      setDataViewPreference(view);
+    }
+  };
 
   return (
     <>
-      <DataViewPicker selectedView={selectedView} onSelect={setSelectedView} />
+      <DataViewPicker selectedView={selectedView} onSelect={selectDataView} />
       {hasData ? (
         <>
           {hasActiveFast && (
             <ActiveHistoryItem session={activeSession} currentTime={currentTime} />
           )}
-          {selectedView === 'history' && <HistoryList sessions={historyState.sessions} />}
-          {selectedView === 'stats' && <StatsPanel history={historyState} />}
-          {selectedView === 'graphs' && <GraphsPanel history={historyState} />}
+          {selectedView === DataViewPreference.History && (
+            <HistoryList sessions={historyState.sessions} />
+          )}
+          {selectedView === DataViewPreference.Stats && <StatsPanel history={historyState} />}
+          {selectedView === DataViewPreference.Graphs && <GraphsPanel history={historyState} />}
         </>
       ) : (
         <FeedbackState
@@ -379,6 +402,10 @@ function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
 
 function HistoryItem({ session }: { session: FastSession }) {
   const theme = useTheme();
+  const editSession = (event?: GestureResponderEvent): void => {
+    event?.stopPropagation();
+    router.push(`/history/${session.id}`);
+  };
   const deleteSession = (event?: GestureResponderEvent): void => {
     event?.stopPropagation();
 
@@ -395,7 +422,7 @@ function HistoryItem({ session }: { session: FastSession }) {
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => router.push(`/history/${session.id}`)}
+      onPress={editSession}
       style={({ pressed }) => [
         styles.item,
         { borderColor: theme.backgroundSelected },
@@ -406,18 +433,49 @@ function HistoryItem({ session }: { session: FastSession }) {
           session={session}
           durationSeconds={getSessionDurationSeconds(session)}
           endedLabel={
-            session.endedAt === null ? 'Not ended' : new Date(session.endedAt).toLocaleString()
+            session.endedAt === null ? 'In progress' : formatLocaleDateTime(session.endedAt)
           }
         />
       </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={deleteSession}
-        style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}>
-        <ThemedText type="small" themeColor="textSecondary">
-          Delete
-        </ThemedText>
-      </Pressable>
+      <View style={styles.itemActions}>
+        <IconButton label="Edit fast" symbol={{ ios: 'pencil', android: 'edit', web: 'edit' }} onPress={editSession} />
+        <IconButton
+          label="Delete fast"
+          symbol={{ ios: 'trash', android: 'delete', web: 'delete' }}
+          onPress={deleteSession}
+        />
+      </View>
+    </Pressable>
+  );
+}
+
+function IconButton({
+  label,
+  symbol,
+  onPress,
+}: {
+  label: string;
+  symbol: { ios: 'pencil' | 'trash'; android: 'edit' | 'delete'; web: 'edit' | 'delete' };
+  onPress: (event: GestureResponderEvent) => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+      <SymbolView
+        name={symbol}
+        size={20}
+        tintColor={theme.textSecondary}
+        fallback={
+          <ThemedText type="small" themeColor="textSecondary">
+            {label}
+          </ThemedText>
+        }
+      />
     </Pressable>
   );
 }
@@ -435,10 +493,10 @@ function HistorySummary({
     <>
       <ThemedText type="smallBold">{formatDuration(durationSeconds)}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
-        Started {new Date(session.startedAt).toLocaleString()}
+        {formatLocaleDateTime(session.startedAt)}
       </ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
-        Ended {endedLabel}
+        {endedLabel}
       </ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
         {session.status} · {session.goalDurationHours} hour goal
@@ -571,8 +629,14 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: Spacing.one,
   },
-  deleteButton: {
+  itemActions: {
+    flexDirection: 'row',
+    gap: Spacing.one,
+  },
+  iconButton: {
+    width: 40,
     minHeight: 40,
+    alignItems: 'center',
     justifyContent: 'center',
   },
   grid: {

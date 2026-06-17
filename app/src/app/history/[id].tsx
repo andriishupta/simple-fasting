@@ -1,6 +1,10 @@
 import { useState } from 'react';
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import {
   Alert,
+  Platform,
   Pressable,
   StyleSheet,
   TextInput,
@@ -28,8 +32,8 @@ import { type FastSession, type FastingGoal } from '@/storage/app-storage';
 import { useSettings } from '@/storage/settings-storage';
 
 type EditState = {
-  startedAt: string;
-  endedAt: string;
+  startedAt: Date | null;
+  endedAt: Date | null;
   goalDurationHours: string;
   reason: string;
 };
@@ -37,49 +41,51 @@ type EditState = {
 const customGoalId = 'custom-duration';
 const maxGoalDurationHours = 40 * 24;
 
-const toDateTimeInputValue = (timestamp: string | null): string => {
+const toDateValue = (timestamp: string | null): Date | null => {
   if (timestamp === null) {
-    return '';
+    return null;
   }
 
   const date = new Date(timestamp);
 
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-
-  const offsetMilliseconds = date.getTimezoneOffset() * 60_000;
-
-  return new Date(date.getTime() - offsetMilliseconds).toISOString().slice(0, 16);
+  return Number.isNaN(date.getTime()) ? null : date;
 };
 
-const fromDateTimeInputValue = (value: string): string | null => {
-  const trimmedValue = value.trim();
+const mergeDatePart = ({ current, selected }: { current: Date | null; selected: Date }): Date => {
+  const next = current === null ? new Date() : new Date(current);
 
-  if (trimmedValue === '') {
-    return null;
-  }
+  next.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
+  return next;
+};
 
-  const date = new Date(trimmedValue);
+const mergeTimePart = ({ current, selected }: { current: Date | null; selected: Date }): Date => {
+  const next = current === null ? new Date() : new Date(current);
 
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  next.setHours(selected.getHours(), selected.getMinutes());
+  return next;
 };
 
 const createEditState = (session: FastSession): EditState => ({
-  startedAt: toDateTimeInputValue(session.startedAt),
-  endedAt: toDateTimeInputValue(session.endedAt),
+  startedAt: toDateValue(session.startedAt),
+  endedAt: toDateValue(session.endedAt),
   goalDurationHours: `${session.goalDurationHours}`,
   reason: session.reason ?? '',
 });
 
+const formatLocaleDateTime = (timestamp: string): string =>
+  new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'medium',
+  }).format(new Date(timestamp));
+
 export default function HistoryDetailScreen() {
-  const { id, edit } = useLocalSearchParams<{ id: string; edit?: string }>();
+  const { id } = useLocalSearchParams<{ id: string }>();
   useHistoryState();
   const session = typeof id === 'string' ? getFastSession(id) : undefined;
 
   if (session === undefined) {
     return (
-      <ScreenScaffold title="Fast Details" eyebrow="History">
+      <ScreenScaffold title="Edit Fast" eyebrow="History">
         <FeedbackState
           kind="error"
           title="Fast not found"
@@ -91,21 +97,14 @@ export default function HistoryDetailScreen() {
   }
 
   return (
-    <ScreenScaffold title="Fast Details" eyebrow="History">
-      <DetailContent session={session} shouldStartEditing={edit === '1'} />
+    <ScreenScaffold title="Edit Fast" eyebrow="History">
+      <DetailContent session={session} />
     </ScreenScaffold>
   );
 }
 
-function DetailContent({
-  session,
-  shouldStartEditing,
-}: {
-  session: FastSession;
-  shouldStartEditing: boolean;
-}) {
+function DetailContent({ session }: { session: FastSession }) {
   const settings = useSettings();
-  const [isEditing, setIsEditing] = useState(shouldStartEditing);
   const [editState, setEditState] = useState<EditState>(() => createEditState(session));
   const [editError, setEditError] = useState<string | null>(null);
   const selectedGoalId =
@@ -120,28 +119,32 @@ function DetailContent({
         style: 'destructive',
         onPress: () => {
           deleteFastSession(session.id);
-          router.replace('/history');
+          router.back();
         },
       },
     ]);
   };
   const cancelEditing = (): void => {
-    setEditState(createEditState(session));
-    setEditError(null);
-    setIsEditing(false);
-  };
-  const startEditing = (): void => {
-    setEditState(createEditState(session));
-    setEditError(null);
-    setIsEditing(true);
+    router.back();
   };
   const saveEdits = (): void => {
-    const startedAt = fromDateTimeInputValue(editState.startedAt);
-    const endedAt = fromDateTimeInputValue(editState.endedAt);
+    const startedAt = editState.startedAt;
+    const endedAt = editState.endedAt;
     const goalDurationHours = Number(editState.goalDurationHours);
+    const currentTime = Date.now();
 
     if (startedAt === null) {
       setEditError('Start time is required.');
+      return;
+    }
+
+    if (startedAt.getTime() > currentTime) {
+      setEditError('Start time cannot be in the future.');
+      return;
+    }
+
+    if (endedAt !== null && endedAt.getTime() > currentTime) {
+      setEditError('End time cannot be in the future.');
       return;
     }
 
@@ -155,7 +158,7 @@ function DetailContent({
       return;
     }
 
-    if (endedAt !== null && new Date(endedAt).getTime() <= new Date(startedAt).getTime()) {
+    if (endedAt !== null && endedAt.getTime() <= startedAt.getTime()) {
       setEditError('End time must be after start time.');
       return;
     }
@@ -164,8 +167,8 @@ function DetailContent({
       sessionId: session.id,
       update: (currentSession) => ({
         ...currentSession,
-        startedAt,
-        endedAt,
+        startedAt: startedAt.toISOString(),
+        endedAt: endedAt?.toISOString() ?? null,
         goalDurationHours,
         reason: editState.reason.trim() === '' ? null : editState.reason.trim(),
       }),
@@ -176,8 +179,8 @@ function DetailContent({
       return;
     }
 
-    setIsEditing(false);
     setEditError(null);
+    router.back();
   };
 
   return (
@@ -191,89 +194,75 @@ function DetailContent({
         </ThemedText>
       </View>
 
-      <DetailRow label="Started" value={new Date(session.startedAt).toLocaleString()} />
-      <DetailRow
-        label="Ended"
-        value={session.endedAt === null ? 'Not ended' : new Date(session.endedAt).toLocaleString()}
-      />
-      <DetailRow label="Goal" value={`${session.goalDurationHours} hours`} />
-      <DetailRow label="Reason" value={session.reason ?? 'None'} />
-      <DetailRow label="Created" value={new Date(session.createdAt).toLocaleString()} />
-      <DetailRow label="Updated" value={new Date(session.updatedAt).toLocaleString()} />
+      <AppSurface style={styles.editPanel}>
+        <ThemedText type="small" themeColor="textSecondary">
+          {formatLocaleDateTime(session.startedAt)}
+          {session.endedAt === null ? '' : ` to ${formatLocaleDateTime(session.endedAt)}`}
+        </ThemedText>
+        {editError !== null && (
+          <FeedbackState
+            kind="error"
+            title="Could not save changes"
+            description={editError}
+            action={{ label: 'Dismiss', onPress: () => setEditError(null) }}
+          />
+        )}
+        <NativeDateTimeField
+          label="Start time"
+          value={editState.startedAt}
+          onChange={(startedAt) => setEditState((state) => ({ ...state, startedAt }))}
+        />
+        <NativeDateTimeField
+          label="End time"
+          value={editState.endedAt}
+          canClear
+          fallbackDate={editState.startedAt ?? undefined}
+          onChange={(endedAt) => setEditState((state) => ({ ...state, endedAt }))}
+        />
+        <GoalPicker
+          goals={settings.goals}
+          selectedGoalId={selectedGoalId}
+          onSelect={(goalId) => {
+            if (goalId === customGoalId) {
+              setEditState((state) => ({ ...state, goalDurationHours: '' }));
+              return;
+            }
 
-      {isEditing && (
-        <AppSurface style={styles.editPanel}>
-          <ThemedText type="smallBold">Edit fast</ThemedText>
-          {editError !== null && (
-            <FeedbackState
-              kind="error"
-              title="Could not save changes"
-              description={editError}
-              action={{ label: 'Dismiss', onPress: () => setEditError(null) }}
-            />
-          )}
+            const goal = settings.goals.find((goalOption) => goalOption.id === goalId);
+
+            if (goal !== undefined) {
+              setEditState((state) => ({
+                ...state,
+                goalDurationHours: `${goal.targetDurationHours}`,
+              }));
+            }
+          }}
+        />
+        {selectedGoalId === customGoalId && (
           <EditField
-            label="Started"
-            value={editState.startedAt}
-            placeholder="YYYY-MM-DDTHH:mm"
-            onChangeText={(startedAt) => setEditState((state) => ({ ...state, startedAt }))}
+            label="Custom goal hours"
+            value={editState.goalDurationHours}
+            keyboardType="number-pad"
+            onChangeText={(goalDurationHours) =>
+              setEditState((state) => ({
+                ...state,
+                goalDurationHours: goalDurationHours.replaceAll(/\D/g, ''),
+              }))
+            }
           />
-          <EditField
-            label="Ended"
-            value={editState.endedAt}
-            placeholder="Leave empty if not ended"
-            onChangeText={(endedAt) => setEditState((state) => ({ ...state, endedAt }))}
-          />
-          <GoalPicker
-            goals={settings.goals}
-            selectedGoalId={selectedGoalId}
-            onSelect={(goalId) => {
-              if (goalId === customGoalId) {
-                setEditState((state) => ({ ...state, goalDurationHours: '' }));
-                return;
-              }
-
-              const goal = settings.goals.find((goalOption) => goalOption.id === goalId);
-
-              if (goal !== undefined) {
-                setEditState((state) => ({
-                  ...state,
-                  goalDurationHours: `${goal.targetDurationHours}`,
-                }));
-              }
-            }}
-          />
-          {selectedGoalId === customGoalId && (
-            <EditField
-              label="Custom goal hours"
-              value={editState.goalDurationHours}
-              keyboardType="number-pad"
-              onChangeText={(goalDurationHours) =>
-                setEditState((state) => ({
-                  ...state,
-                  goalDurationHours: goalDurationHours.replaceAll(/\D/g, ''),
-                }))
-              }
-            />
-          )}
-          <EditField
-            label="Reason"
-            value={editState.reason}
-            placeholder="Optional"
-            onChangeText={(reason) => setEditState((state) => ({ ...state, reason }))}
-          />
-          <View style={styles.actions}>
-            <AppButton label="Cancel" onPress={cancelEditing} variant="secondary" fullWidth />
-            <AppButton label="Save" onPress={saveEdits} fullWidth />
-          </View>
-        </AppSurface>
-      )}
-
-      <View style={styles.actions}>
-        {!isEditing && <AppButton label="Edit" onPress={startEditing} fullWidth />}
-        <AppButton label="Back" onPress={() => router.back()} variant="secondary" fullWidth />
-        <AppButton label="Delete" onPress={deleteSession} variant="danger" fullWidth />
-      </View>
+        )}
+        <EditField
+          label="Reason"
+          value={editState.reason}
+          placeholder="Optional"
+          onChangeText={(reason) => setEditState((state) => ({ ...state, reason }))}
+        />
+        <View style={styles.actions}>
+          <AppButton label="Cancel" onPress={cancelEditing} variant="secondary" fullWidth />
+          <AppButton label="Save" onPress={saveEdits} fullWidth />
+          <AppButton label="Delete" onPress={deleteSession} variant="danger" fullWidth />
+        </View>
+      </AppSurface>
     </View>
   );
 }
@@ -335,14 +324,63 @@ function GoalButton({
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function NativeDateTimeField({
+  label,
+  value,
+  fallbackDate,
+  canClear = false,
+  onChange,
+}: {
+  label: string;
+  value: Date | null;
+  fallbackDate?: Date;
+  canClear?: boolean;
+  onChange: (value: Date | null) => void;
+}) {
+  const pickerValue = value ?? fallbackDate ?? new Date();
+  const updateDate = (_event: DateTimePickerEvent, selectedDate?: Date): void => {
+    if (selectedDate !== undefined) {
+      onChange(mergeDatePart({ current: value, selected: selectedDate }));
+    }
+  };
+  const updateTime = (_event: DateTimePickerEvent, selectedDate?: Date): void => {
+    if (selectedDate !== undefined) {
+      onChange(mergeTimePart({ current: value, selected: selectedDate }));
+    }
+  };
+
   return (
-    <AppSurface style={styles.row}>
-      <ThemedText type="small" themeColor="textSecondary">
-        {label}
-      </ThemedText>
-      <ThemedText>{value}</ThemedText>
-    </AppSurface>
+    <View style={styles.field}>
+      <View style={styles.fieldHeader}>
+        <ThemedText type="smallBold">{label}</ThemedText>
+        {canClear && value !== null && (
+          <Pressable accessibilityRole="button" onPress={() => onChange(null)}>
+            <ThemedText type="smallBold" themeColor="accent">
+              Clear
+            </ThemedText>
+          </Pressable>
+        )}
+      </View>
+      <DateTimePicker
+        mode="date"
+        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+        value={pickerValue}
+        maximumDate={new Date()}
+        onChange={updateDate}
+      />
+      <DateTimePicker
+        mode="time"
+        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+        value={pickerValue}
+        maximumDate={new Date()}
+        onChange={updateTime}
+      />
+      {value !== null && (
+        <ThemedText type="small" themeColor="textSecondary">
+          {formatLocaleDateTime(value.toISOString())}
+        </ThemedText>
+      )}
+    </View>
   );
 }
 
@@ -393,14 +431,18 @@ const styles = StyleSheet.create({
   duration: {
     textAlign: 'center',
   },
-  row: {
-    gap: Spacing.one,
-  },
   editPanel: {
     gap: Spacing.three,
   },
   field: {
     gap: Spacing.one,
+  },
+  fieldHeader: {
+    minHeight: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
   },
   input: {
     minHeight: 44,

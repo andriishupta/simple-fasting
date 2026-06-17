@@ -1,5 +1,6 @@
 import {
   AccentColorName,
+  DataViewPreference,
   FastStatus,
   GoalKind,
   StorageKey,
@@ -57,6 +58,7 @@ const isOptionalRate = (value: unknown): value is number | null =>
 
 const themePreferences = Object.values(ThemePreference);
 const accentColorNames = Object.values(AccentColorName);
+const dataViewPreferences = Object.values(DataViewPreference);
 const fastStatuses = Object.values(FastStatus);
 
 const sanitizeTimestamp = (value: unknown, fallback: Timestamp): Timestamp =>
@@ -142,6 +144,9 @@ export const repairSettings = (
     lastUsedGoalDurationHours: isPositiveNumber(value.lastUsedGoalDurationHours)
       ? value.lastUsedGoalDurationHours
       : defaults.lastUsedGoalDurationHours,
+    dataViewPreference: isEnumValue(dataViewPreferences, value.dataViewPreference)
+      ? value.dataViewPreference
+      : defaults.dataViewPreference,
     notifications: {
       fastEndReminderEnabled: isBoolean(notifications.fastEndReminderEnabled)
         ? notifications.fastEndReminderEnabled

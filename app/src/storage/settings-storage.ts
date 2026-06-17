@@ -13,6 +13,7 @@ import {
   ThemePreference,
   type AccentColorName as AccentColorNameType,
   type AppSettings,
+  type DataViewPreference as DataViewPreferenceType,
   type FastingGoal,
   type NotificationSettings,
   type ThemePreference as ThemePreferenceType,
@@ -207,6 +208,13 @@ export const setLastUsedGoalDurationHours = (lastUsedGoalDurationHours: number):
   updateSettings((settings) => ({
     ...settings,
     lastUsedGoalDurationHours,
+    updatedAt: now(),
+  }));
+
+export const setDataViewPreference = (dataViewPreference: DataViewPreferenceType): AppSettings =>
+  updateSettings((settings) => ({
+    ...settings,
+    dataViewPreference,
     updatedAt: now(),
   }));
 
