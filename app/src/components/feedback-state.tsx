@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { AppButton } from '@/components/app-button';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -27,8 +28,8 @@ export function FeedbackState({ kind, title, description, action }: FeedbackStat
       style={[
         styles.container,
         {
-          borderColor: kind === 'error' ? '#D92D20' : theme.backgroundSelected,
-          backgroundColor: kind === 'error' ? '#FEF3F2' : 'transparent',
+          borderColor: kind === 'error' ? theme.danger : theme.backgroundSelected,
+          backgroundColor: kind === 'error' ? theme.dangerBackground : 'transparent',
         },
       ]}>
       <ThemedText type="smallBold">{title}</ThemedText>
@@ -36,18 +37,12 @@ export function FeedbackState({ kind, title, description, action }: FeedbackStat
         {description}
       </ThemedText>
       {action !== undefined && (
-        <Pressable
-          accessibilityRole="button"
+        <AppButton
+          label={action.label}
           onPress={action.onPress}
-          style={({ pressed }) => [
-            styles.action,
-            { backgroundColor: kind === 'error' ? '#D92D20' : theme.accent },
-            pressed && styles.pressed,
-          ]}>
-          <ThemedText type="smallBold" style={styles.actionText}>
-            {action.label}
-          </ThemedText>
-        </Pressable>
+          variant={kind === 'error' ? 'danger' : 'primary'}
+          style={styles.action}
+        />
       )}
     </View>
   );
@@ -66,17 +61,6 @@ const styles = StyleSheet.create({
     maxWidth: 420,
   },
   action: {
-    minHeight: 44,
     alignSelf: 'flex-start',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.three,
-  },
-  actionText: {
-    color: '#FFFFFF',
-  },
-  pressed: {
-    opacity: 0.72,
   },
 });

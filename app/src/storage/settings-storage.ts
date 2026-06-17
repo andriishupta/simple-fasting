@@ -31,14 +31,124 @@ const readSettings = (): AppSettings =>
 let settingsSnapshot = createDefaultAppSettings(now());
 
 export const accentColorValues: Record<AccentColorName, string> = {
-  [AccentColorName.Red]: '#EF4444',
+  [AccentColorName.Red]: '#DC2626',
   [AccentColorName.Orange]: '#F97316',
   [AccentColorName.Amber]: '#F59E0B',
   [AccentColorName.Green]: '#22C55E',
   [AccentColorName.Teal]: '#14B8A6',
-  [AccentColorName.Blue]: '#3B82F6',
+  [AccentColorName.Blue]: '#2563EB',
   [AccentColorName.Purple]: '#8B5CF6',
   [AccentColorName.Pink]: '#EC4899',
+};
+
+type AccentPalette = {
+  accent: string;
+  accentBackground: string;
+  accentBorder: string;
+  accentForeground: string;
+};
+
+const accentPalettes: Record<'light' | 'dark', Record<AccentColorName, AccentPalette>> = {
+  light: {
+    [AccentColorName.Red]: {
+      accent: '#DC2626',
+      accentBackground: '#FEE2E2',
+      accentBorder: '#FCA5A5',
+      accentForeground: '#FFFFFF',
+    },
+    [AccentColorName.Orange]: {
+      accent: '#EA580C',
+      accentBackground: '#FFEDD5',
+      accentBorder: '#FDBA74',
+      accentForeground: '#FFFFFF',
+    },
+    [AccentColorName.Amber]: {
+      accent: '#B45309',
+      accentBackground: '#FEF3C7',
+      accentBorder: '#FCD34D',
+      accentForeground: '#FFFFFF',
+    },
+    [AccentColorName.Green]: {
+      accent: '#15803D',
+      accentBackground: '#DCFCE7',
+      accentBorder: '#86EFAC',
+      accentForeground: '#FFFFFF',
+    },
+    [AccentColorName.Teal]: {
+      accent: '#0F766E',
+      accentBackground: '#CCFBF1',
+      accentBorder: '#5EEAD4',
+      accentForeground: '#FFFFFF',
+    },
+    [AccentColorName.Blue]: {
+      accent: '#2563EB',
+      accentBackground: '#DBEAFE',
+      accentBorder: '#93C5FD',
+      accentForeground: '#FFFFFF',
+    },
+    [AccentColorName.Purple]: {
+      accent: '#7C3AED',
+      accentBackground: '#EDE9FE',
+      accentBorder: '#C4B5FD',
+      accentForeground: '#FFFFFF',
+    },
+    [AccentColorName.Pink]: {
+      accent: '#DB2777',
+      accentBackground: '#FCE7F3',
+      accentBorder: '#F9A8D4',
+      accentForeground: '#FFFFFF',
+    },
+  },
+  dark: {
+    [AccentColorName.Red]: {
+      accent: '#FCA5A5',
+      accentBackground: '#7F1D1D',
+      accentBorder: '#EF4444',
+      accentForeground: '#111827',
+    },
+    [AccentColorName.Orange]: {
+      accent: '#FDBA74',
+      accentBackground: '#7C2D12',
+      accentBorder: '#F97316',
+      accentForeground: '#111827',
+    },
+    [AccentColorName.Amber]: {
+      accent: '#FCD34D',
+      accentBackground: '#78350F',
+      accentBorder: '#F59E0B',
+      accentForeground: '#111827',
+    },
+    [AccentColorName.Green]: {
+      accent: '#86EFAC',
+      accentBackground: '#14532D',
+      accentBorder: '#22C55E',
+      accentForeground: '#111827',
+    },
+    [AccentColorName.Teal]: {
+      accent: '#5EEAD4',
+      accentBackground: '#134E4A',
+      accentBorder: '#14B8A6',
+      accentForeground: '#111827',
+    },
+    [AccentColorName.Blue]: {
+      accent: '#60A5FA',
+      accentBackground: '#1E3A8A',
+      accentBorder: '#3B82F6',
+      accentForeground: '#0F172A',
+    },
+    [AccentColorName.Purple]: {
+      accent: '#C4B5FD',
+      accentBackground: '#4C1D95',
+      accentBorder: '#8B5CF6',
+      accentForeground: '#111827',
+    },
+    [AccentColorName.Pink]: {
+      accent: '#F9A8D4',
+      accentBackground: '#831843',
+      accentBorder: '#EC4899',
+      accentForeground: '#111827',
+    },
+  },
 };
 
 export const accentColorLabels: Record<AccentColorName, string> = {
@@ -127,6 +237,14 @@ export const getDefaultGoal = (settings: AppSettings): FastingGoal =>
 
 export const getAccentColor = (settings: AppSettings): string =>
   accentColorValues[settings.accentColorName];
+
+export const getAccentPalette = ({
+  accentColorName,
+  colorScheme,
+}: {
+  accentColorName: AccentColorName;
+  colorScheme: 'light' | 'dark';
+}): AccentPalette => accentPalettes[colorScheme][accentColorName];
 
 export const getEffectiveColorScheme = ({
   themePreference,

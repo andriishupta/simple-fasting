@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { AppButton } from '@/components/app-button';
 import { FeedbackState } from '@/components/feedback-state';
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
@@ -94,7 +95,7 @@ export default function HomeScreen() {
             style={styles.input}
           />
 
-          <ActionButton label="Start Fast" onPress={startSelectedFast} />
+          <AppButton label="Start Fast" onPress={startSelectedFast} />
         </ThemedView>
       ) : (
         <>
@@ -164,7 +165,7 @@ function ActiveFastPanel({
           Goal reached
         </ThemedText>
       )}
-      <ActionButton label="End Fast" onPress={onEnd} />
+      <AppButton label="End Fast" onPress={onEnd} />
       <ThemedText type="small" themeColor="textSecondary">
         Updated {new Date(currentTime).toLocaleTimeString()}
       </ThemedText>
@@ -213,8 +214,8 @@ function GoalButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.goalButton,
-        { borderColor: selected ? theme.accent : theme.backgroundSelected },
-        selected && { backgroundColor: theme.backgroundSelected },
+        { borderColor: selected ? theme.accentBorder : theme.backgroundSelected },
+        selected && { backgroundColor: theme.accentBackground },
         pressed && styles.pressed,
       ]}>
       <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textSecondary'}>
@@ -250,25 +251,6 @@ function Metric({ label, value }: { label: string; value: string }) {
       </ThemedText>
       <ThemedText type="smallBold">{value}</ThemedText>
     </View>
-  );
-}
-
-function ActionButton({ label, onPress }: { label: string; onPress: () => void }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.actionButton,
-        { backgroundColor: theme.accent },
-        pressed && styles.pressed,
-      ]}>
-      <ThemedText type="smallBold" style={styles.actionText}>
-        {label}
-      </ThemedText>
-    </Pressable>
   );
 }
 
@@ -316,16 +298,6 @@ const styles = StyleSheet.create({
   metric: {
     flex: 1,
     gap: Spacing.one,
-  },
-  actionButton: {
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.four,
-  },
-  actionText: {
-    color: '#FFFFFF',
   },
   pressed: {
     opacity: 0.72,

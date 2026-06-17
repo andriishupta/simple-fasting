@@ -33,13 +33,7 @@ const themeOptions = [
 
 const accentOptions = [
   AccentColorName.Red,
-  AccentColorName.Orange,
-  AccentColorName.Amber,
-  AccentColorName.Green,
-  AccentColorName.Teal,
   AccentColorName.Blue,
-  AccentColorName.Purple,
-  AccentColorName.Pink,
 ] as const;
 
 const reminderTimeOptions = [
@@ -300,6 +294,7 @@ function GoalPicker({
   selectedGoal: FastingGoal;
   onSelect: (goalId: string) => void;
 }) {
+  const theme = useTheme();
   const selectedIndex = Math.max(
     0,
     goals.findIndex((goal) => goal.id === selectedGoal.id),
@@ -319,6 +314,7 @@ function GoalPicker({
         values={goals.map((goal) => goal.name)}
         selectedIndex={selectedIndex}
         onValueChange={selectGoal}
+        tintColor={theme.accent}
         style={styles.nativeSegmentedControl}
       />
     </ThemedView>
@@ -350,7 +346,10 @@ function AccentPicker({
               onPress={() => onSelect(accentName)}
               style={({ pressed }) => [
                 styles.accentButton,
-                { borderColor: selected ? theme.accent : theme.backgroundSelected },
+                {
+                  backgroundColor: selected ? theme.accentBackground : 'transparent',
+                  borderColor: selected ? theme.accentBorder : theme.backgroundSelected,
+                },
                 pressed && styles.pressed,
               ]}>
               <View
@@ -392,7 +391,7 @@ function SettingsSwitch({
           value={value}
           onValueChange={onValueChange}
           trackColor={{ true: theme.accent }}
-          thumbColor={Platform.OS === 'android' && value ? theme.background : undefined}
+          thumbColor={Platform.OS === 'android' && value ? theme.accentForeground : undefined}
         />
       }
     />

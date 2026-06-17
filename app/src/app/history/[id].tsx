@@ -1,6 +1,7 @@
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
+import { AppButton } from '@/components/app-button';
 import { FeedbackState } from '@/components/feedback-state';
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
@@ -81,8 +82,8 @@ function DetailContent({ session }: { session: FastSession }) {
       <DetailRow label="Updated" value={new Date(session.updatedAt).toLocaleString()} />
 
       <View style={styles.actions}>
-        <ActionButton label="Back" onPress={() => router.back()} />
-        <ActionButton label="Delete" destructive onPress={deleteSession} />
+        <AppButton label="Back" onPress={() => router.back()} variant="secondary" fullWidth />
+        <AppButton label="Delete" onPress={deleteSession} variant="danger" fullWidth />
       </View>
     </View>
   );
@@ -98,33 +99,6 @@ function DetailRow({ label, value }: { label: string; value: string }) {
       </ThemedText>
       <ThemedText>{value}</ThemedText>
     </View>
-  );
-}
-
-function ActionButton({
-  label,
-  destructive = false,
-  onPress,
-}: {
-  label: string;
-  destructive?: boolean;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        { backgroundColor: destructive ? '#D92D20' : theme.accent },
-        pressed && styles.pressed,
-      ]}>
-      <ThemedText type="smallBold" style={styles.buttonText}>
-        {label}
-      </ThemedText>
-    </Pressable>
   );
 }
 
@@ -147,19 +121,5 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     gap: Spacing.two,
-  },
-  button: {
-    minHeight: 48,
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.four,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-  },
-  pressed: {
-    opacity: 0.72,
   },
 });

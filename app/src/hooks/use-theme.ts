@@ -1,7 +1,7 @@
 import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
-import { getAccentColor, getEffectiveColorScheme, useSettings } from '@/storage/settings-storage';
+import { getAccentPalette, getEffectiveColorScheme, useSettings } from '@/storage/settings-storage';
 
 export function useTheme() {
   const settings = useSettings();
@@ -13,6 +13,9 @@ export function useTheme() {
 
   return {
     ...Colors[theme],
-    accent: getAccentColor(settings),
+    ...getAccentPalette({
+      accentColorName: settings.accentColorName,
+      colorScheme: theme,
+    }),
   };
 }
