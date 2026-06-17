@@ -216,6 +216,34 @@ This application is intentionally small.
 
 ---
 
+# Error Handling
+
+Handle throwable cases explicitly.
+
+Prefer:
+
+- Recover immediately when the app can safely do so
+- Retry or reschedule local-only work when the fix is obvious
+- Keep persisted data consistent if an operation partially fails
+- Show a small in-app error state or alert when the app cannot recover automatically
+
+Avoid:
+
+- Silent failures
+- Unhandled promises
+- Throwing from user-triggered flows without visible feedback
+- Losing local data because an optional platform feature failed
+
+If a recoverable operation fails:
+
+1. Preserve the user's local data.
+2. Revert or repair any partial app state if needed.
+3. Surface a clear in-app message that something went wrong.
+
+Do not expose internal stack traces to users.
+
+---
+
 # Storage
 
 Primary storage:

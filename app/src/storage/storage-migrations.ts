@@ -67,6 +67,11 @@ const migrateSettingsToV1 = (
     ...settings,
     schemaVersion: StorageSchemaVersion.V1,
     goals,
+    notifications: {
+      ...defaultSettings.notifications,
+      ...settings?.notifications,
+      dailyReminderNotificationId: settings?.notifications.dailyReminderNotificationId ?? null,
+    },
     updatedAt: settings?.updatedAt ?? timestamp,
   };
 };

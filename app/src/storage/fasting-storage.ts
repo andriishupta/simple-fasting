@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from 'react';
-import { Platform } from 'react-native';
 
 import {
   appStorage,
@@ -12,6 +11,10 @@ import {
   type HistoryState,
 } from '@/storage/app-storage';
 import { getSettings } from '@/storage/settings-storage';
+import {
+  cancelScheduledNotification,
+  scheduleFastEndNotification,
+} from '@/storage/notification-storage';
 
 const now = (): string => new Date().toISOString();
 
@@ -39,50 +42,6 @@ const saveHistoryState = (historyState: HistoryState): HistoryState => {
   appStorage.insert(StorageKey.History, historyState);
 
   return historyState;
-};
-
-const scheduleFastEndNotification = async (session: FastSession): Promise<string | null> => {
-  const settings = getSettings();
-
-  if (!settings.notifications.fastEndReminderEnabled || Platform.OS === 'web') {
-    return null;
-  }
-
-  const Notifications = await import('expo-notifications');
-  const triggerDate = new Date(
-    new Date(session.startedAt).getTime() + session.goalDurationHours * 3_600_000,
-  );
-
-  if (triggerDate.getTime() <= Date.now()) {
-    return null;
-  }
-
-  const permissions = await Notifications.getPermissionsAsync();
-
-  if (!permissions.granted) {
-    return null;
-  }
-
-  return Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'Fast goal reached',
-      body: `${session.goalDurationHours} hour fast complete.`,
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: triggerDate,
-    },
-  });
-};
-
-const cancelNotification = async (notificationId: string | null): Promise<void> => {
-  if (notificationId === null || Platform.OS === 'web') {
-    return;
-  }
-
-  const Notifications = await import('expo-notifications');
-
-  await Notifications.cancelScheduledNotificationAsync(notificationId);
 };
 
 export const refreshFastSnapshots = (): void => {
@@ -115,7 +74,11 @@ export const startFast = async ({
     createdAt: timestamp,
     updatedAt: timestamp,
   };
-  const fastEndNotificationId = await scheduleFastEndNotification(session);
+  const settings = getSettings();
+  const fastEndNotificationId = await scheduleFastEndNotification({
+    session,
+    enabled: settings.notifications.fastEndReminderEnabled,
+  });
 
   return saveActiveFastState({
     schemaVersion: activeFastSnapshot.schemaVersion,
@@ -132,7 +95,7 @@ export const endFast = async (): Promise<FastSession | null> => {
     return null;
   }
 
-  await cancelNotification(activeFastState.fastEndNotificationId);
+  await cancelScheduledNotification(activeFastState.fastEndNotificationId);
 
   const timestamp = now();
   const completedSession: FastSession = {
@@ -203,6 +166,35 @@ export const updateFastSession = ({
   });
 
   return updatedSession;
+};
+
+export const reconcileActiveFastEndNotification = async (): Promise<ActiveFastState> => {
+  const activeFastState = getActiveFastState();
+
+  if (activeFastState.session === null) {
+    await cancelScheduledNotification(activeFastState.fastEndNotificationId);
+
+    return saveActiveFastState({
+      ...activeFastState,
+      fastEndNotificationId: null,
+      updatedAt: now(),
+    });
+  }
+
+  const settings = getSettings();
+
+  await cancelScheduledNotification(activeFastState.fastEndNotificationId);
+
+  const fastEndNotificationId = await scheduleFastEndNotification({
+    session: activeFastState.session,
+    enabled: settings.notifications.fastEndReminderEnabled,
+  });
+
+  return saveActiveFastState({
+    ...activeFastState,
+    fastEndNotificationId,
+    updatedAt: now(),
+  });
 };
 
 const subscribeToActiveFast = (onStoreChange: () => void): (() => void) =>

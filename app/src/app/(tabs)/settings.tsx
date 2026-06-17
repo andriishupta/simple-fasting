@@ -9,7 +9,7 @@ import {
   setAccentColorName,
   setDefaultGoal,
   setThemePreference,
-  updateNotificationSettings,
+  updateNotificationSettingsAndSchedule,
   updateWidgetSettings,
   useSettings,
   getDefaultGoal,
@@ -18,12 +18,13 @@ import {
   openPrivacyPolicy,
   openSupportEmail,
   requestLocalNotificationPermission,
-  setDailyReminderTime,
+  setDailyReminderTimeAndSchedule,
   shareDataExport,
   SettingsExportFormat,
 } from '@/storage/settings-storage';
 import { AccentColorName, ThemePreference, type FastingGoal } from '@/storage/app-storage';
 import { useTheme } from '@/hooks/use-theme';
+import { reconcileActiveFastEndNotification } from '@/storage/fasting-storage';
 
 const themeOptions = [
   { label: 'System', value: ThemePreference.System },
@@ -46,37 +47,49 @@ const reminderTimeOptions = [
 export default function SettingsScreen() {
   const settings = useSettings();
   const defaultGoal = getDefaultGoal(settings);
-  const setFastEndReminderEnabled = async (fastEndReminderEnabled: boolean): Promise<void> => {
-    if (fastEndReminderEnabled && !(await requestLocalNotificationPermission())) {
-      Alert.alert(
-        'Notifications are off',
-        'Enable notifications in system settings to use fasting reminders.',
-      );
-      return;
+  const runNotificationUpdate = async (update: () => Promise<void>): Promise<void> => {
+    try {
+      await update();
+    } catch {
+      Alert.alert('Notification update failed', 'Please try again.');
     }
+  };
+  const setFastEndReminderEnabled = async (fastEndReminderEnabled: boolean): Promise<void> => {
+    await runNotificationUpdate(async () => {
+      if (fastEndReminderEnabled && !(await requestLocalNotificationPermission())) {
+        Alert.alert(
+          'Notifications are off',
+          'Enable notifications in system settings to use fasting reminders.',
+        );
+        return;
+      }
 
-    updateNotificationSettings((notifications) => ({
-      ...notifications,
-      fastEndReminderEnabled,
-    }));
+      await updateNotificationSettingsAndSchedule((notifications) => ({
+        ...notifications,
+        fastEndReminderEnabled,
+      }));
+      await reconcileActiveFastEndNotification();
+    });
   };
   const setDailyReminderEnabled = async (dailyReminderEnabled: boolean): Promise<void> => {
-    if (dailyReminderEnabled && !(await requestLocalNotificationPermission())) {
-      Alert.alert(
-        'Notifications are off',
-        'Enable notifications in system settings to use daily reminders.',
-      );
-      return;
-    }
+    await runNotificationUpdate(async () => {
+      if (dailyReminderEnabled && !(await requestLocalNotificationPermission())) {
+        Alert.alert(
+          'Notifications are off',
+          'Enable notifications in system settings to use daily reminders.',
+        );
+        return;
+      }
 
-    updateNotificationSettings((notifications) => ({
-      ...notifications,
-      dailyReminderEnabled,
-      dailyReminderTime:
-        dailyReminderEnabled && notifications.dailyReminderTime === null
-          ? '20:00'
-          : notifications.dailyReminderTime,
-    }));
+      await updateNotificationSettingsAndSchedule((notifications) => ({
+        ...notifications,
+        dailyReminderEnabled,
+        dailyReminderTime:
+          dailyReminderEnabled && notifications.dailyReminderTime === null
+            ? '20:00'
+            : notifications.dailyReminderTime,
+      }));
+    });
   };
   const setAndroidOngoingNotificationEnabled = async (
     androidOngoingNotificationEnabled: boolean,
@@ -146,7 +159,11 @@ export default function SettingsScreen() {
             label="Reminder time"
             values={reminderTimeOptions}
             selectedValue={settings.notifications.dailyReminderTime ?? '20:00'}
-            onSelect={setDailyReminderTime}
+            onSelect={(dailyReminderTime) => {
+              void runNotificationUpdate(async () => {
+                await setDailyReminderTimeAndSchedule(dailyReminderTime);
+              });
+            }}
           />
         )}
       </SettingsSection>

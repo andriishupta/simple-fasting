@@ -17,6 +17,11 @@ import {
   type ThemePreference as ThemePreferenceType,
   type WidgetSettings,
 } from '@/storage/app-storage';
+import {
+  cancelScheduledNotification,
+  requestLocalNotificationPermission,
+  scheduleDailyReminderNotification,
+} from '@/storage/notification-storage';
 
 export enum SettingsExportFormat {
   Json = 'json',
@@ -223,6 +228,44 @@ export const setDailyReminderTime = (dailyReminderTime: string): AppSettings =>
     dailyReminderTime,
   }));
 
+export const reconcileDailyReminderNotification = async (): Promise<AppSettings> => {
+  const settings = getSettings();
+
+  await cancelScheduledNotification(settings.notifications.dailyReminderNotificationId);
+
+  if (!settings.notifications.dailyReminderEnabled || settings.notifications.dailyReminderTime === null) {
+    return updateNotificationSettings((notifications) => ({
+      ...notifications,
+      dailyReminderNotificationId: null,
+    }));
+  }
+
+  const dailyReminderNotificationId = await scheduleDailyReminderNotification(
+    settings.notifications.dailyReminderTime,
+  );
+
+  return updateNotificationSettings((notifications) => ({
+    ...notifications,
+    dailyReminderNotificationId,
+  }));
+};
+
+export const updateNotificationSettingsAndSchedule = async (
+  update: (notifications: NotificationSettings) => NotificationSettings,
+): Promise<AppSettings> => {
+  updateNotificationSettings(update);
+
+  return reconcileDailyReminderNotification();
+};
+
+export const setDailyReminderTimeAndSchedule = async (
+  dailyReminderTime: string,
+): Promise<AppSettings> =>
+  updateNotificationSettingsAndSchedule((notifications) => ({
+    ...notifications,
+    dailyReminderTime,
+  }));
+
 export const updateWidgetSettings = (
   update: (widgets: WidgetSettings) => WidgetSettings,
 ): AppSettings =>
@@ -382,30 +425,7 @@ export const shareDataExport = async (format: SettingsExportFormat): Promise<voi
   await shareTextFallback({ content, filename });
 };
 
-export const requestLocalNotificationPermission = async (): Promise<boolean> => {
-  if (Platform.OS === 'web') {
-    return false;
-  }
-
-  const Notifications = await import('expo-notifications');
-
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('fasting-reminders', {
-      name: 'Fasting reminders',
-      importance: Notifications.AndroidImportance.DEFAULT,
-    });
-  }
-
-  const existingPermissions = await Notifications.getPermissionsAsync();
-
-  if (existingPermissions.granted) {
-    return true;
-  }
-
-  const requestedPermissions = await Notifications.requestPermissionsAsync();
-
-  return requestedPermissions.granted;
-};
+export { requestLocalNotificationPermission };
 
 export const openPrivacyPolicy = async (): Promise<void> => {
   await WebBrowser.openBrowserAsync('https://simple-fasting.app/privacy');

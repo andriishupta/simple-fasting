@@ -6,8 +6,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FeedbackState } from '@/components/feedback-state';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { refreshFastSnapshots } from '@/storage/fasting-storage';
-import { refreshSettingsSnapshot, useAppColorScheme } from '@/storage/settings-storage';
+import {
+  reconcileActiveFastEndNotification,
+  refreshFastSnapshots,
+} from '@/storage/fasting-storage';
+import {
+  reconcileDailyReminderNotification,
+  refreshSettingsSnapshot,
+  useAppColorScheme,
+} from '@/storage/settings-storage';
+import { configureLocalNotificationBehavior } from '@/storage/notification-storage';
 import { initializeAppStorage } from '@/storage/storage-migrations';
 
 type StartupState =
@@ -24,6 +32,9 @@ export default function RootLayout() {
       initializeAppStorage();
       refreshSettingsSnapshot();
       refreshFastSnapshots();
+      void configureLocalNotificationBehavior();
+      void reconcileDailyReminderNotification();
+      void reconcileActiveFastEndNotification();
       setStartupState({ status: 'ready' });
     } catch (error) {
       setStartupState({

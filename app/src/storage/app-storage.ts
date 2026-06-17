@@ -63,6 +63,7 @@ export type NotificationSettings = {
   fastEndReminderEnabled: boolean;
   dailyReminderEnabled: boolean;
   dailyReminderTime: string | null;
+  dailyReminderNotificationId: string | null;
 };
 
 export type WidgetSettings = {
@@ -215,6 +216,7 @@ export const createDefaultAppSettings = (updatedAt: Timestamp): AppSettings => (
     fastEndReminderEnabled: true,
     dailyReminderEnabled: false,
     dailyReminderTime: null,
+    dailyReminderNotificationId: null,
   },
   widgets: {
     homeScreenWidgetsEnabled: true,
