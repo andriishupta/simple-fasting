@@ -342,10 +342,29 @@ const escapeCsvValue = (value: string | number | null): string => {
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 };
 
+const createExportMetadata = () => ({
+  exportedAt: now(),
+  app: {
+    name: Constants.expoConfig?.name ?? 'Simple Fasting',
+    version: Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.0',
+    buildVersion: Constants.nativeBuildVersion ?? null,
+  },
+  storage: appStorage.get(StorageKey.Metadata) ?? null,
+});
+
 const createHistoryCsv = (): string => {
+  const metadata = createExportMetadata();
+  const activeFast = appStorage.get(StorageKey.ActiveFast)?.session;
   const history = appStorage.get(StorageKey.History);
-  const rows = history?.sessions ?? [];
+  const rows = [
+    ...(activeFast === undefined || activeFast === null ? [] : [{ source: 'active', ...activeFast }]),
+    ...(history?.sessions.map((session) => ({ source: 'history', ...session })) ?? []),
+  ];
   const header = [
+    'exportedAt',
+    'appVersion',
+    'buildVersion',
+    'source',
     'id',
     'status',
     'startedAt',
@@ -357,6 +376,10 @@ const createHistoryCsv = (): string => {
   ];
   const body = rows.map((session) =>
     [
+      metadata.exportedAt,
+      metadata.app.version,
+      metadata.app.buildVersion,
+      session.source,
       session.id,
       session.status,
       session.startedAt,
@@ -376,14 +399,8 @@ const createHistoryCsv = (): string => {
 const createJsonExport = (): string =>
   JSON.stringify(
     {
-      exportedAt: now(),
-      data: appStorage.query([
-        StorageKey.Metadata,
-        StorageKey.Settings,
-        StorageKey.ActiveFast,
-        StorageKey.History,
-        StorageKey.GraphCache,
-      ]),
+      metadata: createExportMetadata(),
+      fastingData: appStorage.query([StorageKey.ActiveFast, StorageKey.History]),
     },
     null,
     2,

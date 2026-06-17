@@ -39,6 +39,7 @@ type EditState = {
 };
 
 const customGoalId = 'custom-duration';
+const unlimitedGoalId = 'unlimited-duration';
 const maxGoalDurationHours = 40 * 24;
 
 const toDateValue = (timestamp: string | null): Date | null => {
@@ -78,6 +79,9 @@ const formatLocaleDateTime = (timestamp: string): string =>
     timeStyle: 'medium',
   }).format(new Date(timestamp));
 
+const formatGoalLabel = (goalDurationHours: number): string =>
+  goalDurationHours <= 0 ? 'Unlimited' : `${goalDurationHours} hour goal`;
+
 export default function HistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   useHistoryState();
@@ -108,8 +112,10 @@ function DetailContent({ session }: { session: FastSession }) {
   const [editState, setEditState] = useState<EditState>(() => createEditState(session));
   const [editError, setEditError] = useState<string | null>(null);
   const selectedGoalId =
-    settings.goals.find((goal) => `${goal.targetDurationHours}` === editState.goalDurationHours)
-      ?.id ?? customGoalId;
+    editState.goalDurationHours === '0'
+      ? unlimitedGoalId
+      : settings.goals.find((goal) => `${goal.targetDurationHours}` === editState.goalDurationHours)
+          ?.id ?? customGoalId;
 
   const deleteSession = (): void => {
     Alert.alert('Delete fast?', 'This removes the session from local history.', [
@@ -130,7 +136,8 @@ function DetailContent({ session }: { session: FastSession }) {
   const saveEdits = (): void => {
     const startedAt = editState.startedAt;
     const endedAt = editState.endedAt;
-    const goalDurationHours = Number(editState.goalDurationHours);
+    const goalDurationText = editState.goalDurationHours.trim();
+    const goalDurationHours = Number(goalDurationText);
     const currentTime = Date.now();
 
     if (startedAt === null) {
@@ -148,8 +155,13 @@ function DetailContent({ session }: { session: FastSession }) {
       return;
     }
 
-    if (!Number.isInteger(goalDurationHours) || goalDurationHours <= 0) {
-      setEditError('Goal must be a positive number of hours.');
+    if (selectedGoalId === customGoalId && goalDurationText === '') {
+      setEditError('Goal must be unlimited or a positive number of hours.');
+      return;
+    }
+
+    if (!Number.isInteger(goalDurationHours) || goalDurationHours < 0) {
+      setEditError('Goal must be unlimited or a positive number of hours.');
       return;
     }
 
@@ -190,7 +202,7 @@ function DetailContent({ session }: { session: FastSession }) {
           {formatDuration(getSessionDurationSeconds(session))}
         </ThemedText>
         <ThemedText themeColor="textSecondary">
-          {session.goalDurationHours} hour goal · {session.status}
+          {formatGoalLabel(session.goalDurationHours)} · {session.status}
         </ThemedText>
       </View>
 
@@ -225,6 +237,11 @@ function DetailContent({ session }: { session: FastSession }) {
           onSelect={(goalId) => {
             if (goalId === customGoalId) {
               setEditState((state) => ({ ...state, goalDurationHours: '' }));
+              return;
+            }
+
+            if (goalId === unlimitedGoalId) {
+              setEditState((state) => ({ ...state, goalDurationHours: '0' }));
               return;
             }
 
@@ -290,6 +307,11 @@ function GoalPicker({
         label="Custom"
         selected={selectedGoalId === customGoalId}
         onPress={() => onSelect(customGoalId)}
+      />
+      <GoalButton
+        label="Unlimited"
+        selected={selectedGoalId === unlimitedGoalId}
+        onPress={() => onSelect(unlimitedGoalId)}
       />
     </View>
   );

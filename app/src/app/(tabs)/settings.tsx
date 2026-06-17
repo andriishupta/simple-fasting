@@ -12,8 +12,8 @@ import { Spacing } from '@/constants/theme';
 import {
   setAccentColorName,
   setThemePreference,
+  refreshSettingsSnapshot,
   updateNotificationSettingsAndSchedule,
-  updateWidgetSettings,
   useSettings,
   accentColorLabels,
   accentColorValues,
@@ -31,9 +31,15 @@ import {
   shareDataExport,
   SettingsExportFormat,
 } from '@/storage/settings-storage';
-import { AccentColorName, ThemePreference } from '@/storage/app-storage';
+import { AccentColorName, StorageKey, ThemePreference, appStorage } from '@/storage/app-storage';
 import { useTheme } from '@/hooks/use-theme';
-import { reconcileActiveFastEndNotification } from '@/storage/fasting-storage';
+import {
+  getActiveFastState,
+  reconcileActiveFastEndNotification,
+  refreshFastSnapshots,
+} from '@/storage/fasting-storage';
+import { cancelScheduledNotification } from '@/storage/notification-storage';
+import { initializeAppStorage } from '@/storage/storage-migrations';
 
 const themeOptions = [
   { label: 'System', value: ThemePreference.System },
@@ -104,28 +110,47 @@ export default function SettingsScreen() {
       }));
     });
   };
-  const setAndroidOngoingNotificationEnabled = async (
-    androidOngoingNotificationEnabled: boolean,
-  ): Promise<void> => {
-    if (androidOngoingNotificationEnabled && !(await requestLocalNotificationPermission())) {
-      Alert.alert(
-        'Notifications are off',
-        'Enable notifications in system settings to show an ongoing fasting notification.',
-      );
-      return;
-    }
-
-    updateWidgetSettings((widgets) => ({
-      ...widgets,
-      androidOngoingNotificationEnabled,
-    }));
-  };
   const exportData = async (format: SettingsExportFormat): Promise<void> => {
     try {
       await shareDataExport(format);
     } catch {
       Alert.alert('Export failed', 'The export file could not be created.');
     }
+  };
+  const clearLocalData = (): void => {
+    Alert.alert(
+      'Clear all data?',
+      'Clearing storage will remove all data on this device, including history, graphs, settings, and any active fast. Make sure to export a backup first. Continue with deletion?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Delete',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              try {
+                const settingsBeforeClear = appStorage.get(StorageKey.Settings);
+                const activeFastBeforeClear = getActiveFastState();
+
+                await Promise.all([
+                  cancelScheduledNotification(
+                    settingsBeforeClear?.notifications.dailyReminderNotificationId ?? null,
+                  ),
+                  cancelScheduledNotification(activeFastBeforeClear.fastEndNotificationId),
+                ]);
+                appStorage.clear();
+                initializeAppStorage();
+                refreshSettingsSnapshot();
+                refreshFastSnapshots();
+                router.replace('/');
+              } catch {
+                Alert.alert('Clear failed', 'Local data could not be cleared.');
+              }
+            })();
+          },
+        },
+      ],
+    );
   };
   const openExternalAction = async (action: () => Promise<void>): Promise<void> => {
     try {
@@ -185,58 +210,24 @@ export default function SettingsScreen() {
         )}
       </SettingsSection>
 
-      <SettingsSection title="Widgets">
-        {Platform.OS === 'ios' ? (
-          <>
-            <SettingsSwitch
-              title="Live Activities"
-              description="Show an active fast on supported iPhone surfaces."
-              value={settings.widgets.liveActivitiesEnabled}
-              onValueChange={(liveActivitiesEnabled) =>
-                updateWidgetSettings((widgets) => ({
-                  ...widgets,
-                  liveActivitiesEnabled,
-                  dynamicIslandEnabled: liveActivitiesEnabled
-                    ? widgets.dynamicIslandEnabled
-                    : false,
-                }))
-              }
-            />
-            <SettingsSwitch
-              title="Dynamic Island"
-              description="Show the active fast on supported iPhone models."
-              value={settings.widgets.dynamicIslandEnabled}
-              onValueChange={(dynamicIslandEnabled) =>
-                updateWidgetSettings((widgets) => ({
-                  ...widgets,
-                  liveActivitiesEnabled: dynamicIslandEnabled
-                    ? true
-                    : widgets.liveActivitiesEnabled,
-                  dynamicIslandEnabled,
-                }))
-              }
-            />
-          </>
-        ) : (
-          <SettingsSwitch
-            title="Android ongoing notification"
-            description="Show the active fast as an ongoing local notification."
-            value={settings.widgets.androidOngoingNotificationEnabled}
-            onValueChange={setAndroidOngoingNotificationEnabled}
-          />
-        )}
-      </SettingsSection>
+      <WidgetSettingsSection />
 
       <SettingsSection title="Data">
-        <SettingsActionRow
-          title="Export JSON"
-          description="Share a local backup of settings and fasting data."
-          onPress={() => exportData(SettingsExportFormat.Json)}
+        <SettingsRow
+          title="Export"
+          description="Fasting data and app metadata."
+          trailing={
+            <View style={styles.exportButtons}>
+              <SmallActionButton label="JSON" onPress={() => exportData(SettingsExportFormat.Json)} />
+              <SmallActionButton label="CSV" onPress={() => exportData(SettingsExportFormat.Csv)} />
+            </View>
+          }
         />
         <SettingsActionRow
-          title="Export CSV"
-          description="Share completed fasting history as a spreadsheet-friendly file."
-          onPress={() => exportData(SettingsExportFormat.Csv)}
+          title="Clear data"
+          description="Delete local history, graphs, settings, and active fast."
+          actionLabel="Delete"
+          onPress={clearLocalData}
         />
       </SettingsSection>
 
@@ -307,6 +298,10 @@ function SettingsSection({ title, children }: { title: string; children: React.R
       </ThemedView>
     </ThemedView>
   );
+}
+
+function WidgetSettingsSection() {
+  return null;
 }
 
 function SegmentedControl<Value extends string>({
@@ -455,10 +450,12 @@ function SettingsSwitch({
 function SettingsActionRow({
   title,
   description,
+  actionLabel = 'Open',
   onPress,
 }: {
   title: string;
   description: string;
+  actionLabel?: string;
   onPress: () => void;
 }) {
   return (
@@ -469,8 +466,27 @@ function SettingsActionRow({
       <SettingsRow
         title={title}
         description={description}
-        trailing={<ThemedText themeColor="accent">Open</ThemedText>}
+        trailing={<ThemedText themeColor="accent">{actionLabel}</ThemedText>}
       />
+    </Pressable>
+  );
+}
+
+function SmallActionButton({ label, onPress }: { label: string; onPress: () => void }) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.smallButton,
+        { borderColor: theme.accentBorder, backgroundColor: theme.accentBackground },
+        pressed && styles.pressed,
+      ]}>
+      <ThemedText type="smallBold" themeColor="accent">
+        {label}
+      </ThemedText>
     </Pressable>
   );
 }
@@ -544,6 +560,19 @@ const styles = StyleSheet.create({
   rowText: {
     flex: 1,
     gap: Spacing.one,
+  },
+  exportButtons: {
+    flexDirection: 'row',
+    gap: Spacing.one,
+  },
+  smallButton: {
+    minHeight: 36,
+    minWidth: 58,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.two,
   },
   pressed: {
     opacity: 0.72,

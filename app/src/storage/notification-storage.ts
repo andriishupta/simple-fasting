@@ -92,7 +92,7 @@ export const scheduleFastEndNotification = async ({
   session: FastSession;
   enabled: boolean;
 }): Promise<string | null> => {
-  if (!enabled || Platform.OS === 'web') {
+  if (!enabled || session.goalDurationHours <= 0 || Platform.OS === 'web') {
     return null;
   }
 

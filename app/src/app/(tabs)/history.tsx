@@ -115,13 +115,17 @@ const getLongestStreakDays = (completedDayKeys: readonly string[]): number => {
 };
 
 const getCompletionRate = (sessions: readonly FastSession[]): number => {
-  const totalGoalHours = sessions.reduce((total, session) => total + session.goalDurationHours, 0);
+  const plannedSessions = sessions.filter((session) => session.goalDurationHours > 0);
+  const totalGoalHours = plannedSessions.reduce(
+    (total, session) => total + session.goalDurationHours,
+    0,
+  );
 
   if (totalGoalHours === 0) {
     return 0;
   }
 
-  const totalFastedHours = sessions.reduce(
+  const totalFastedHours = plannedSessions.reduce(
     (total, session) => total + getSessionDurationHours(session),
     0,
   );
@@ -243,6 +247,9 @@ const formatPercent = (value: number): string => `${Math.round(value * 100)}%`;
 const formatGraphHours = (hours: number): string => `${formatHours(hours)}h`;
 
 const formatGraphCount = (value: number): string => `${value}`;
+
+const formatGoalLabel = (goalDurationHours: number): string =>
+  goalDurationHours <= 0 ? 'Unlimited' : `${goalDurationHours} hour goal`;
 
 const formatLocaleDateTime = (timestamp: string): string =>
   new Intl.DateTimeFormat(undefined, {
@@ -499,7 +506,7 @@ function HistorySummary({
         {endedLabel}
       </ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
-        {session.status} · {session.goalDurationHours} hour goal
+        {session.status} · {formatGoalLabel(session.goalDurationHours)}
       </ThemedText>
       {session.reason !== null && (
         <ThemedText type="small" themeColor="textSecondary">

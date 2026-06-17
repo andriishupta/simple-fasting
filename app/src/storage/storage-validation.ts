@@ -39,6 +39,8 @@ const isNumber = (value: unknown): value is number =>
 
 const isPositiveNumber = (value: unknown): value is number => isNumber(value) && value > 0;
 
+const isNonNegativeNumber = (value: unknown): value is number => isNumber(value) && value >= 0;
+
 const isNullableString = (value: unknown): value is string | null =>
   value === null || isString(value);
 
@@ -141,7 +143,7 @@ export const repairSettings = (
       ? value.accentColorName
       : defaults.accentColorName,
     goals: normalizeGoals(value.goals, defaults.goals, timestamp),
-    lastUsedGoalDurationHours: isPositiveNumber(value.lastUsedGoalDurationHours)
+    lastUsedGoalDurationHours: isNonNegativeNumber(value.lastUsedGoalDurationHours)
       ? value.lastUsedGoalDurationHours
       : defaults.lastUsedGoalDurationHours,
     dataViewPreference: isEnumValue(dataViewPreferences, value.dataViewPreference)
@@ -190,7 +192,7 @@ const sanitizeSession = (value: unknown, timestamp: Timestamp): FastSession | nu
     !isString(value.id) ||
     !isEnumValue(fastStatuses, value.status) ||
     !isTimestamp(value.startedAt) ||
-    !isPositiveNumber(value.goalDurationHours)
+    !isNonNegativeNumber(value.goalDurationHours)
   ) {
     return null;
   }
