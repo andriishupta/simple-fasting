@@ -1,11 +1,12 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FeedbackState } from '@/components/feedback-state';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { appStorage } from '@/storage/app-storage';
 import {
   reconcileActiveFastEndNotification,
   refreshFastSnapshots,
@@ -32,16 +33,48 @@ export default function RootLayout() {
       initializeAppStorage();
       refreshSettingsSnapshot();
       refreshFastSnapshots();
-      void configureLocalNotificationBehavior();
-      void reconcileDailyReminderNotification();
-      void reconcileActiveFastEndNotification();
       setStartupState({ status: 'ready' });
+      void Promise.all([
+        configureLocalNotificationBehavior(),
+        reconcileDailyReminderNotification(),
+        reconcileActiveFastEndNotification(),
+      ]).catch(() => {
+        setStartupState({
+          status: 'error',
+          message: 'Local data loaded, but reminders could not be restored.',
+        });
+      });
     } catch (error) {
       setStartupState({
         status: 'error',
         message: error instanceof Error ? error.message : 'Storage could not be initialized.',
       });
     }
+  };
+  const resetLocalAppData = (): void => {
+    Alert.alert(
+      'Reset local data?',
+      'This removes local settings, active fast, and history from this device.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: () => {
+            try {
+              appStorage.clear();
+              initializeStorage();
+            } catch (error) {
+              setStartupState({
+                status: 'error',
+                message:
+                  error instanceof Error ? error.message : 'Local app data could not be reset.',
+              });
+            }
+          },
+        },
+      ],
+    );
   };
 
   useEffect(initializeStorage, []);
@@ -54,7 +87,11 @@ export default function RootLayout() {
           <Stack.Screen name="history/[id]" />
         </Stack>
       ) : (
-        <StartupScreen startupState={startupState} onRetry={initializeStorage} />
+        <StartupScreen
+          startupState={startupState}
+          onRetry={initializeStorage}
+          onReset={resetLocalAppData}
+        />
       )}
     </ThemeProvider>
   );
@@ -63,9 +100,11 @@ export default function RootLayout() {
 function StartupScreen({
   startupState,
   onRetry,
+  onReset,
 }: {
   startupState: Exclude<StartupState, { status: 'ready' }>;
   onRetry: () => void;
+  onReset: () => void;
 }) {
   return (
     <ThemedView style={styles.root}>
@@ -82,7 +121,12 @@ function StartupScreen({
               kind="error"
               title="App data could not load"
               description={startupState.message}
-              action={{ label: 'Try Again', onPress: onRetry }}
+              action={{ label: 'Try Again', onPress: onRetry, variant: 'primary' }}
+              secondaryAction={{
+                label: 'Reset Local Data',
+                onPress: onReset,
+                variant: 'danger',
+              }}
             />
           )}
         </ThemedView>

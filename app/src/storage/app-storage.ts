@@ -140,11 +140,13 @@ export type StorageQueryResult<Keys extends readonly StorageKey[]> = Partial<{
 export type AppStorage = {
   insert: <Key extends StorageKey>(key: Key, value: AppStorageValueMap[Key]) => void;
   get: <Key extends StorageKey>(key: Key) => AppStorageValueMap[Key] | undefined;
+  getRaw: (key: StorageKey) => string | undefined;
   getOrDefault: <Key extends StorageKey>(
     key: Key,
     defaultValue: AppStorageValueMap[Key],
   ) => AppStorageValueMap[Key];
   delete: (key: StorageKey) => boolean;
+  quarantine: (key: StorageKey, reason: string) => void;
   contains: (key: StorageKey) => boolean;
   query: <Keys extends readonly StorageKey[]>(keys: Keys) => StorageQueryResult<Keys>;
   list: () => readonly StoredEntry[];
@@ -285,10 +287,34 @@ export const createAppStorage = (): AppStorage => ({
 
   get: (key) => parseStoredValue<AppStorageValueMap[typeof key]>(storage.getString(key)),
 
+  getRaw: (key) => storage.getString(key),
+
   getOrDefault: (key, defaultValue) =>
     parseStoredValue<AppStorageValueMap[typeof key]>(storage.getString(key)) ?? defaultValue,
 
   delete: (key) => storage.remove(key),
+
+  quarantine: (key, reason) => {
+    const rawValue = storage.getString(key);
+
+    if (rawValue === undefined) {
+      return;
+    }
+
+    const timestamp = new Date().toISOString();
+    const quarantineKey = `corrupt:${key}:${timestamp}`;
+
+    storage.set(
+      quarantineKey,
+      JSON.stringify({
+        key,
+        reason,
+        rawValue,
+        quarantinedAt: timestamp,
+      }),
+    );
+    storage.remove(key);
+  },
 
   contains: (key) => storage.contains(key),
 

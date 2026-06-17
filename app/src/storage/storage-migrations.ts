@@ -15,6 +15,14 @@ import {
   type StorageMetadata,
   type Timestamp,
 } from '@/storage/app-storage';
+import {
+  quarantineIfRawParseFailed,
+  repairActiveFast,
+  repairGraphCache,
+  repairHistory,
+  repairMetadata,
+  repairSettings,
+} from '@/storage/storage-validation';
 
 type RuntimeVersions = {
   appVersion: string;
@@ -27,6 +35,45 @@ const getRuntimeVersions = (): RuntimeVersions => ({
 });
 
 const now = (): Timestamp => new Date().toISOString();
+
+const readRepairedValue = <Value>({
+  key,
+  timestamp,
+  repair,
+}: {
+  key: StorageKey;
+  timestamp: Timestamp;
+  repair: (value: unknown, timestamp: Timestamp) => {
+    value: Value | undefined;
+    repaired: boolean;
+    reason: string | null;
+  };
+}): Value | undefined => {
+  quarantineIfRawParseFailed(key);
+
+  const hasRawValue = appStorage.getRaw(key) !== undefined;
+  const value = appStorage.get(key) as unknown;
+  const result = repair(value, timestamp);
+
+  if (result.value === undefined) {
+    if (result.repaired && hasRawValue) {
+      appStorage.quarantine(key, result.reason ?? 'Stored value was repaired.');
+    }
+
+    return undefined;
+  }
+
+  if (result.repaired && hasRawValue) {
+    const previousValue = JSON.stringify(value);
+    const repairedValue = JSON.stringify(result.value);
+
+    if (previousValue !== repairedValue) {
+      appStorage.quarantine(key, result.reason ?? 'Stored value was repaired.');
+    }
+  }
+
+  return result.value;
+};
 
 const mergeRuntimeMetadata = (
   metadata: StorageMetadata | undefined,
@@ -89,29 +136,54 @@ const migrateActiveFastToV1 = (
 
 export const initializeAppStorage = (): void => {
   const timestamp = now();
+  const metadata = readRepairedValue({
+    key: StorageKey.Metadata,
+    timestamp,
+    repair: repairMetadata,
+  });
+  const settings = readRepairedValue({
+    key: StorageKey.Settings,
+    timestamp,
+    repair: repairSettings,
+  });
+  const activeFast = readRepairedValue({
+    key: StorageKey.ActiveFast,
+    timestamp,
+    repair: repairActiveFast,
+  });
+  const history = readRepairedValue({
+    key: StorageKey.History,
+    timestamp,
+    repair: repairHistory,
+  });
+  const graphCache = readRepairedValue({
+    key: StorageKey.GraphCache,
+    timestamp,
+    repair: repairGraphCache,
+  });
 
   appStorage.insert(
     StorageKey.Metadata,
-    mergeRuntimeMetadata(appStorage.get(StorageKey.Metadata), timestamp),
+    mergeRuntimeMetadata(metadata, timestamp),
   );
 
   appStorage.insert(
     StorageKey.Settings,
-    migrateSettingsToV1(appStorage.get(StorageKey.Settings), timestamp),
+    migrateSettingsToV1(settings, timestamp),
   );
 
   appStorage.insert(
     StorageKey.ActiveFast,
-    migrateActiveFastToV1(appStorage.get(StorageKey.ActiveFast), timestamp),
+    migrateActiveFastToV1(activeFast, timestamp),
   );
 
   appStorage.insert(
     StorageKey.History,
-    appStorage.getOrDefault(StorageKey.History, createEmptyHistoryState(timestamp)),
+    history ?? createEmptyHistoryState(timestamp),
   );
 
   appStorage.insert(
     StorageKey.GraphCache,
-    appStorage.getOrDefault(StorageKey.GraphCache, createEmptyGraphCacheState(timestamp)),
+    graphCache ?? createEmptyGraphCacheState(timestamp),
   );
 };

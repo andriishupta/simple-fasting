@@ -10,6 +10,7 @@ type FeedbackStateKind = 'empty' | 'error' | 'loading';
 type FeedbackAction = {
   label: string;
   onPress: () => void;
+  variant?: 'primary' | 'secondary' | 'danger';
 };
 
 type FeedbackStateProps = {
@@ -17,9 +18,16 @@ type FeedbackStateProps = {
   title: string;
   description: string;
   action?: FeedbackAction;
+  secondaryAction?: FeedbackAction;
 };
 
-export function FeedbackState({ kind, title, description, action }: FeedbackStateProps) {
+export function FeedbackState({
+  kind,
+  title,
+  description,
+  action,
+  secondaryAction,
+}: FeedbackStateProps) {
   const theme = useTheme();
 
   return (
@@ -36,13 +44,25 @@ export function FeedbackState({ kind, title, description, action }: FeedbackStat
       <ThemedText type="small" themeColor="textSecondary" style={styles.description}>
         {description}
       </ThemedText>
-      {action !== undefined && (
-        <AppButton
-          label={action.label}
-          onPress={action.onPress}
-          variant={kind === 'error' ? 'danger' : 'primary'}
-          style={styles.action}
-        />
+      {(action !== undefined || secondaryAction !== undefined) && (
+        <View style={styles.actions}>
+          {action !== undefined && (
+            <AppButton
+              label={action.label}
+              onPress={action.onPress}
+              variant={action.variant ?? (kind === 'error' ? 'danger' : 'primary')}
+              style={styles.action}
+            />
+          )}
+          {secondaryAction !== undefined && (
+            <AppButton
+              label={secondaryAction.label}
+              onPress={secondaryAction.onPress}
+              variant={secondaryAction.variant ?? 'secondary'}
+              style={styles.action}
+            />
+          )}
+        </View>
       )}
     </View>
   );
@@ -60,7 +80,12 @@ const styles = StyleSheet.create({
   description: {
     maxWidth: 420,
   },
+  actions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
   action: {
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
   },
 });
