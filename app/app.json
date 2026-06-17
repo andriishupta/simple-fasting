@@ -7,8 +7,10 @@
     "icon": "./assets/images/icon.png",
     "scheme": "simple-fasting",
     "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "app.simplefasting"
     },
     "android": {
       "adaptiveIcon": {

@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, StyleSheet, TextInput, View, type KeyboardTypeOptions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { SegmentedControl as ExpoSegmentedControl } from '@expo/ui/community/segmented-control';
 
 import { AppButton } from '@/components/app-button';
 import { AppSurface } from '@/components/app-surface';
@@ -19,7 +18,6 @@ import {
   useHistoryState,
 } from '@/storage/fasting-storage';
 import { type FastSession } from '@/storage/app-storage';
-import { useSettings } from '@/storage/settings-storage';
 
 type EditState = {
   startedAt: string;
@@ -27,6 +25,8 @@ type EditState = {
   goalDurationHours: string;
   reason: string;
 };
+
+const maxGoalDurationHours = 40 * 24;
 
 const toDateTimeInputValue = (timestamp: string | null): string => {
   if (timestamp === null) {
@@ -89,16 +89,9 @@ export default function HistoryDetailScreen() {
 }
 
 function DetailContent({ session }: { session: FastSession }) {
-  const settings = useSettings();
-  const theme = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [editState, setEditState] = useState<EditState>(() => createEditState(session));
   const [editError, setEditError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setEditState(createEditState(session));
-    setEditError(null);
-  }, [session]);
 
   const deleteSession = (): void => {
     Alert.alert('Delete fast?', 'This removes the session from local history.', [
@@ -118,6 +111,11 @@ function DetailContent({ session }: { session: FastSession }) {
     setEditError(null);
     setIsEditing(false);
   };
+  const startEditing = (): void => {
+    setEditState(createEditState(session));
+    setEditError(null);
+    setIsEditing(true);
+  };
   const saveEdits = (): void => {
     const startedAt = fromDateTimeInputValue(editState.startedAt);
     const endedAt = fromDateTimeInputValue(editState.endedAt);
@@ -128,8 +126,13 @@ function DetailContent({ session }: { session: FastSession }) {
       return;
     }
 
-    if (!Number.isFinite(goalDurationHours) || goalDurationHours <= 0) {
+    if (!Number.isInteger(goalDurationHours) || goalDurationHours <= 0) {
       setEditError('Goal must be a positive number of hours.');
+      return;
+    }
+
+    if (goalDurationHours > maxGoalDurationHours) {
+      setEditError('Goal can be up to 40 days.');
       return;
     }
 
@@ -157,14 +160,6 @@ function DetailContent({ session }: { session: FastSession }) {
     setIsEditing(false);
     setEditError(null);
   };
-  const goalOptions = settings.goals.map((goal) => ({
-    label: goal.name,
-    value: `${goal.targetDurationHours}`,
-  }));
-  const selectedGoalIndex = Math.max(
-    0,
-    goalOptions.findIndex((goal) => goal.value === editState.goalDurationHours),
-  );
 
   return (
     <View style={styles.content}>
@@ -210,25 +205,17 @@ function DetailContent({ session }: { session: FastSession }) {
             placeholder="Leave empty if not ended"
             onChangeText={(endedAt) => setEditState((state) => ({ ...state, endedAt }))}
           />
-          <View style={styles.field}>
-            <ThemedText type="smallBold">Goal</ThemedText>
-            <ExpoSegmentedControl
-              values={goalOptions.map((goal) => goal.label)}
-              selectedIndex={selectedGoalIndex}
-              onValueChange={(label) => {
-                const goal = goalOptions.find((option) => option.label === label);
-
-                if (goal !== undefined) {
-                  setEditState((state) => ({
-                    ...state,
-                    goalDurationHours: goal.value,
-                  }));
-                }
-              }}
-              tintColor={theme.accent}
-              style={styles.segmentedControl}
-            />
-          </View>
+          <EditField
+            label="Goal hours"
+            value={editState.goalDurationHours}
+            keyboardType="number-pad"
+            onChangeText={(goalDurationHours) =>
+              setEditState((state) => ({
+                ...state,
+                goalDurationHours: goalDurationHours.replaceAll(/\D/g, ''),
+              }))
+            }
+          />
           <EditField
             label="Reason"
             value={editState.reason}
@@ -243,7 +230,7 @@ function DetailContent({ session }: { session: FastSession }) {
       )}
 
       <View style={styles.actions}>
-        {!isEditing && <AppButton label="Edit" onPress={() => setIsEditing(true)} fullWidth />}
+        {!isEditing && <AppButton label="Edit" onPress={startEditing} fullWidth />}
         <AppButton label="Back" onPress={() => router.back()} variant="secondary" fullWidth />
         <AppButton label="Delete" onPress={deleteSession} variant="danger" fullWidth />
       </View>
@@ -266,11 +253,13 @@ function EditField({
   label,
   value,
   placeholder,
+  keyboardType,
   onChangeText,
 }: {
   label: string;
   value: string;
   placeholder?: string;
+  keyboardType?: KeyboardTypeOptions;
   onChangeText: (value: string) => void;
 }) {
   const theme = useTheme();
@@ -282,6 +271,7 @@ function EditField({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
+        keyboardType={keyboardType}
         placeholderTextColor={theme.textSecondary}
         style={[
           styles.input,
@@ -326,8 +316,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
-  },
-  segmentedControl: {
-    minHeight: 36,
   },
 });

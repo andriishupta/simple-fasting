@@ -8,12 +8,15 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import {
+  cancelFast,
+  continueFast,
   endFast,
   formatDuration,
   getElapsedSeconds,
   getGoalSeconds,
   startFast,
   useActiveFastState,
+  useHistoryState,
 } from '@/storage/fasting-storage';
 import { getDefaultGoal, useSettings } from '@/storage/settings-storage';
 import { type FastingGoal } from '@/storage/app-storage';
@@ -32,19 +35,17 @@ const parsePositiveInteger = (value: string): number => {
 export default function HomeScreen() {
   const settings = useSettings();
   const activeFastState = useActiveFastState();
+  const historyState = useHistoryState();
   const theme = useTheme();
   const defaultGoal = getDefaultGoal(settings);
   const [selectedGoalId, setSelectedGoalId] = useState(defaultGoal.id);
   const [customDays, setCustomDays] = useState('0');
   const [customHours, setCustomHours] = useState('16');
   const [reason, setReason] = useState('');
-  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [operationError, setOperationError] = useState<string | null>(null);
   const activeSession = activeFastState.session;
-
-  useEffect(() => {
-    setSelectedGoalId(defaultGoal.id);
-  }, [defaultGoal.id]);
+  const latestSession = historyState.sessions[0];
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
@@ -93,6 +94,34 @@ export default function HomeScreen() {
       Alert.alert('Unable to end fast', 'Please try again.');
     }
   };
+  const cancelActiveFast = (): void => {
+    Alert.alert('Cancel fast?', 'This stops the active fast without saving it to history.', [
+      { text: 'Keep Fasting', style: 'cancel' },
+      {
+        text: 'Cancel Fast',
+        style: 'destructive',
+        onPress: () => {
+          void cancelFast().catch(() => {
+            setOperationError('The fast could not be cancelled. Your active fast is still saved locally.');
+            Alert.alert('Unable to cancel fast', 'Please try again.');
+          });
+        },
+      },
+    ]);
+  };
+  const continueLatestFast = async (): Promise<void> => {
+    if (latestSession === undefined) {
+      return;
+    }
+
+    try {
+      await continueFast(latestSession);
+      setOperationError(null);
+    } catch {
+      setOperationError('The fast could not be continued. Please start a new fast instead.');
+      Alert.alert('Unable to continue fast', 'Please try again.');
+    }
+  };
 
   return (
     <ScreenScaffold title="Fast" eyebrow="Current fast">
@@ -115,12 +144,6 @@ export default function HomeScreen() {
             goals={settings.goals}
             selectedGoalId={selectedGoalId}
             onSelect={setSelectedGoalId}
-          />
-
-          <GoalButton
-            label="Custom"
-            selected={selectedGoalId === customGoalId}
-            onPress={() => setSelectedGoalId(customGoalId)}
           />
 
           {selectedGoalId === customGoalId && (
@@ -163,6 +186,13 @@ export default function HomeScreen() {
           />
 
           <AppButton label="Start Fast" onPress={startSelectedFast} />
+          {latestSession !== undefined && (
+            <AppButton
+              label={`Continue ${latestSession.goalDurationHours}h Fast`}
+              onPress={continueLatestFast}
+              variant="secondary"
+            />
+          )}
         </ThemedView>
       ) : (
         <>
@@ -182,6 +212,7 @@ export default function HomeScreen() {
             reason={activeSession.reason}
             elapsedSeconds={getElapsedSeconds(activeSession, currentTime)}
             goalSeconds={getGoalSeconds(activeSession)}
+            onCancel={cancelActiveFast}
           />
         </>
       )}
@@ -197,6 +228,7 @@ function ActiveFastPanel({
   elapsedSeconds,
   goalSeconds,
   onEnd,
+  onCancel,
 }: {
   currentTime: number;
   goalName: string;
@@ -205,6 +237,7 @@ function ActiveFastPanel({
   elapsedSeconds: number;
   goalSeconds: number;
   onEnd: () => void;
+  onCancel: () => void;
 }) {
   const progress = Math.min(1, elapsedSeconds / goalSeconds);
   const remainingSeconds = Math.max(0, goalSeconds - elapsedSeconds);
@@ -232,7 +265,10 @@ function ActiveFastPanel({
           Goal reached
         </ThemedText>
       )}
-      <AppButton label="End Fast" onPress={onEnd} />
+      <View style={styles.actions}>
+        <AppButton label="End Fast" onPress={onEnd} fullWidth />
+        <AppButton label="Cancel" onPress={onCancel} variant="secondary" fullWidth />
+      </View>
       <ThemedText type="small" themeColor="textSecondary">
         Updated {new Date(currentTime).toLocaleTimeString()}
       </ThemedText>
@@ -295,6 +331,11 @@ function GoalPicker({
           onPress={() => onSelect(goal.id)}
         />
       ))}
+      <GoalButton
+        label="Custom"
+        selected={selectedGoalId === customGoalId}
+        onPress={() => onSelect(customGoalId)}
+      />
     </View>
   );
 }
@@ -408,6 +449,10 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   metrics: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  actions: {
     flexDirection: 'row',
     gap: Spacing.two,
   },

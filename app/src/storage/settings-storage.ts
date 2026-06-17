@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { Linking, Platform, Share, useColorScheme, type ColorSchemeName } from 'react-native';
+import Constants from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as WebBrowser from 'expo-web-browser';
@@ -418,10 +419,33 @@ export const shareDataExport = async (format: SettingsExportFormat): Promise<voi
 
 export { requestLocalNotificationPermission };
 
-export const openPrivacyPolicy = async (): Promise<void> => {
-  await WebBrowser.openBrowserAsync('https://simple-fasting.app/privacy');
+const websiteUrl = 'https://simplefasting.app';
+const supportEmail = 'support@simplefasting.app';
+const devEmail = 'dev@simplefasting.app';
+
+const openWebsitePath = async (path: string): Promise<void> => {
+  await WebBrowser.openBrowserAsync(`${websiteUrl}${path}`);
 };
 
-export const openSupportEmail = async (): Promise<void> => {
-  await Linking.openURL('mailto:support@simple-fasting.app');
-};
+export const getAppVersionLabel = (): string =>
+  `Version ${Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.0'}`;
+
+export const openWebsite = async (): Promise<void> => openWebsitePath('');
+
+export const openFaq = async (): Promise<void> => openWebsitePath('/faq');
+
+export const openPrivacyPolicy = async (): Promise<void> => openWebsitePath('/privacy');
+
+export const openTerms = async (): Promise<void> => openWebsitePath('/terms');
+
+export const openFeedbackEmail = async (): Promise<void> =>
+  Linking.openURL(`mailto:${supportEmail}?subject=Simple%20Fasting%20feedback`);
+
+export const openSupportEmail = async (): Promise<void> =>
+  Linking.openURL(`mailto:${supportEmail}?subject=Simple%20Fasting%20support`);
+
+export const openDevEmail = async (): Promise<void> =>
+  Linking.openURL(`mailto:${devEmail}?subject=Simple%20Fasting`);
+
+export const openBugReportEmail = async (): Promise<void> =>
+  Linking.openURL(`mailto:${supportEmail}?subject=Simple%20Fasting%20bug%20report`);

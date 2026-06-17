@@ -127,6 +127,44 @@ export const endFast = async (): Promise<FastSession | null> => {
   return completedSession;
 };
 
+export const cancelFast = async (): Promise<ActiveFastState> => {
+  const activeFastState = getActiveFastState();
+
+  await cancelScheduledNotification(activeFastState.fastEndNotificationId);
+
+  return saveActiveFastState({
+    ...activeFastState,
+    session: null,
+    fastEndNotificationId: null,
+    updatedAt: now(),
+  });
+};
+
+export const continueFast = async (session: FastSession): Promise<ActiveFastState> => {
+  const timestamp = now();
+  const continuedSession: FastSession = {
+    ...session,
+    id: createSessionId(),
+    status: FastStatus.Active,
+    startedAt: timestamp,
+    endedAt: null,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+  const settings = getSettings();
+  const fastEndNotificationId = await scheduleFastEndNotification({
+    session: continuedSession,
+    enabled: settings.notifications.fastEndReminderEnabled,
+  });
+
+  return saveActiveFastState({
+    schemaVersion: activeFastSnapshot.schemaVersion,
+    session: continuedSession,
+    fastEndNotificationId,
+    updatedAt: timestamp,
+  });
+};
+
 export const deleteFastSession = (sessionId: string): HistoryState => {
   const historyState = getHistoryState();
 

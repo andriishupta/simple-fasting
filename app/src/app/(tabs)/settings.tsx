@@ -15,8 +15,15 @@ import {
   getDefaultGoal,
   accentColorLabels,
   accentColorValues,
+  getAppVersionLabel,
+  openBugReportEmail,
+  openDevEmail,
+  openFaq,
+  openFeedbackEmail,
   openPrivacyPolicy,
   openSupportEmail,
+  openTerms,
+  openWebsite,
   requestLocalNotificationPermission,
   setDailyReminderTimeAndSchedule,
   shareDataExport,
@@ -221,7 +228,7 @@ export default function SettingsScreen() {
         )}
       </SettingsSection>
 
-      <SettingsSection title="Data and support">
+      <SettingsSection title="Data">
         <SettingsActionRow
           title="Export JSON"
           description="Share a local backup of settings and fasting data."
@@ -232,19 +239,58 @@ export default function SettingsScreen() {
           description="Share completed fasting history as a spreadsheet-friendly file."
           onPress={() => exportData(SettingsExportFormat.Csv)}
         />
+      </SettingsSection>
+
+      <SettingsSection title="Support">
+        <SettingsActionRow
+          title="FAQ"
+          description="Open common questions on the website."
+          onPress={() => openExternalAction(openFaq)}
+        />
+        <SettingsActionRow
+          title="Website"
+          description="Visit simplefasting.app."
+          onPress={() => openExternalAction(openWebsite)}
+        />
+        <SettingsActionRow
+          title="Feedback"
+          description="Share an idea or tell us what is not working well."
+          onPress={() => openExternalAction(openFeedbackEmail)}
+        />
+        <SettingsActionRow
+          title="Contact developer"
+          description="Email the developer directly."
+          onPress={() => openExternalAction(openDevEmail)}
+        />
+        <SettingsActionRow
+          title="Report bug"
+          description="Send a bug report by email."
+          onPress={() => openExternalAction(openBugReportEmail)}
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Legal">
         <SettingsActionRow
           title="Privacy Policy"
           description="Local-first, no account, no tracking."
           onPress={() => openExternalAction(openPrivacyPolicy)}
         />
         <SettingsActionRow
-          title="Support"
-          description="Open an email to contact support."
+          title="Terms of Use"
+          description="Read app terms and tracking-only disclaimer."
+          onPress={() => openExternalAction(openTerms)}
+        />
+      </SettingsSection>
+
+      <SettingsSection title="About">
+        <SettingsActionRow
+          title="Support email"
+          description="Contact support@simplefasting.app."
           onPress={() => openExternalAction(openSupportEmail)}
         />
         <SettingsRow
-          title="Support Creator"
-          description="Future optional donation support, not part of core v1 functionality."
+          title="Build"
+          description={getAppVersionLabel()}
         />
       </SettingsSection>
     </ScreenScaffold>

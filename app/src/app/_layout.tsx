@@ -77,7 +77,9 @@ export default function RootLayout() {
     );
   };
 
-  useEffect(initializeStorage, []);
+  useEffect(() => {
+    queueMicrotask(initializeStorage);
+  }, []);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
