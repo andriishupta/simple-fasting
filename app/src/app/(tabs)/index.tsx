@@ -22,6 +22,7 @@ import { useTheme } from '@/hooks/use-theme';
 export default function HomeScreen() {
   const settings = useSettings();
   const activeFastState = useActiveFastState();
+  const theme = useTheme();
   const defaultGoal = getDefaultGoal(settings);
   const [selectedGoalId, setSelectedGoalId] = useState(defaultGoal.id);
   const [reason, setReason] = useState('');
@@ -91,8 +92,15 @@ export default function HomeScreen() {
             value={reason}
             onChangeText={setReason}
             placeholder="Reason (optional)"
-            placeholderTextColor="#8A8F98"
-            style={styles.input}
+            placeholderTextColor={theme.textSecondary}
+            style={[
+              styles.input,
+              {
+                borderColor: theme.backgroundSelected,
+                color: theme.text,
+                backgroundColor: theme.background,
+              },
+            ]}
           />
 
           <AppButton label="Start Fast" onPress={startSelectedFast} />
@@ -276,7 +284,6 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: Spacing.two,
     borderWidth: 1,
-    borderColor: '#D8DADF',
     paddingHorizontal: Spacing.three,
     fontSize: 16,
   },

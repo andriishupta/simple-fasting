@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 
+import { AppSurface } from '@/components/app-surface';
 import {
   HeatmapGrid,
   HorizontalBars,
@@ -15,7 +16,6 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useHistoryState } from '@/storage/fasting-storage';
 import { FastStatus, type FastSession, type HistoryState } from '@/storage/app-storage';
-import { useTheme } from '@/hooks/use-theme';
 
 type GraphData = {
   weeklyHeatmap: readonly HeatmapCell[];
@@ -223,13 +223,11 @@ export default function GraphsScreen() {
 }
 
 function GraphSection({ title, children }: { title: string; children: React.ReactNode }) {
-  const theme = useTheme();
-
   return (
-    <View style={[styles.section, { borderColor: theme.backgroundSelected }]}>
+    <AppSurface style={styles.section}>
       <ThemedText type="smallBold">{title}</ThemedText>
       {children}
-    </View>
+    </AppSurface>
   );
 }
 
@@ -239,8 +237,5 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: Spacing.three,
-    borderWidth: 1,
-    borderRadius: Spacing.two,
-    padding: Spacing.three,
   },
 });

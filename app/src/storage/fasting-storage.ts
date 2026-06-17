@@ -174,6 +174,37 @@ export const deleteFastSession = (sessionId: string): HistoryState => {
   });
 };
 
+export const updateFastSession = ({
+  sessionId,
+  update,
+}: {
+  sessionId: string;
+  update: (session: FastSession) => FastSession;
+}): FastSession | undefined => {
+  const historyState = getHistoryState();
+  const currentSession = historyState.sessions.find((session) => session.id === sessionId);
+
+  if (currentSession === undefined) {
+    return undefined;
+  }
+
+  const timestamp = now();
+  const updatedSession = {
+    ...update(currentSession),
+    updatedAt: timestamp,
+  };
+
+  saveHistoryState({
+    ...historyState,
+    sessions: historyState.sessions
+      .map((session) => (session.id === sessionId ? updatedSession : session))
+      .sort((first, second) => second.startedAt.localeCompare(first.startedAt)),
+    updatedAt: timestamp,
+  });
+
+  return updatedSession;
+};
+
 const subscribeToActiveFast = (onStoreChange: () => void): (() => void) =>
   appStorage.subscribe((key) => {
     if (key === StorageKey.ActiveFast) {
