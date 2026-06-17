@@ -19,12 +19,24 @@ import { getDefaultGoal, useSettings } from '@/storage/settings-storage';
 import { type FastingGoal } from '@/storage/app-storage';
 import { useTheme } from '@/hooks/use-theme';
 
+const customGoalId = 'custom-duration';
+const maxCustomDurationDays = 40;
+const maxCustomDurationHours = maxCustomDurationDays * 24;
+
+const parsePositiveInteger = (value: string): number => {
+  const parsedValue = Number(value);
+
+  return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : 0;
+};
+
 export default function HomeScreen() {
   const settings = useSettings();
   const activeFastState = useActiveFastState();
   const theme = useTheme();
   const defaultGoal = getDefaultGoal(settings);
   const [selectedGoalId, setSelectedGoalId] = useState(defaultGoal.id);
+  const [customDays, setCustomDays] = useState('0');
+  const [customHours, setCustomHours] = useState('16');
   const [reason, setReason] = useState('');
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [operationError, setOperationError] = useState<string | null>(null);
@@ -42,10 +54,27 @@ export default function HomeScreen() {
 
   const selectedGoal =
     settings.goals.find((goal) => goal.id === selectedGoalId) ?? defaultGoal;
+  const customDurationHours =
+    parsePositiveInteger(customDays) * 24 + parsePositiveInteger(customHours);
+  const selectedDurationHours =
+    selectedGoalId === customGoalId ? customDurationHours : selectedGoal.targetDurationHours;
   const startSelectedFast = async (): Promise<void> => {
+    if (selectedDurationHours <= 0) {
+      Alert.alert('Choose a duration', 'Set at least 1 hour for a custom fast.');
+      return;
+    }
+
+    if (selectedGoalId === customGoalId && selectedDurationHours > maxCustomDurationHours) {
+      Alert.alert(
+        'Duration is too long',
+        `Custom fasts can be up to ${maxCustomDurationDays} days.`,
+      );
+      return;
+    }
+
     try {
       await startFast({
-        goalDurationHours: selectedGoal.targetDurationHours,
+        goalDurationHours: selectedDurationHours,
         reason: reason.trim() === '' ? null : reason.trim(),
       });
       setReason('');
@@ -87,6 +116,36 @@ export default function HomeScreen() {
             selectedGoalId={selectedGoalId}
             onSelect={setSelectedGoalId}
           />
+
+          <GoalButton
+            label="Custom"
+            selected={selectedGoalId === customGoalId}
+            onPress={() => setSelectedGoalId(customGoalId)}
+          />
+
+          {selectedGoalId === customGoalId && (
+            <ThemedView style={styles.customGoal}>
+              <View style={styles.customInputs}>
+                <DurationInput
+                  label="Days"
+                  value={customDays}
+                  onChangeText={setCustomDays}
+                />
+                <DurationInput
+                  label="Hours"
+                  value={customHours}
+                  onChangeText={setCustomHours}
+                />
+              </View>
+              <ThemedText type="small" themeColor="textSecondary">
+                Maximum custom fast: {maxCustomDurationDays} days.
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                This app is for tracking only and is not medical advice. Read the policy and terms
+                of use for more information.
+              </ThemedText>
+            </ThemedView>
+          )}
 
           <TextInput
             value={reason}
@@ -181,6 +240,42 @@ function ActiveFastPanel({
   );
 }
 
+function DurationInput({
+  label,
+  value,
+  onChangeText,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+}) {
+  const theme = useTheme();
+  const updateValue = (nextValue: string): void => {
+    onChangeText(nextValue.replaceAll(/\D/g, ''));
+  };
+
+  return (
+    <ThemedView style={styles.durationInputGroup}>
+      <ThemedText type="smallBold">{label}</ThemedText>
+      <TextInput
+        value={value}
+        onChangeText={updateValue}
+        keyboardType="number-pad"
+        maxLength={label === 'Days' ? 2 : 3}
+        style={[
+          styles.input,
+          styles.durationInput,
+          {
+            borderColor: theme.backgroundSelected,
+            color: theme.text,
+            backgroundColor: theme.background,
+          },
+        ]}
+      />
+    </ThemedView>
+  );
+}
+
 function GoalPicker({
   goals,
   selectedGoalId,
@@ -270,6 +365,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
+  },
+  customGoal: {
+    gap: Spacing.two,
+  },
+  customInputs: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  durationInputGroup: {
+    flex: 1,
+    gap: Spacing.one,
+  },
+  durationInput: {
+    textAlign: 'center',
   },
   goalButton: {
     minHeight: 40,
