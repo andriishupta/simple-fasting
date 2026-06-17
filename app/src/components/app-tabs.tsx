@@ -10,20 +10,12 @@ export default function AppTabs() {
       backgroundColor={colors.background}
       indicatorColor={colors.accent}
       labelStyle={{ selected: { color: colors.text } }}>
+      <NativeTabs.Trigger name="history">
+        <NativeTabs.Trigger.Label>Data</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Fast</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="history">
-        <NativeTabs.Trigger.Label>History</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="statistics">
-        <NativeTabs.Trigger.Label>Stats</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="graphs">
-        <NativeTabs.Trigger.Label>Graphs</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="settings">

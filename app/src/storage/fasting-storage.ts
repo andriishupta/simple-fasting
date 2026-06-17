@@ -10,7 +10,11 @@ import {
   type FastSession,
   type HistoryState,
 } from '@/storage/app-storage';
-import { getSettings } from '@/storage/settings-storage';
+import {
+  cancelDailyReminderNotification,
+  getSettings,
+  reconcileDailyReminderNotification,
+} from '@/storage/settings-storage';
 import {
   cancelScheduledNotification,
   scheduleFastEndNotification,
@@ -79,6 +83,7 @@ export const startFast = async ({
     session,
     enabled: settings.notifications.fastEndReminderEnabled,
   });
+  await cancelDailyReminderNotification();
 
   return saveActiveFastState({
     schemaVersion: activeFastSnapshot.schemaVersion,
@@ -123,6 +128,7 @@ export const endFast = async (): Promise<FastSession | null> => {
     fastEndNotificationId: null,
     updatedAt: timestamp,
   });
+  await reconcileDailyReminderNotification();
 
   return completedSession;
 };
@@ -132,37 +138,16 @@ export const cancelFast = async (): Promise<ActiveFastState> => {
 
   await cancelScheduledNotification(activeFastState.fastEndNotificationId);
 
-  return saveActiveFastState({
+  const nextActiveFastState = saveActiveFastState({
     ...activeFastState,
     session: null,
     fastEndNotificationId: null,
     updatedAt: now(),
   });
-};
 
-export const continueFast = async (session: FastSession): Promise<ActiveFastState> => {
-  const timestamp = now();
-  const continuedSession: FastSession = {
-    ...session,
-    id: createSessionId(),
-    status: FastStatus.Active,
-    startedAt: timestamp,
-    endedAt: null,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
-  const settings = getSettings();
-  const fastEndNotificationId = await scheduleFastEndNotification({
-    session: continuedSession,
-    enabled: settings.notifications.fastEndReminderEnabled,
-  });
+  await reconcileDailyReminderNotification();
 
-  return saveActiveFastState({
-    schemaVersion: activeFastSnapshot.schemaVersion,
-    session: continuedSession,
-    fastEndNotificationId,
-    updatedAt: timestamp,
-  });
+  return nextActiveFastState;
 };
 
 export const deleteFastSession = (sessionId: string): HistoryState => {

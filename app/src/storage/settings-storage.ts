@@ -225,10 +225,16 @@ export const updateNotificationSettings = (
 
 export const reconcileDailyReminderNotification = async (): Promise<AppSettings> => {
   const settings = getSettings();
+  const activeFast = appStorage.get(StorageKey.ActiveFast);
+  const hasActiveFast = activeFast?.session !== undefined && activeFast.session !== null;
 
   await cancelScheduledNotification(settings.notifications.dailyReminderNotificationId);
 
-  if (!settings.notifications.dailyReminderEnabled || settings.notifications.dailyReminderTime === null) {
+  if (
+    !settings.notifications.dailyReminderEnabled ||
+    settings.notifications.dailyReminderTime === null ||
+    hasActiveFast
+  ) {
     return updateNotificationSettings((notifications) => ({
       ...notifications,
       dailyReminderNotificationId: null,
@@ -260,6 +266,17 @@ export const setDailyReminderTimeAndSchedule = async (
     ...notifications,
     dailyReminderTime,
   }));
+
+export const cancelDailyReminderNotification = async (): Promise<AppSettings> => {
+  const settings = getSettings();
+
+  await cancelScheduledNotification(settings.notifications.dailyReminderNotificationId);
+
+  return updateNotificationSettings((notifications) => ({
+    ...notifications,
+    dailyReminderNotificationId: null,
+  }));
+};
 
 export const updateWidgetSettings = (
   update: (widgets: WidgetSettings) => WidgetSettings,

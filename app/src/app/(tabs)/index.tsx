@@ -9,14 +9,12 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import {
   cancelFast,
-  continueFast,
   endFast,
   formatDuration,
   getElapsedSeconds,
   getGoalSeconds,
   startFast,
   useActiveFastState,
-  useHistoryState,
 } from '@/storage/fasting-storage';
 import { getDefaultGoal, useSettings } from '@/storage/settings-storage';
 import { type FastingGoal } from '@/storage/app-storage';
@@ -35,7 +33,6 @@ const parsePositiveInteger = (value: string): number => {
 export default function HomeScreen() {
   const settings = useSettings();
   const activeFastState = useActiveFastState();
-  const historyState = useHistoryState();
   const theme = useTheme();
   const defaultGoal = getDefaultGoal(settings);
   const [selectedGoalId, setSelectedGoalId] = useState(defaultGoal.id);
@@ -45,7 +42,6 @@ export default function HomeScreen() {
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [operationError, setOperationError] = useState<string | null>(null);
   const activeSession = activeFastState.session;
-  const latestSession = historyState.sessions[0];
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
@@ -108,19 +104,6 @@ export default function HomeScreen() {
         },
       },
     ]);
-  };
-  const continueLatestFast = async (): Promise<void> => {
-    if (latestSession === undefined) {
-      return;
-    }
-
-    try {
-      await continueFast(latestSession);
-      setOperationError(null);
-    } catch {
-      setOperationError('The fast could not be continued. Please start a new fast instead.');
-      Alert.alert('Unable to continue fast', 'Please try again.');
-    }
   };
 
   return (
@@ -186,13 +169,6 @@ export default function HomeScreen() {
           />
 
           <AppButton label="Start Fast" onPress={startSelectedFast} />
-          {latestSession !== undefined && (
-            <AppButton
-              label={`Continue ${latestSession.goalDurationHours}h Fast`}
-              onPress={continueLatestFast}
-              variant="secondary"
-            />
-          )}
         </ThemedView>
       ) : (
         <>

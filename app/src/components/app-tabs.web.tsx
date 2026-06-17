@@ -19,17 +19,11 @@ export default function AppTabs() {
       <TabSlot style={{ height: '100%' }} />
       <TabList asChild>
         <CustomTabList>
+          <TabTrigger name="data" href="/history" asChild>
+            <TabButton>Data</TabButton>
+          </TabTrigger>
           <TabTrigger name="fast" href="/" asChild>
             <TabButton>Fast</TabButton>
-          </TabTrigger>
-          <TabTrigger name="history" href="/history" asChild>
-            <TabButton>History</TabButton>
-          </TabTrigger>
-          <TabTrigger name="statistics" href="/statistics" asChild>
-            <TabButton>Stats</TabButton>
-          </TabTrigger>
-          <TabTrigger name="graphs" href="/graphs" asChild>
-            <TabButton>Graphs</TabButton>
           </TabTrigger>
           <TabTrigger name="settings" href="/settings" asChild>
             <TabButton>Settings</TabButton>

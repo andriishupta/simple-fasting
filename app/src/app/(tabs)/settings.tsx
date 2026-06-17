@@ -1,4 +1,7 @@
 import { Alert, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { SegmentedControl as ExpoSegmentedControl } from '@expo/ui/community/segmented-control';
 
 import { ScreenScaffold } from '@/components/screen-scaffold';
@@ -44,12 +47,17 @@ const accentOptions = [
   AccentColorName.Blue,
 ] as const;
 
-const reminderTimeOptions = [
-  { label: '18:00', value: '18:00' },
-  { label: '19:00', value: '19:00' },
-  { label: '20:00', value: '20:00' },
-  { label: '21:00', value: '21:00' },
-] as const;
+const timeToDate = (time: string): Date => {
+  const [hour = '20', minute = '0'] = time.split(':');
+  const date = new Date();
+
+  date.setHours(Number(hour), Number(minute), 0, 0);
+
+  return date;
+};
+
+const dateToTime = (date: Date): string =>
+  `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 
 export default function SettingsScreen() {
   const settings = useSettings();
@@ -162,11 +170,10 @@ export default function SettingsScreen() {
           onValueChange={setDailyReminderEnabled}
         />
         {settings.notifications.dailyReminderEnabled && (
-          <SegmentedControl
+          <TimePicker
             label="Reminder time"
-            values={reminderTimeOptions}
-            selectedValue={settings.notifications.dailyReminderTime ?? '20:00'}
-            onSelect={(dailyReminderTime) => {
+            value={settings.notifications.dailyReminderTime ?? '20:00'}
+            onChange={(dailyReminderTime) => {
               void runNotificationUpdate(async () => {
                 await setDailyReminderTimeAndSchedule(dailyReminderTime);
               });
@@ -176,17 +183,6 @@ export default function SettingsScreen() {
       </SettingsSection>
 
       <SettingsSection title="Widgets">
-        <SettingsSwitch
-          title="Home Screen widgets"
-          description="Keep active fast and recent fast summaries available outside the app."
-          value={settings.widgets.homeScreenWidgetsEnabled}
-          onValueChange={(homeScreenWidgetsEnabled) =>
-            updateWidgetSettings((widgets) => ({
-              ...widgets,
-              homeScreenWidgetsEnabled,
-            }))
-          }
-        />
         {Platform.OS === 'ios' ? (
           <>
             <SettingsSwitch
@@ -343,6 +339,34 @@ function SegmentedControl<Value extends string>({
         onValueChange={selectLabel}
         tintColor={theme.accent}
         style={styles.nativeSegmentedControl}
+      />
+    </ThemedView>
+  );
+}
+
+function TimePicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const updateTime = (_event: DateTimePickerEvent, date?: Date): void => {
+    if (date !== undefined) {
+      onChange(dateToTime(date));
+    }
+  };
+
+  return (
+    <ThemedView style={styles.controlGroup}>
+      <ThemedText type="smallBold">{label}</ThemedText>
+      <DateTimePicker
+        mode="time"
+        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+        value={timeToDate(value)}
+        onChange={updateTime}
       />
     </ThemedView>
   );
