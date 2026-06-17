@@ -8,6 +8,7 @@ import { Spacing } from '@/constants/theme';
 import {
   deleteFastSession,
   formatDuration,
+  getSessionDurationSeconds,
   useHistoryState,
 } from '@/storage/fasting-storage';
 import { type FastSession } from '@/storage/app-storage';
@@ -38,11 +39,6 @@ export default function HistoryScreen() {
 
 function HistoryItem({ session }: { session: FastSession }) {
   const theme = useTheme();
-  const endedAt = session.endedAt === null ? Date.now() : new Date(session.endedAt).getTime();
-  const durationSeconds = Math.max(
-    0,
-    Math.floor((endedAt - new Date(session.startedAt).getTime()) / 1000),
-  );
   const deleteSession = (event?: GestureResponderEvent): void => {
     event?.stopPropagation();
 
@@ -66,7 +62,9 @@ function HistoryItem({ session }: { session: FastSession }) {
         pressed && styles.pressed,
       ]}>
       <View style={styles.itemText}>
-        <ThemedText type="smallBold">{formatDuration(durationSeconds)}</ThemedText>
+        <ThemedText type="smallBold">
+          {formatDuration(getSessionDurationSeconds(session))}
+        </ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           {new Date(session.startedAt).toLocaleDateString()} · {session.goalDurationHours} hour goal
         </ThemedText>

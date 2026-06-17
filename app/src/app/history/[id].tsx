@@ -14,6 +14,7 @@ import {
   deleteFastSession,
   formatDuration,
   getFastSession,
+  getSessionDurationSeconds,
   updateFastSession,
   useHistoryState,
 } from '@/storage/fasting-storage';
@@ -93,11 +94,6 @@ function DetailContent({ session }: { session: FastSession }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editState, setEditState] = useState<EditState>(() => createEditState(session));
   const [editError, setEditError] = useState<string | null>(null);
-  const endedAt = session.endedAt === null ? Date.now() : new Date(session.endedAt).getTime();
-  const durationSeconds = Math.max(
-    0,
-    Math.floor((endedAt - new Date(session.startedAt).getTime()) / 1000),
-  );
 
   useEffect(() => {
     setEditState(createEditState(session));
@@ -174,7 +170,7 @@ function DetailContent({ session }: { session: FastSession }) {
     <View style={styles.content}>
       <View style={styles.summary}>
         <ThemedText type="title" style={styles.duration}>
-          {formatDuration(durationSeconds)}
+          {formatDuration(getSessionDurationSeconds(session))}
         </ThemedText>
         <ThemedText themeColor="textSecondary">
           {session.goalDurationHours} hour goal · {session.status}

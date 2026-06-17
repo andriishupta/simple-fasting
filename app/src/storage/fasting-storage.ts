@@ -222,8 +222,23 @@ export const useHistoryState = (): HistoryState =>
 export const getElapsedSeconds = (session: FastSession, currentTime: number): number =>
   Math.max(0, Math.floor((currentTime - new Date(session.startedAt).getTime()) / 1000));
 
+export const getSessionDurationSeconds = (
+  session: FastSession,
+  currentTime = Date.now(),
+): number =>
+  getElapsedSeconds(
+    session,
+    session.endedAt === null ? currentTime : new Date(session.endedAt).getTime(),
+  );
+
+export const getSessionDurationHours = (session: FastSession): number =>
+  getSessionDurationSeconds(session) / 3600;
+
 export const getGoalSeconds = (session: FastSession): number =>
   Math.max(1, session.goalDurationHours * 60 * 60);
+
+export const formatHours = (hours: number): string =>
+  hours < 10 ? hours.toFixed(1) : Math.round(hours).toString();
 
 export const formatDuration = (totalSeconds: number): string => {
   const hours = Math.floor(totalSeconds / 3600);

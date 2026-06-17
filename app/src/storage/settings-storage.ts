@@ -222,12 +222,6 @@ export const updateNotificationSettings = (
     updatedAt: now(),
   }));
 
-export const setDailyReminderTime = (dailyReminderTime: string): AppSettings =>
-  updateNotificationSettings((notifications) => ({
-    ...notifications,
-    dailyReminderTime,
-  }));
-
 export const reconcileDailyReminderNotification = async (): Promise<AppSettings> => {
   const settings = getSettings();
 
@@ -277,9 +271,6 @@ export const updateWidgetSettings = (
 
 export const getDefaultGoal = (settings: AppSettings): FastingGoal =>
   settings.goals.find((goal) => goal.isDefault) ?? settings.goals[0];
-
-export const getAccentColor = (settings: AppSettings): string =>
-  accentColorValues[settings.accentColorName];
 
 export const getAccentPalette = ({
   accentColorName,

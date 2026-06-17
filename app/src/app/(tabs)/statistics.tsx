@@ -6,7 +6,7 @@ import { FeedbackState } from '@/components/feedback-state';
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { useHistoryState } from '@/storage/fasting-storage';
+import { formatHours, getSessionDurationHours, useHistoryState } from '@/storage/fasting-storage';
 import { FastStatus, type FastSession, type HistoryState } from '@/storage/app-storage';
 
 type FastingStats = {
@@ -21,17 +21,6 @@ type FastingStats = {
 };
 
 const dayMilliseconds = 24 * 60 * 60 * 1000;
-
-const getDurationHours = (session: FastSession): number => {
-  if (session.endedAt === null) {
-    return 0;
-  }
-
-  return Math.max(
-    0,
-    (new Date(session.endedAt).getTime() - new Date(session.startedAt).getTime()) / 3_600_000,
-  );
-};
 
 const getDayKey = (date: Date): string => date.toISOString().slice(0, 10);
 
@@ -105,7 +94,7 @@ const getLongestStreakDays = (completedDayKeys: readonly string[]): number => {
 
 const getFastingStats = (history: HistoryState): FastingStats => {
   const completedSessions = getCompletedSessions(history);
-  const durations = completedSessions.map(getDurationHours);
+  const durations = completedSessions.map(getSessionDurationHours);
   const totalHours = durations.reduce((total, duration) => total + duration, 0);
   const completedDayKeys = getCompletedDayKeys(completedSessions);
 
@@ -122,9 +111,6 @@ const getFastingStats = (history: HistoryState): FastingStats => {
     totalSessions: history.sessions.length,
   };
 };
-
-const formatHours = (hours: number): string =>
-  hours < 10 ? hours.toFixed(1) : Math.round(hours).toString();
 
 const formatPercent = (value: number): string => `${Math.round(value * 100)}%`;
 

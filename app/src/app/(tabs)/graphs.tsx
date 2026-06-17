@@ -14,7 +14,7 @@ import { FeedbackState } from '@/components/feedback-state';
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { useHistoryState } from '@/storage/fasting-storage';
+import { formatHours, getSessionDurationHours, useHistoryState } from '@/storage/fasting-storage';
 import { FastStatus, type FastSession, type HistoryState } from '@/storage/app-storage';
 
 type GraphData = {
@@ -32,17 +32,6 @@ const dayMilliseconds = 24 * 60 * 60 * 1000;
 const getDayKey = (date: Date): string => date.toISOString().slice(0, 10);
 
 const getMonthKey = (date: Date): string => date.toISOString().slice(0, 7);
-
-const getDurationHours = (session: FastSession): number => {
-  if (session.endedAt === null) {
-    return 0;
-  }
-
-  return Math.max(
-    0,
-    (new Date(session.endedAt).getTime() - new Date(session.startedAt).getTime()) / 3_600_000,
-  );
-};
 
 const getCompletedSessions = (history: HistoryState): readonly FastSession[] =>
   history.sessions.filter((session) => session.status === FastStatus.Completed);
@@ -64,7 +53,7 @@ const getHoursByDay = (sessions: readonly FastSession[]): Record<string, number>
 
     return {
       ...result,
-      [dayKey]: (result[dayKey] ?? 0) + getDurationHours(session),
+      [dayKey]: (result[dayKey] ?? 0) + getSessionDurationHours(session),
     };
   }, {});
 
@@ -97,7 +86,7 @@ const getMonthlyHours = (sessions: readonly FastSession[]): readonly BarDatum[] 
 
     return {
       ...result,
-      [monthKey]: (result[monthKey] ?? 0) + getDurationHours(session),
+      [monthKey]: (result[monthKey] ?? 0) + getSessionDurationHours(session),
     };
   }, {});
 
@@ -118,7 +107,7 @@ const getDurationDistribution = (sessions: readonly FastSession[]): readonly Bar
   return buckets.map((bucket) => ({
     label: bucket.label,
     value: sessions.filter((session) => {
-      const hours = getDurationHours(session);
+      const hours = getSessionDurationHours(session);
 
       return hours >= bucket.min && hours < bucket.max;
     }).length,
@@ -131,7 +120,7 @@ const getGoalAchievementRate = (sessions: readonly FastSession[]): number => {
   }
 
   const achievedCount = sessions.filter(
-    (session) => getDurationHours(session) >= session.goalDurationHours,
+    (session) => getSessionDurationHours(session) >= session.goalDurationHours,
   ).length;
 
   return achievedCount / sessions.length;
@@ -162,8 +151,7 @@ const getGraphData = (history: HistoryState): GraphData => {
   };
 };
 
-const formatGraphHours = (hours: number): string =>
-  `${hours < 10 ? hours.toFixed(1) : Math.round(hours).toString()}h`;
+const formatGraphHours = (hours: number): string => `${formatHours(hours)}h`;
 
 const formatGraphCount = (value: number): string => `${value}`;
 
