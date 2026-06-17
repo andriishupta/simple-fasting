@@ -1,6 +1,7 @@
 import { Alert, Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
 import { router } from 'expo-router';
 
+import { FeedbackState } from '@/components/feedback-state';
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -18,12 +19,12 @@ export default function HistoryScreen() {
   return (
     <ScreenScaffold title="History" eyebrow="Completed fasts">
       {historyState.sessions.length === 0 ? (
-        <>
-          <ThemedText>No fasting history yet.</ThemedText>
-          <ThemedText themeColor="textSecondary">
-            Completed sessions will appear here after you end a fast.
-          </ThemedText>
-        </>
+        <FeedbackState
+          kind="empty"
+          title="No fasting history yet"
+          description="Completed sessions will appear here after you end a fast."
+          action={{ label: 'Start a Fast', onPress: () => router.push('/') }}
+        />
       ) : (
         <View style={styles.list}>
           {historyState.sessions.map((session) => (

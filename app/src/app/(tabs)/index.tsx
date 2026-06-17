@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { FeedbackState } from '@/components/feedback-state';
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -24,6 +25,7 @@ export default function HomeScreen() {
   const [selectedGoalId, setSelectedGoalId] = useState(defaultGoal.id);
   const [reason, setReason] = useState('');
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [operationError, setOperationError] = useState<string | null>(null);
   const activeSession = activeFastState.session;
 
   useEffect(() => {
@@ -45,14 +47,18 @@ export default function HomeScreen() {
         reason: reason.trim() === '' ? null : reason.trim(),
       });
       setReason('');
+      setOperationError(null);
     } catch {
+      setOperationError('The fast could not be started. Check local storage and try again.');
       Alert.alert('Unable to start fast', 'Please try again.');
     }
   };
   const endActiveFast = async (): Promise<void> => {
     try {
       await endFast();
+      setOperationError(null);
     } catch {
+      setOperationError('The fast could not be ended. Your active fast is still saved locally.');
       Alert.alert('Unable to end fast', 'Please try again.');
     }
   };
@@ -61,6 +67,14 @@ export default function HomeScreen() {
     <ScreenScaffold title="Fast" eyebrow="Current fast">
       {activeSession === null ? (
         <ThemedView style={styles.section}>
+          {operationError !== null && (
+            <FeedbackState
+              kind="error"
+              title="Fast action failed"
+              description={operationError}
+              action={{ label: 'Dismiss', onPress: () => setOperationError(null) }}
+            />
+          )}
           <ThemedText>No active fast yet.</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             Choose a goal and start when you are ready.
@@ -83,15 +97,25 @@ export default function HomeScreen() {
           <ActionButton label="Start Fast" onPress={startSelectedFast} />
         </ThemedView>
       ) : (
-        <ActiveFastPanel
-          currentTime={currentTime}
-          goalName={`${activeSession.goalDurationHours} hour goal`}
-          onEnd={endActiveFast}
-          startedAt={activeSession.startedAt}
-          reason={activeSession.reason}
-          elapsedSeconds={getElapsedSeconds(activeSession, currentTime)}
-          goalSeconds={getGoalSeconds(activeSession)}
-        />
+        <>
+          {operationError !== null && (
+            <FeedbackState
+              kind="error"
+              title="Fast action failed"
+              description={operationError}
+              action={{ label: 'Dismiss', onPress: () => setOperationError(null) }}
+            />
+          )}
+          <ActiveFastPanel
+            currentTime={currentTime}
+            goalName={`${activeSession.goalDurationHours} hour goal`}
+            onEnd={endActiveFast}
+            startedAt={activeSession.startedAt}
+            reason={activeSession.reason}
+            elapsedSeconds={getElapsedSeconds(activeSession, currentTime)}
+            goalSeconds={getGoalSeconds(activeSession)}
+          />
+        </>
       )}
     </ScreenScaffold>
   );

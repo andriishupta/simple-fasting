@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
 
 import {
   HeatmapGrid,
@@ -8,6 +9,7 @@ import {
   type BarDatum,
   type HeatmapCell,
 } from '@/components/graphs/simple-graphs';
+import { FeedbackState } from '@/components/feedback-state';
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -174,12 +176,12 @@ export default function GraphsScreen() {
   return (
     <ScreenScaffold title="Graphs" eyebrow="Visual summary">
       {history.sessions.length === 0 ? (
-        <>
-          <ThemedText>No graph data yet.</ThemedText>
-          <ThemedText themeColor="textSecondary">
-            Complete a fast to build heatmaps and charts.
-          </ThemedText>
-        </>
+        <FeedbackState
+          kind="empty"
+          title="No graph data yet"
+          description="Complete a fast to build heatmaps and charts."
+          action={{ label: 'Start a Fast', onPress: () => router.push('/') }}
+        />
       ) : (
         <View style={styles.content}>
           <GraphSection title="Weekly heatmap">

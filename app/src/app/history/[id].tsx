@@ -1,6 +1,7 @@
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
+import { FeedbackState } from '@/components/feedback-state';
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -21,8 +22,12 @@ export default function HistoryDetailScreen() {
   if (session === undefined) {
     return (
       <ScreenScaffold title="Fast Details" eyebrow="History">
-        <ThemedText>Fast not found.</ThemedText>
-        <ActionButton label="Back to History" onPress={() => router.replace('/history')} />
+        <FeedbackState
+          kind="error"
+          title="Fast not found"
+          description="This session may have been deleted from local history."
+          action={{ label: 'Back to History', onPress: () => router.replace('/history') }}
+        />
       </ScreenScaffold>
     );
   }

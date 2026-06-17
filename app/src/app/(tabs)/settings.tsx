@@ -1,4 +1,5 @@
 import { Alert, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { SegmentedControl as ExpoSegmentedControl } from '@expo/ui/community/segmented-control';
 
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
@@ -263,19 +264,29 @@ function SegmentedControl<Value extends string>({
   selectedValue: Value;
   onSelect: (value: Value) => void;
 }) {
+  const theme = useTheme();
+  const selectedIndex = Math.max(
+    0,
+    values.findIndex((option) => option.value === selectedValue),
+  );
+  const selectLabel = (selectedLabel: string): void => {
+    const selectedOption = values.find((option) => option.label === selectedLabel);
+
+    if (selectedOption !== undefined) {
+      onSelect(selectedOption.value);
+    }
+  };
+
   return (
     <ThemedView style={styles.controlGroup}>
       <ThemedText type="smallBold">{label}</ThemedText>
-      <View style={styles.segmentedRow}>
-        {values.map((option) => (
-          <SegmentButton
-            key={option.value}
-            label={option.label}
-            selected={option.value === selectedValue}
-            onPress={() => onSelect(option.value)}
-          />
-        ))}
-      </View>
+      <ExpoSegmentedControl
+        values={values.map((option) => option.label)}
+        selectedIndex={selectedIndex}
+        onValueChange={selectLabel}
+        tintColor={theme.accent}
+        style={styles.nativeSegmentedControl}
+      />
     </ThemedView>
   );
 }
@@ -289,49 +300,28 @@ function GoalPicker({
   selectedGoal: FastingGoal;
   onSelect: (goalId: string) => void;
 }) {
+  const selectedIndex = Math.max(
+    0,
+    goals.findIndex((goal) => goal.id === selectedGoal.id),
+  );
+  const selectGoal = (selectedLabel: string): void => {
+    const goal = goals.find((goalOption) => goalOption.name === selectedLabel);
+
+    if (goal !== undefined) {
+      onSelect(goal.id);
+    }
+  };
+
   return (
     <ThemedView style={styles.controlGroup}>
       <ThemedText type="smallBold">Default fast</ThemedText>
-      <View style={styles.segmentedRow}>
-        {goals.map((goal) => (
-          <SegmentButton
-            key={goal.id}
-            label={goal.name}
-            selected={goal.id === selectedGoal.id}
-            onPress={() => onSelect(goal.id)}
-          />
-        ))}
-      </View>
+      <ExpoSegmentedControl
+        values={goals.map((goal) => goal.name)}
+        selectedIndex={selectedIndex}
+        onValueChange={selectGoal}
+        style={styles.nativeSegmentedControl}
+      />
     </ThemedView>
-  );
-}
-
-function SegmentButton({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.segmentButton,
-        { borderColor: selected ? theme.accent : theme.backgroundSelected },
-        selected && { backgroundColor: theme.backgroundSelected },
-        pressed && styles.pressed,
-      ]}>
-      <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textSecondary'}>
-        {label}
-      </ThemedText>
-    </Pressable>
   );
 }
 
@@ -469,19 +459,8 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     padding: Spacing.three,
   },
-  segmentedRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  segmentButton: {
-    minHeight: 40,
-    minWidth: 82,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.three,
+  nativeSegmentedControl: {
+    minHeight: 36,
   },
   accentGrid: {
     flexDirection: 'row',

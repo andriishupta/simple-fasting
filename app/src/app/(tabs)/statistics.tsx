@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
 
+import { FeedbackState } from '@/components/feedback-state';
 import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -133,12 +135,12 @@ export default function StatisticsScreen() {
   return (
     <ScreenScaffold title="Statistics" eyebrow="History summary">
       {historyState.sessions.length === 0 ? (
-        <>
-          <ThemedText>No statistics yet.</ThemedText>
-          <ThemedText themeColor="textSecondary">
-            Complete a fast to start building your local stats.
-          </ThemedText>
-        </>
+        <FeedbackState
+          kind="empty"
+          title="No statistics yet"
+          description="Complete a fast to start building your local stats."
+          action={{ label: 'Start a Fast', onPress: () => router.push('/') }}
+        />
       ) : (
         <View style={styles.grid}>
           <StatCard label="Current streak" value={`${stats.currentStreakDays}`} suffix="days" />
