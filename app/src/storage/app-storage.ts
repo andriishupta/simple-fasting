@@ -106,6 +106,7 @@ export type ActiveFastState = {
   schemaVersion: StorageSchemaVersion.V1;
   session: FastSession | null;
   fastEndNotificationId: string | null;
+  fastEndReminderEnabled: boolean;
   updatedAt: Timestamp;
 };
 
@@ -243,6 +244,7 @@ export const createEmptyActiveFastState = (updatedAt: Timestamp): ActiveFastStat
   schemaVersion: StorageSchemaVersion.V1,
   session: null,
   fastEndNotificationId: null,
+  fastEndReminderEnabled: true,
   updatedAt,
 });
 

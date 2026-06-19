@@ -80,9 +80,10 @@ export const startFast = async ({
     updatedAt: timestamp,
   };
   const settings = getSettings();
+  const fastEndReminderEnabled = settings.notifications.fastEndReminderEnabled;
   const fastEndNotificationId = await scheduleFastEndNotification({
     session,
-    enabled: settings.notifications.fastEndReminderEnabled,
+    enabled: fastEndReminderEnabled,
   });
   setLastUsedGoalDurationHours(goalDurationHours);
   await cancelDailyReminderNotification();
@@ -91,6 +92,7 @@ export const startFast = async ({
     schemaVersion: activeFastSnapshot.schemaVersion,
     session,
     fastEndNotificationId,
+    fastEndReminderEnabled,
     updatedAt: timestamp,
   });
 };
@@ -128,6 +130,7 @@ export const endFast = async (): Promise<FastSession | null> => {
     ...activeFastState,
     session: null,
     fastEndNotificationId: null,
+    fastEndReminderEnabled: true,
     updatedAt: timestamp,
   });
   await reconcileDailyReminderNotification();
@@ -144,6 +147,7 @@ export const cancelFast = async (): Promise<ActiveFastState> => {
     ...activeFastState,
     session: null,
     fastEndNotificationId: null,
+    fastEndReminderEnabled: true,
     updatedAt: now(),
   });
 
@@ -212,12 +216,42 @@ export const reconcileActiveFastEndNotification = async (): Promise<ActiveFastSt
 
   const fastEndNotificationId = await scheduleFastEndNotification({
     session: activeFastState.session,
-    enabled: settings.notifications.fastEndReminderEnabled,
+    enabled:
+      settings.notifications.fastEndReminderEnabled && activeFastState.fastEndReminderEnabled,
   });
 
   return saveActiveFastState({
     ...activeFastState,
     fastEndNotificationId,
+    updatedAt: now(),
+  });
+};
+
+export const setActiveFastEndReminderEnabled = async (
+  fastEndReminderEnabled: boolean,
+): Promise<ActiveFastState> => {
+  const activeFastState = getActiveFastState();
+
+  await cancelScheduledNotification(activeFastState.fastEndNotificationId);
+
+  if (activeFastState.session === null) {
+    return saveActiveFastState({
+      ...activeFastState,
+      fastEndNotificationId: null,
+      fastEndReminderEnabled,
+      updatedAt: now(),
+    });
+  }
+
+  const fastEndNotificationId = await scheduleFastEndNotification({
+    session: activeFastState.session,
+    enabled: fastEndReminderEnabled,
+  });
+
+  return saveActiveFastState({
+    ...activeFastState,
+    fastEndNotificationId,
+    fastEndReminderEnabled,
     updatedAt: now(),
   });
 };

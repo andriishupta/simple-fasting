@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import {
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  TextInput,
+  View,
+} from 'react-native';
 import { router } from 'expo-router';
 
 import { FeedbackState } from '@/components/feedback-state';
@@ -14,6 +23,7 @@ import {
   formatDuration,
   getElapsedSeconds,
   getGoalSeconds,
+  setActiveFastEndReminderEnabled,
   startFast,
   useActiveFastState,
 } from '@/storage/fasting-storage';
@@ -81,6 +91,7 @@ export default function HomeScreen() {
   const fastEndReminderAt =
     activeSession !== null &&
     activeFastState.fastEndNotificationId !== null &&
+    activeFastState.fastEndReminderEnabled &&
     settings.notifications.fastEndReminderEnabled
       ? new Date(
           new Date(activeSession.startedAt).getTime() + activeSession.goalDurationHours * 3_600_000,
@@ -155,6 +166,17 @@ export default function HomeScreen() {
         },
       },
     ]);
+  };
+  const setCurrentFastEndReminderEnabled = async (
+    fastEndReminderEnabled: boolean,
+  ): Promise<void> => {
+    try {
+      await setActiveFastEndReminderEnabled(fastEndReminderEnabled);
+      setOperationError(null);
+    } catch {
+      setOperationError('The fast reminder could not be updated.');
+      Alert.alert('Unable to update reminder', 'Please try again.');
+    }
   };
 
   return (
@@ -248,6 +270,10 @@ export default function HomeScreen() {
             }
             onCancel={cancelActiveFast}
             fastEndReminderAt={fastEndReminderAt}
+            fastEndReminderEnabled={activeFastState.fastEndReminderEnabled}
+            onFastEndReminderEnabledChange={(fastEndReminderEnabled) => {
+              void setCurrentFastEndReminderEnabled(fastEndReminderEnabled);
+            }}
           />
         </>
       )}
@@ -278,6 +304,8 @@ function ActiveFastPanel({
   onEnd,
   onCancel,
   fastEndReminderAt,
+  fastEndReminderEnabled,
+  onFastEndReminderEnabledChange,
 }: {
   goalName: string;
   startedAt: string;
@@ -287,23 +315,63 @@ function ActiveFastPanel({
   onEnd: () => void;
   onCancel: () => void;
   fastEndReminderAt: Date | null;
+  fastEndReminderEnabled: boolean;
+  onFastEndReminderEnabledChange: (enabled: boolean) => void;
 }) {
+  const [timerView, setTimerView] = useState<'elapsed' | 'remaining'>('elapsed');
+  const theme = useTheme();
+  const isUnlimited = goalSeconds === null;
+  const startedDate = new Date(startedAt);
+  const willEndAt =
+    goalSeconds === null ? null : new Date(startedDate.getTime() + goalSeconds * 1000);
   const progress = goalSeconds === null ? 0 : Math.min(1, elapsedSeconds / goalSeconds);
   const remainingSeconds = goalSeconds === null ? null : Math.max(0, goalSeconds - elapsedSeconds);
+  const shownSeconds =
+    timerView === 'remaining' && remainingSeconds !== null ? remainingSeconds : elapsedSeconds;
+  const toggleTimerView = (): void => {
+    if (!isUnlimited) {
+      setTimerView((view) => (view === 'elapsed' ? 'remaining' : 'elapsed'));
+    }
+  };
 
   return (
     <ThemedView style={styles.section}>
       <ThemedText type="smallBold" themeColor="textSecondary">
         {goalName}
       </ThemedText>
-      <ThemedText type="title" style={styles.timer}>
-        {formatDuration(elapsedSeconds)}
-      </ThemedText>
+      <Pressable
+        accessibilityRole={isUnlimited ? undefined : 'button'}
+        onPress={toggleTimerView}
+        style={({ pressed }) => [styles.timerBox, pressed && !isUnlimited && styles.pressed]}>
+        <View style={styles.timerIndicator}>
+          <ThemedText type="smallBold" themeColor={timerView === 'elapsed' ? 'accent' : 'textSecondary'}>
+            •
+          </ThemedText>
+          {!isUnlimited && (
+            <ThemedText type="smallBold" themeColor={timerView === 'remaining' ? 'accent' : 'textSecondary'}>
+              ×
+            </ThemedText>
+          )}
+        </View>
+        {isUnlimited && (
+          <ThemedText type="subtitle" themeColor="accent">
+            ∞
+          </ThemedText>
+        )}
+        <ThemedText type="title" style={styles.timer}>
+          {formatDuration(shownSeconds)}
+        </ThemedText>
+        {!isUnlimited && (
+          <ThemedText type="small" themeColor="textSecondary">
+            {timerView === 'elapsed' ? 'Elapsed' : 'Remaining'}
+          </ThemedText>
+        )}
+      </Pressable>
       {goalSeconds !== null && <ProgressBar progress={progress} />}
       <View style={styles.metrics}>
-        <Metric label="Started" value={new Date(startedAt).toLocaleTimeString()} />
-        {remainingSeconds !== null && (
-          <Metric label="Remaining" value={formatDuration(remainingSeconds)} />
+        <Metric label="Started" value={startedDate.toLocaleString()} />
+        {willEndAt !== null && (
+          <Metric label="Will end on" value={willEndAt.toLocaleString()} />
         )}
       </View>
       {reason !== null && (
@@ -316,10 +384,20 @@ function ActiveFastPanel({
           Goal reached
         </ThemedText>
       )}
-      {fastEndReminderAt !== null && (
-        <ThemedText type="small" themeColor="textSecondary">
-          Fast end reminder at {fastEndReminderAt.toLocaleString()}
-        </ThemedText>
+      {!isUnlimited && (
+        <View style={styles.reminderRow}>
+          <View style={styles.reminderText}>
+            <ThemedText type="smallBold">Fast reminder</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {fastEndReminderAt === null ? 'Off for this fast' : fastEndReminderAt.toLocaleString()}
+            </ThemedText>
+          </View>
+          <Switch
+            value={fastEndReminderEnabled}
+            onValueChange={onFastEndReminderEnabledChange}
+            trackColor={{ true: theme.accent }}
+          />
+        </View>
       )}
       <LogoActionButton label="End fast" onPress={onEnd} />
       <GhostButton label="Cancel fast" onPress={onCancel} />
@@ -669,6 +747,15 @@ const styles = StyleSheet.create({
   timer: {
     textAlign: 'center',
   },
+  timerBox: {
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  timerIndicator: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    gap: Spacing.one,
+  },
   progressTrack: {
     height: 10,
     borderRadius: 5,
@@ -682,6 +769,16 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   metric: {
+    flex: 1,
+    gap: Spacing.one,
+  },
+  reminderRow: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  reminderText: {
     flex: 1,
     gap: Spacing.one,
   },

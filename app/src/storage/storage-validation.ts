@@ -240,6 +240,9 @@ export const repairActiveFast = (
       schemaVersion: StorageSchemaVersion.V1,
       session,
       fastEndNotificationId: sanitizeNotificationId(value.fastEndNotificationId),
+      fastEndReminderEnabled: isBoolean(value.fastEndReminderEnabled)
+        ? value.fastEndReminderEnabled
+        : true,
       updatedAt: sanitizeTimestamp(value.updatedAt, timestamp),
     },
     repaired: true,

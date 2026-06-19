@@ -354,17 +354,12 @@ const createExportMetadata = () => ({
 
 const createHistoryCsv = (): string => {
   const metadata = createExportMetadata();
-  const activeFast = appStorage.get(StorageKey.ActiveFast)?.session;
   const history = appStorage.get(StorageKey.History);
-  const rows = [
-    ...(activeFast === undefined || activeFast === null ? [] : [{ source: 'active', ...activeFast }]),
-    ...(history?.sessions.map((session) => ({ source: 'history', ...session })) ?? []),
-  ];
+  const rows = history?.sessions ?? [];
   const header = [
     'exportedAt',
     'appVersion',
     'buildVersion',
-    'source',
     'id',
     'status',
     'startedAt',
@@ -379,7 +374,6 @@ const createHistoryCsv = (): string => {
       metadata.exportedAt,
       metadata.app.version,
       metadata.app.buildVersion,
-      session.source,
       session.id,
       session.status,
       session.startedAt,
@@ -400,7 +394,7 @@ const createJsonExport = (): string =>
   JSON.stringify(
     {
       metadata: createExportMetadata(),
-      fastingData: appStorage.query([StorageKey.ActiveFast, StorageKey.History]),
+      data: appStorage.get(StorageKey.History)?.sessions ?? [],
     },
     null,
     2,
