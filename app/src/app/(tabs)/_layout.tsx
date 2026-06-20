@@ -7,19 +7,19 @@ export default function TabLayout() {
 
   return (
     <NativeTabs tintColor={theme.accent} minimizeBehavior="onScrollDown">
+      <NativeTabs.Trigger name="history" role="history">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'chart.bar', selected: 'chart.bar.fill' }}
+          md="analytics"
+        />
+        <NativeTabs.Trigger.Label>Data</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Icon
           sf={{ default: 'timer', selected: 'timer' }}
           md="timer"
         />
         <NativeTabs.Trigger.Label>Fast</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="history" role="history">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'clock', selected: 'clock.fill' }}
-          md="history"
-        />
-        <NativeTabs.Trigger.Label>History</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
         <NativeTabs.Trigger.Icon

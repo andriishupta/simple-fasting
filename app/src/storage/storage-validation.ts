@@ -2,11 +2,13 @@ import {
   AccentColorName,
   DataViewPreference,
   FastStatus,
+  FastingGoalType,
   GoalKind,
   StorageKey,
   StorageSchemaVersion,
   ThemePreference,
   appStorage,
+  createDefaultGoals,
   createDefaultAppSettings,
   createEmptyActiveFastState,
   createEmptyGraphCacheState,
@@ -62,6 +64,7 @@ const themePreferences = Object.values(ThemePreference);
 const accentColorNames = Object.values(AccentColorName);
 const dataViewPreferences = Object.values(DataViewPreference);
 const fastStatuses = Object.values(FastStatus);
+const fastingGoalTypes = Object.values(FastingGoalType);
 
 const sanitizeTimestamp = (value: unknown, fallback: Timestamp): Timestamp =>
   isTimestamp(value) ? value : fallback;
@@ -81,9 +84,12 @@ const sanitizeGoal = (value: unknown, fallbackTimestamp: Timestamp): FastingGoal
   return {
     id: value.id,
     kind: GoalKind.Duration,
+    type: isEnumValue(fastingGoalTypes, value.type)
+      ? value.type
+      : FastingGoalType.Custom,
     name: isString(value.name) && value.name.trim() !== '' ? value.name : `${value.targetDurationHours} hours`,
     targetDurationHours: value.targetDurationHours,
-    isDefault: isBoolean(value.isDefault) ? value.isDefault : false,
+    isEnabled: isBoolean(value.isEnabled) ? value.isEnabled : true,
     createdAt: sanitizeTimestamp(value.createdAt, fallbackTimestamp),
     updatedAt: sanitizeTimestamp(value.updatedAt, fallbackTimestamp),
   };
@@ -116,11 +122,33 @@ const normalizeGoals = (
           candidate.targetDurationHours === goal.targetDurationHours,
       ) === index,
   );
-  const defaultGoal = uniqueGoals.find((goal) => goal.isDefault) ?? uniqueGoals[0];
+  const standardGoals = createDefaultGoals(timestamp).map((standardGoal) => {
+    const savedGoal = uniqueGoals.find(
+      (goal) => goal.targetDurationHours === standardGoal.targetDurationHours,
+    );
 
-  return uniqueGoals.map((goal) => ({
+    return {
+      ...standardGoal,
+      isEnabled: savedGoal?.isEnabled ?? true,
+      createdAt: savedGoal?.createdAt ?? standardGoal.createdAt,
+      updatedAt: savedGoal?.updatedAt ?? standardGoal.updatedAt,
+    };
+  });
+  const standardDurations = new Set(standardGoals.map((goal) => goal.targetDurationHours));
+  const customGoals = uniqueGoals
+    .filter((goal) => !standardDurations.has(goal.targetDurationHours))
+    .map((goal) => ({ ...goal, type: FastingGoalType.Custom }));
+  const mergedGoals = [...standardGoals, ...customGoals];
+  const enabledGoals = mergedGoals.filter((goal) => goal.isEnabled);
+  const fallbackGoal =
+    enabledGoals.find((goal) => goal.id === 'goal-16-hours') ??
+    enabledGoals[0] ??
+    mergedGoals.find((goal) => goal.id === 'goal-16-hours') ??
+    mergedGoals[0];
+
+  return mergedGoals.map((goal) => ({
     ...goal,
-    isDefault: goal.id === defaultGoal.id,
+    isEnabled: goal.id === fallbackGoal.id ? true : goal.isEnabled,
   }));
 };
 

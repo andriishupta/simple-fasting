@@ -1,6 +1,6 @@
 import { StyleSheet, View, type ViewProps } from 'react-native';
 
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type AppSurfaceProps = ViewProps & {
@@ -15,7 +15,7 @@ export function AppSurface({ padded = true, style, ...viewProps }: AppSurfacePro
       style={[
         styles.surface,
         {
-          backgroundColor: theme.backgroundElement,
+          backgroundColor: theme.background,
           borderColor: theme.backgroundSelected,
         },
         padded && styles.padded,
@@ -29,7 +29,8 @@ export function AppSurface({ padded = true, style, ...viewProps }: AppSurfacePro
 const styles = StyleSheet.create({
   surface: {
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.surface,
+    borderCurve: 'continuous',
   },
   padded: {
     padding: Spacing.three,

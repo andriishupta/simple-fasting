@@ -59,15 +59,16 @@ Use this reference table to choose the right document before starting work:
 
 When unsure, start with `01-product-specification.md`, then consult the more specific document if the work is about execution order, deployment, or future evolution.
 
-Documentation is the source of truth.
+The current implementation in `/app` is the source of truth for behavior that already exists. Documentation is the source of truth for product intent, remaining work, release requirements, and future scope.
 
-Do not silently diverge from documented requirements.
+Keep implementation and documentation synchronized. Do not silently diverge from documented requirements or describe unimplemented behavior as shipped.
 
 If documentation and implementation conflict:
 
-1. Explain the conflict.
-2. Propose a solution.
-3. Keep behavior consistent.
+1. Inspect the current implementation and relevant history/context.
+2. Explain the conflict.
+3. Propose the smallest consistent solution.
+4. Update documentation when behavior intentionally changes.
 
 ---
 
@@ -224,10 +225,11 @@ MMKV
 Requirements:
 
 - Versioned schema
-- Migration support
-- Backward compatibility
+- Typed validation
 
-Persisted structures should support future migrations.
+Before the first public v1 release, breaking storage changes are allowed when explicitly requested. Do not add compatibility code for abandoned development-only shapes by default, and do not clear local data without approval.
+
+After the first public release, persisted schema changes require migrations, backward compatibility, and upgrade testing. Persisted structures should remain migration-friendly now.
 
 ---
 
@@ -279,6 +281,21 @@ Avoid:
 - Unnecessary screens
 
 Users should be able to start a fast within seconds.
+
+### UI/UX Workflow
+
+For meaningful UI changes:
+
+1. Inspect the current screen and neighboring screens before editing.
+2. Identify the existing shared tokens and native interaction patterns.
+3. Prefer Expo and platform-native controls, safe-area handling, navigation, gestures, and transitions.
+4. Keep cards, grouped rows, spacing, radii, typography, and icon treatment consistent across screens.
+5. Avoid scrolling when a normal phone viewport has enough room; retain responsive scrolling for small or expanded states.
+6. Check both idle and expanded/error/keyboard states.
+7. When a simulator is available, verify with screenshots and interaction rather than relying only on code inspection.
+8. Consider iOS and Android behavior separately while keeping product behavior consistent.
+
+Do not optimize a single screen in isolation if the result makes the application feel like multiple unrelated products.
 
 ---
 
@@ -354,7 +371,19 @@ Before implementing:
 
 1. Read relevant documentation.
 2. Understand existing patterns.
-3. Follow repository conventions.
+3. Inspect the current app behavior when UX or runtime behavior matters.
+4. Follow repository conventions.
+
+### Skills and Tools
+
+Use relevant provided skills when they materially improve the work. In particular:
+
+- use Expo/native UI guidance for Expo Router, controls, safe areas, tabs, sheets, animation, and platform behavior;
+- use iOS simulator/debugger tooling for native screenshots and interaction checks when an iOS simulator is available;
+- use browser/frontend testing guidance for website rendering work;
+- use focused review/audit skills when the user requests a whole-repository or over-engineering review.
+
+Read a selected skill completely and follow its workflow. Do not invoke skills mechanically when they do not apply. Explain briefly when a skill changes the work or verification approach.
 
 For significant changes:
 
@@ -389,6 +418,8 @@ A task is complete when:
 - Existing functionality remains intact
 - No obvious security issues exist
 - Documentation remains accurate
+- UI changes have proportional runtime or screenshot verification when available
+- Native platform changes consider iOS and Android behavior
 
 ---
 

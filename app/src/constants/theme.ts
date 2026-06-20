@@ -76,4 +76,10 @@ export const Spacing = {
   six: 64,
 } as const;
 
+export const Radius = {
+  control: 12,
+  surface: 16,
+  pill: 999,
+} as const;
+
 export const MaxContentWidth = 800;

@@ -1,361 +1,123 @@
-# Simple Fasting — Future Evolution & Versioning Strategy
+# Simple Fasting — Future Roadmap and Versioning
 
-## Purpose
+The current `/app` implementation is the baseline. Roadmap items are not commitments and should be implemented only when explicitly requested or supported by clear user demand.
 
-Describe realistic future evolution paths while preserving the project's core philosophy:
+## Versioning and Storage Policy
 
-- **Local First**
-- **Privacy First**
-- **Offline First**
-- **User Owns Data**
+### Before the first public v1 release
 
-Future features should be introduced only when there is demonstrated user demand.
+- Breaking storage/model changes are allowed.
+- Development data may be reset when explicitly approved.
+- Do not build compatibility layers for abandoned development-only shapes unless they solve a current problem.
+- Keep the current schema typed and internally consistent.
 
----
+### After the first public release
 
-## Version 1.x — Local First Foundation
+- Persisted schema changes require a version bump and migration.
+- Preserve user history, active fasts, settings, and goals.
+- Test upgrades from every supported public schema.
+- Never silently discard valid user data.
 
-**Status:** Initial Release
+## Current v1 Baseline
 
-### Principles
+Implemented today:
 
-- No accounts
-- No backend
-- No cloud sync
-- No subscriptions
-- No personal data collection
+- native Data, Fast, and Settings tabs;
+- planned, custom, and open-ended fasting;
+- optional notes and local reminders;
+- history, edit, statistics, heatmaps, and charts;
+- standard/custom goals with last-selection persistence;
+- themes and accent colors;
+- JSON/CSV export and clear data;
+- offline FAQ, Privacy Policy, and Terms;
+- small iOS and Android home-screen widgets.
 
-### Features
+Release readiness work remains documented in `02-execution-plan.md` and `03-release-deployment-guide.md`.
 
-- Fasting Timer
-- History
-- Statistics
-- Goals
-- Heatmaps
-- Widgets
-- Local Notifications
-- Export JSON
-- Export CSV
+## Near-Term Candidates
 
-### Storage
+These retain the local-first architecture and can be considered for v1.x or v2 based on priority:
 
-```
-MMKV
-├── settings
-├── activeFast
-├── history
-└── graphCache
-```
+- native swipe-to-delete for History;
+- multi-select and bulk history delete;
+- network-aware external-link state;
+- medium widget with active fast and recent summary;
+- large statistics/heatmap widget;
+- iOS lock-screen widgets;
+- Android ongoing fasting notification;
+- iOS Live Activities and Dynamic Island;
+- more automated tests and accessibility polish.
 
-History is the source of truth. Statistics and charts are derived locally.
+## Version 2 — Power-User Native Experience
 
-### Business Model
+Possible additions:
 
-Free. Potential future donation/support link.
+- Apple Watch start/end/progress experience;
+- advanced widgets and configurable layouts;
+- weekly and monthly reports;
+- long-term goal trends;
+- alternate app icons;
+- optional one-time Pro unlock if a paid tier is deliberately approved.
 
----
+The architecture should remain local-only with no mandatory account or backend.
 
-## Version 2.x — Power User Experience
+## Version 3 — Optional Apple Ecosystem Sync
 
-**Status:** Optional Future
+Potential scope:
 
-### Goal
+- iCloud backup;
+- CloudKit sync for history, settings, and goals;
+- iPhone, iPad, Apple Watch, and macOS continuity.
 
-Improve daily usage without introducing accounts or cloud services.
+Derived statistics and graph caches should be rebuilt locally rather than synced.
 
-### New Features
+This remains optional and must not remove local-only mode.
 
-#### Apple Watch
+## Version 4 — Optional Cross-Platform Sync
 
-- Start Fast
-- End Fast
-- View Active Fast
-- View Progress
-- View Goal Progress
+Only if users clearly require Android/Apple synchronization:
 
-#### Advanced Widgets
+- optional accounts;
+- local mode remains available;
+- encrypted transport and a minimal sync backend;
+- sync only history, settings, and goals;
+- rebuild charts and statistics locally;
+- offline queue with an explicit, tested conflict strategy.
 
-- Additional widget layouts
-- Weekly widgets
-- Monthly widgets
-- Goal widgets
+A backend, Cloudflare, database, authentication, or recurring payment must not be introduced speculatively.
 
-#### Advanced Statistics
+## Version 5 — Ecosystem Expansion
 
-- Weekly reports
-- Monthly reports
-- Goal completion trends
-- Long-term fasting trends
+Long-term possibilities:
 
-#### Alternate Icons
+- desktop applications;
+- Apple Health and Health Connect integrations;
+- wearables;
+- richer data portability and backup/restore;
+- privacy-preserving long-term insights.
 
-- Light theme icon
-- Dark theme icon
-- Minimal icon
-- Seasonal icons
+## Features Intentionally Avoided
 
-### Architecture
-
-Still: No backend, No accounts, No cloud sync.
-
-### Business Model
-
-Possible: **Simple Fasting Pro** — One-Time Purchase
-
-Unlocks:
-
-- Apple Watch
-- Advanced Widgets
-- Advanced Statistics
-- Alternate Icons
-
----
-
-## Version 3.x — Apple Ecosystem Sync
-
-**Status:** Future
-
-### Goal
-
-Provide seamless Apple ecosystem experience while avoiding custom backend infrastructure.
-
-### New Features
-
-#### iCloud Backup
-
-Automatic backup of:
-
-- History
-- Settings
-- Goals
-
-#### iCloud Sync
-
-Synchronization between:
-
-- iPhone
-- iPad
-- Apple Watch
-- macOS
-
-### Architecture
-
-```
-MMKV
-  ↓
-Sync Layer
-  ↓
-CloudKit
-  ↓
-User Apple ID
-```
-
-### Advantages
-
-- No user account required
-- No password management
-- No backend maintenance
-- No infrastructure costs
-- Native Apple experience
-
-### Limitations
-
-- Apple devices only
-- Android unsupported
-
-### Business Model
-
-One-Time Purchase or Pro Upgrade.
-
----
-
-## Version 4.x — Cross Platform Sync
-
-**Status:** Future
-
-### Goal
-
-Enable synchronization across Apple and Android devices.
-
-### New Features
-
-#### Optional Account System
-
-Users may choose:
-
-- **Local Mode** or **Sync Mode**
-
-Accounts remain optional.
-
-#### Cross Platform Sync
-
-Synchronization between:
-
-- iPhone
-- Android
-- iPad
-- macOS
-- Windows
-
-#### Cloud Backup
-
-Cross-platform backup and restore.
-
-### Architecture
-
-```
-MMKV
-  ↓
-Sync Queue
-  ↓
-Cloudflare Worker
-  ↓
-Cloudflare D1
-```
-
-### Sync Strategy
-
-Only sync:
-
-- history
-- settings
-- goals
-
-Do **NOT** sync:
-
-- statistics
-- heatmaps
-- charts
-- graphCache
-
-Those are rebuilt locally.
-
-### Offline Support
-
-When offline:
-
-```
-Local Changes
-  ↓
-Pending Sync Queue
-```
-
-When online:
-
-```
-Pending Sync Queue
-  ↓
-Cloud Sync
-```
-
-### Conflict Resolution
-
-Simple strategy: **Last Write Wins**
-
-Should be sufficient for fasting data.
-
-### Business Model
-
-Pro Upgrade.
-
----
-
-## Version 5.x — Ecosystem Expansion
-
-**Status:** Long-Term Future
-
-### Goal
-
-Transform Simple Fasting into a broader fasting platform while preserving simplicity.
-
-### New Features
-
-#### Desktop Applications
-
-- macOS
-- Windows
-
-#### Health Integrations
-
-- Apple Health
-- Health Connect
-- Wearables
-
-#### Advanced Analytics
-
-- Long-term reports
-- Habit trends
-- Goal achievement analysis
-
-#### Advanced Widgets
-
-- Dashboard widgets
-- Multi-device widgets
-
-#### Data Portability
-
-- Full export
-- Full backup
-- Migration tools
-
-### Optional Features
-
-Only if significant demand exists:
-
-- Family Sharing
-- Teams
-- Challenges
-- Community Features
-- AI Insights
-
-### Features Intentionally Avoided
-
-Unless overwhelming demand exists:
-
-- Social Feed
-- Ads
-- Aggressive Gamification
-- Mandatory Accounts
-- Complex Meal Tracking
-
----
-
-## Sync Architecture Evolution
-
-| Version | Architecture                                        |
-| ------- | --------------------------------------------------- |
-| V1      | MMKV Only                                           |
-| V2      | MMKV → Apple Watch Communication                    |
-| V3      | MMKV → Sync Layer → CloudKit                        |
-| V4      | MMKV → Sync Queue → Cloudflare Worker → D1          |
-| V5      | MMKV → Cross Platform Sync Layer → Cloudflare Infra |
-
----
-
-## Business Model Evolution
-
-| Version | Model                      |
-| ------- | -------------------------- |
-| V1      | Free                       |
-| V2      | Optional One-Time Purchase |
-| V3      | Pro Upgrade                |
-| V4      | Pro Upgrade + Sync         |
-| V5      | Optional Premium Features  |
-
-No subscription should be introduced unless there is a recurring infrastructure cost that cannot be covered by one-time purchases.
-
----
-
-## Decision Framework
-
-Before implementing any future feature:
+Unless product direction changes explicitly:
+
+- mandatory accounts;
+- social feeds and community mechanics;
+- ads or tracking SDKs;
+- aggressive gamification;
+- complex meal/calorie tracking;
+- AI-generated health advice;
+- subscriptions without unavoidable recurring infrastructure cost.
+
+## Decision Gate
+
+Before adding a roadmap feature, answer:
 
 1. Is there demonstrated user demand?
-2. Does it preserve simplicity?
-3. Does it preserve privacy?
-4. Can it remain optional?
-5. Does it increase maintenance burden?
+2. Does it preserve the fast start/end loop?
+3. Can it remain local and offline where practical?
+4. Does it preserve privacy and user ownership?
+5. Is the maintenance cost justified?
+6. Does it require a payment, account, or backend decision that has not been approved?
+7. How does it affect widgets, notifications, storage, export, and release testing?
 
-If the answer to multiple questions is negative, the feature should not be built.
-
-The project should remain a simple fasting application rather than evolve into a complex health platform.
+If the answers are unclear, keep the feature out of the current release.

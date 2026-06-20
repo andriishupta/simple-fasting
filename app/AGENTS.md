@@ -256,7 +256,7 @@ All persistent data should:
 
 - Have types
 - Have schema versioning
-- Support migrations
+- Remain easy to migrate after public release
 
 Example:
 
@@ -267,6 +267,10 @@ Example:
 ```
 
 Storage must survive app updates.
+
+Before the first public v1 release, explicitly requested breaking model changes do not need development-only backward compatibility. Keep the current shape internally valid, do not retain dead compatibility branches, and do not clear local data unless approved.
+
+After the first public release, storage must survive updates through explicit migrations and upgrade tests.
 
 ---
 
@@ -362,6 +366,30 @@ Avoid:
 - Visual clutter
 
 Users should start fasting within seconds.
+
+For UI work:
+
+1. Audit the current screen and adjacent screens first.
+2. Reuse theme, spacing, radius, surface, row, and button conventions.
+3. Prefer Expo and native platform controls over custom imitations.
+4. Account for safe areas, keyboards, and the native floating tab bar.
+5. Disable unnecessary idle scrolling/bounce when content fits; keep responsive fallback scrolling.
+6. Verify normal, empty, error, expanded, active, light, and dark states as relevant.
+7. Use simulator screenshots and UI interaction checks when available.
+8. Check Android implications even when the first visual pass is on iOS.
+
+The application should read as one product across Fast, Data, Settings, stack screens, local documents, and widgets.
+
+# Skills
+
+Use relevant available skills instead of improvising platform behavior:
+
+- Expo native UI guidance for Router, tabs, sheets, safe areas, controls, and animation;
+- iOS debugger/simulator guidance for screenshots and runtime verification;
+- Expo deployment guidance for builds and releases;
+- focused testing/debugging guidance for rendered UI problems.
+
+Read the selected skill before acting and keep the implementation no more complex than the product requires.
 
 ---
 
@@ -511,6 +539,8 @@ A task is complete when:
 - Existing functionality remains intact
 - Widgets remain functional
 - No obvious performance regressions exist
+- UI changes are checked in a native runtime when available
+- Static Expo exports pass for affected platforms
 
 # Expo HAS CHANGED
 

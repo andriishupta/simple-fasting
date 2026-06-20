@@ -1,14 +1,40 @@
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import { router, type Href } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
-import { SegmentedControl as ExpoSegmentedControl } from '@expo/ui/community/segmented-control';
+import { Picker } from '@expo/ui/community/picker';
+import {
+  Bell,
+  Bug,
+  ChevronRight,
+  CircleHelp,
+  ExternalLink,
+  FileText,
+  Globe,
+  Info,
+  Laptop,
+  Mail,
+  Moon,
+  Shield,
+  Sun,
+  Table2,
+  Target,
+  Timer,
+  Trash2,
+  type LucideIcon,
+} from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
   setAccentColorName,
   setThemePreference,
@@ -19,9 +45,7 @@ import {
   accentColorValues,
   getAppVersionLabel,
   openBugReportEmail,
-  openDevEmail,
   openFaq,
-  openFeedbackEmail,
   openPrivacyPolicy,
   openSupportEmail,
   openTerms,
@@ -47,9 +71,21 @@ import { cancelScheduledNotification } from '@/storage/notification-storage';
 import { initializeAppStorage } from '@/storage/storage-migrations';
 
 const themeOptions = [
-  { label: 'System', value: ThemePreference.System },
-  { label: 'Light', value: ThemePreference.Light },
-  { label: 'Dark', value: ThemePreference.Dark },
+  {
+    label: 'System',
+    value: ThemePreference.System,
+    icon: Laptop,
+  },
+  {
+    label: 'Light',
+    value: ThemePreference.Light,
+    icon: Sun,
+  },
+  {
+    label: 'Dark',
+    value: ThemePreference.Dark,
+    icon: Moon,
+  },
 ] as const;
 
 const accentOptions = [
@@ -63,17 +99,9 @@ const accentOptions = [
   AccentColorName.Pink,
 ] as const;
 
-const timeToDate = (time: string): Date => {
-  const [hour = '20', minute = '0'] = time.split(':');
-  const date = new Date();
-
-  date.setHours(Number(hour), Number(minute), 0, 0);
-
-  return date;
-};
-
-const dateToTime = (date: Date): string =>
-  `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+const accentItemWidth = 76;
+const reminderHours = Array.from({ length: 24 }, (_, hour) => hour);
+const reminderMinutes = Array.from({ length: 60 }, (_, minute) => minute);
 
 export default function SettingsScreen() {
   const settings = useSettings();
@@ -177,13 +205,16 @@ export default function SettingsScreen() {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.screen}>
       <View style={styles.screenContent}>
-        <ThemedText type="subtitle" accessibilityRole="header">
-          Settings
-        </ThemedText>
+        <View style={styles.header}>
+          <ThemedText type="subtitle" accessibilityRole="header">
+            Simple Fasting Settings
+          </ThemedText>
+          <ThemedText themeColor="textSecondary">
+            Private by design. Everything stays on this device.
+          </ThemedText>
+        </View>
         <SettingsSection title="Appearance">
-          <SegmentedControl
-            label="Theme"
-            values={themeOptions}
+          <ThemePicker
             selectedValue={settings.themePreference}
             onSelect={setThemePreference}
           />
@@ -195,20 +226,23 @@ export default function SettingsScreen() {
 
         <SettingsSection title="Goals">
           <SettingsActionRow
+            icon={Target}
             title="Manage fasting goals"
-            description={`${settings.goals.length} saved goal${settings.goals.length === 1 ? '' : 's'}`}
+            description={`${settings.goals.filter((goal) => goal.isEnabled).length} active · ${settings.goals.length} total`}
             onPress={() => router.push('/goals' as Href)}
           />
         </SettingsSection>
 
         <SettingsSection title="Notifications">
           <SettingsSwitch
+            icon={Timer}
             title="Fast end reminder"
             description="Local notification when the goal is reached."
             value={settings.notifications.fastEndReminderEnabled}
             onValueChange={setFastEndReminderEnabled}
           />
           <SettingsSwitch
+            icon={Bell}
             title="Daily fasting reminder"
             description="A local reminder to start your regular fast."
             value={settings.notifications.dailyReminderEnabled}
@@ -229,16 +263,19 @@ export default function SettingsScreen() {
 
         <SettingsSection title="Data">
           <SettingsActionRow
+            icon={FileText}
             title="Export JSON"
             description="Fasting data and app metadata."
             onPress={() => exportData(SettingsExportFormat.Json)}
           />
           <SettingsActionRow
+            icon={Table2}
             title="Export CSV"
             description="Session history in spreadsheet format."
             onPress={() => exportData(SettingsExportFormat.Csv)}
           />
           <SettingsActionRow
+            icon={Trash2}
             title="Clear data"
             description="Delete local history, graphs, settings, and active fast."
             destructive
@@ -246,96 +283,118 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
 
-        <SettingsSection title="Support">
-          <SettingsActionRow title="FAQ" onPress={() => openExternalAction(openFaq)} />
-          <SettingsActionRow title="Website" onPress={() => openExternalAction(openWebsite)} />
+        <SettingsSection title="About">
           <SettingsActionRow
-            title="Feedback"
-            onPress={() => openExternalAction(openFeedbackEmail)}
+            icon={Globe}
+            title="Website"
+            external
+            onPress={() => openExternalAction(openWebsite)}
+          />
+          <SettingsLinkedDocumentRow
+            icon={CircleHelp}
+            title="FAQ"
+            onOpenExternal={() => openExternalAction(openFaq)}
+            onOpenLocal={() => router.push('/faq' as Href)}
           />
           <SettingsActionRow
-            title="Contact developer"
-            onPress={() => openExternalAction(openDevEmail)}
-          />
-          <SettingsActionRow
+            icon={Bug}
             title="Report bug"
             onPress={() => openExternalAction(openBugReportEmail)}
           />
-        </SettingsSection>
-
-        <SettingsSection title="Legal">
           <SettingsActionRow
-            title="Privacy Policy"
-            onPress={() => openExternalAction(openPrivacyPolicy)}
-          />
-          <SettingsActionRow
-            title="Terms of Use"
-            onPress={() => openExternalAction(openTerms)}
-          />
-        </SettingsSection>
-
-        <SettingsSection title="About">
-          <SettingsActionRow
+            icon={Mail}
             title="Support email"
             description="support@simplefasting.app"
             onPress={() => openExternalAction(openSupportEmail)}
           />
-          <SettingsRow title="Build" description={getAppVersionLabel()} />
+          <SettingsRow
+            icon={Info}
+            title="Build"
+            description={getAppVersionLabel()}
+          />
         </SettingsSection>
+
+        <SettingsSection title="Legal">
+          <SettingsLinkedDocumentRow
+            icon={Shield}
+            title="Privacy Policy"
+            onOpenExternal={() => openExternalAction(openPrivacyPolicy)}
+            onOpenLocal={() => router.push('/privacy' as Href)}
+          />
+          <SettingsLinkedDocumentRow
+            icon={FileText}
+            title="Terms of Use"
+            onOpenExternal={() => openExternalAction(openTerms)}
+            onOpenLocal={() => router.push('/terms' as Href)}
+          />
+        </SettingsSection>
+
       </View>
     </ScrollView>
   );
 }
 
 function SettingsSection({ title, children }: { title: string; children: React.ReactNode }) {
+  const theme = useTheme();
+
   return (
-    <ThemedView style={styles.section}>
+    <View style={styles.section}>
       <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
         {title}
       </ThemedText>
-      <ThemedView type="backgroundElement" style={styles.sectionPanel}>
+      <View
+        style={[
+          styles.sectionPanel,
+          { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
+        ]}>
         {children}
-      </ThemedView>
-    </ThemedView>
+      </View>
+    </View>
   );
 }
 
-function SegmentedControl<Value extends string>({
-  label,
-  values,
+function ThemePicker({
   selectedValue,
   onSelect,
 }: {
-  label: string;
-  values: readonly { label: string; value: Value }[];
-  selectedValue: Value;
-  onSelect: (value: Value) => void;
+  selectedValue: ThemePreference;
+  onSelect: (value: ThemePreference) => void;
 }) {
   const theme = useTheme();
-  const selectedIndex = Math.max(
-    0,
-    values.findIndex((option) => option.value === selectedValue),
-  );
-  const selectLabel = (selectedLabel: string): void => {
-    const selectedOption = values.find((option) => option.label === selectedLabel);
-
-    if (selectedOption !== undefined) {
-      onSelect(selectedOption.value);
-    }
-  };
 
   return (
-    <ThemedView
-      style={[styles.controlGroup, { borderBottomColor: theme.backgroundSelected }]}>
-      <ThemedText type="smallBold">{label}</ThemedText>
-      <ExpoSegmentedControl
-        values={values.map((option) => option.label)}
-        selectedIndex={selectedIndex}
-        onValueChange={selectLabel}
-        tintColor={theme.accent}
-        style={styles.nativeSegmentedControl}
-      />
-    </ThemedView>
+    <View style={[styles.themePicker, { borderBottomColor: theme.backgroundSelected }]}>
+      {themeOptions.map((option) => {
+        const selected = option.value === selectedValue;
+        const Icon = option.icon;
+
+        return (
+          <Pressable
+            key={option.value}
+            accessibilityRole="button"
+            accessibilityLabel={`${option.label} theme`}
+            accessibilityState={{ selected }}
+            onPress={() => onSelect(option.value)}
+            style={({ pressed }) => [
+              styles.themeOption,
+              {
+                backgroundColor: selected ? theme.accentBackground : 'transparent',
+                borderColor: selected ? theme.accentBorder : theme.backgroundSelected,
+              },
+              pressed && styles.pressed,
+            ]}>
+            <Icon
+              size={24}
+              color={selected ? theme.accent : theme.textSecondary}
+              strokeWidth={2}
+            />
+            <ThemedText type="smallBold" style={selected ? { color: theme.accent } : undefined}>
+              {option.label}
+            </ThemedText>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -349,23 +408,44 @@ function TimePicker({
   onChange: (value: string) => void;
 }) {
   const theme = useTheme();
-  const updateTime = (_event: DateTimePickerEvent, date?: Date): void => {
-    if (date !== undefined) {
-      onChange(dateToTime(date));
-    }
-  };
+  const [hour = '20', minute = '00'] = value.split(':');
+  const updatePart = (nextHour: string, nextMinute: string): void =>
+    onChange(`${nextHour.padStart(2, '0')}:${nextMinute.padStart(2, '0')}`);
 
   return (
-    <ThemedView
-      style={[styles.controlGroup, { borderBottomColor: theme.backgroundSelected }]}>
-      <ThemedText type="smallBold">{label}</ThemedText>
-      <DateTimePicker
-        mode="time"
-        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-        value={timeToDate(value)}
-        onChange={updateTime}
-      />
-    </ThemedView>
+    <View style={styles.timeControl}>
+      <ThemedText type="smallBold" style={styles.timeLabel}>
+        {label}
+      </ThemedText>
+      <View style={styles.timePickers}>
+        <View style={[styles.timePickerColumn, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.timeLabel}>
+            HOURS
+          </ThemedText>
+          <Picker
+            selectedValue={String(Number(hour))}
+            onValueChange={(nextHour) => updatePart(nextHour, minute)}
+            style={styles.timePicker}>
+            {reminderHours.map((option) => (
+              <Picker.Item key={option} label={String(option).padStart(2, '0')} value={String(option)} />
+            ))}
+          </Picker>
+        </View>
+        <View style={[styles.timePickerColumn, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.timeLabel}>
+            MINUTES
+          </ThemedText>
+          <Picker
+            selectedValue={String(Number(minute))}
+            onValueChange={(nextMinute) => updatePart(hour, nextMinute)}
+            style={styles.timePicker}>
+            {reminderMinutes.map((option) => (
+              <Picker.Item key={option} label={String(option).padStart(2, '0')} value={String(option)} />
+            ))}
+          </Picker>
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -377,53 +457,110 @@ function AccentPicker({
   onSelect: (accentColorName: AccentColorName) => void;
 }) {
   const theme = useTheme();
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const selectedIndex = accentOptions.indexOf(selectedAccentName);
+  const sideInset = Math.max(0, (viewportWidth - accentItemWidth) / 2);
+
+  useEffect(() => {
+    if (viewportWidth === 0) return;
+
+    scrollRef.current?.scrollTo({ x: selectedIndex * accentItemWidth, animated: false });
+  }, [selectedIndex, viewportWidth]);
+
+  useEffect(
+    () => () => {
+      if (scrollStopTimerRef.current !== null) clearTimeout(scrollStopTimerRef.current);
+    },
+    [],
+  );
+
+  const selectStoppedAccent = (offsetX: number): void => {
+    const index = Math.max(
+      0,
+      Math.min(accentOptions.length - 1, Math.round(offsetX / accentItemWidth)),
+    );
+
+    onSelect(accentOptions[index]);
+  };
+  const scheduleStoppedAccent = (event: NativeSyntheticEvent<NativeScrollEvent>): void => {
+    if (scrollStopTimerRef.current !== null) clearTimeout(scrollStopTimerRef.current);
+
+    const offsetX = event.nativeEvent.contentOffset.x;
+    scrollStopTimerRef.current = setTimeout(() => selectStoppedAccent(offsetX), 120);
+  };
+  const finishAccentScroll = (event: NativeSyntheticEvent<NativeScrollEvent>): void => {
+    if (scrollStopTimerRef.current !== null) clearTimeout(scrollStopTimerRef.current);
+    selectStoppedAccent(event.nativeEvent.contentOffset.x);
+  };
 
   return (
-    <ThemedView
-      style={[styles.controlGroup, { borderBottomColor: theme.backgroundSelected }]}>
-      <ThemedText type="smallBold">Accent color</ThemedText>
-      <View style={styles.accentGrid}>
-        {accentOptions.map((accentName) => {
-          const selected = accentName === selectedAccentName;
-
-          return (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`${accentColorLabels[accentName]} accent`}
-              accessibilityState={{ selected }}
-              key={accentName}
-              onPress={() => onSelect(accentName)}
-              style={({ pressed }) => [
-                styles.accentButton,
-                {
-                  backgroundColor: selected ? theme.accentBackground : 'transparent',
-                  borderColor: selected ? theme.accentBorder : theme.backgroundSelected,
-                },
-                pressed && styles.pressed,
-              ]}>
+    <View style={styles.accentControl}>
+      <View style={styles.accentHeading}>
+        <ThemedText type="smallBold">Accent color</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {accentColorLabels[selectedAccentName]}
+        </ThemedText>
+      </View>
+      <View
+        onLayout={(event) => setViewportWidth(event.nativeEvent.layout.width)}
+        style={styles.accentViewport}>
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          accessibilityRole="adjustable"
+          accessibilityLabel="Accent color"
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          snapToInterval={accentItemWidth}
+          snapToAlignment="start"
+          scrollEventThrottle={16}
+          onScroll={scheduleStoppedAccent}
+          onMomentumScrollEnd={finishAccentScroll}
+          contentContainerStyle={{ paddingHorizontal: sideInset }}>
+          {accentOptions.map((accentName) => (
+            <View key={accentName} style={styles.accentItem}>
               <View
                 style={[
                   styles.accentSwatch,
                   { backgroundColor: accentColorValues[accentName] },
                 ]}
               />
-              <ThemedText type="small" themeColor={selected ? 'text' : 'textSecondary'}>
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
                 {accentColorLabels[accentName]}
               </ThemedText>
-            </Pressable>
-          );
-        })}
+            </View>
+          ))}
+        </ScrollView>
+        <View
+          pointerEvents="none"
+          style={[
+            styles.accentSelection,
+            {
+              left: sideInset,
+              transform: [{ translateX: (accentItemWidth - 48) / 2 }],
+              borderColor: theme.accent,
+              boxShadow: `0 0 0 4px ${theme.accentBackground}`,
+            },
+          ]}
+        />
       </View>
-    </ThemedView>
+      <ThemedText type="small" themeColor="textSecondary" style={styles.accentHint}>
+        Swipe to choose. The color updates when scrolling stops.
+      </ThemedText>
+    </View>
   );
 }
 
 function SettingsSwitch({
+  icon,
   title,
   description,
   value,
   onValueChange,
 }: {
+  icon: LucideIcon;
   title: string;
   description: string;
   value: boolean;
@@ -433,6 +570,7 @@ function SettingsSwitch({
 
   return (
     <SettingsRow
+      icon={icon}
       title={title}
       description={description}
       trailing={
@@ -448,54 +586,108 @@ function SettingsSwitch({
 }
 
 function SettingsActionRow({
+  icon,
   title,
   description,
   destructive = false,
+  external = false,
   onPress,
 }: {
+  icon?: LucideIcon;
   title: string;
   description?: string;
   destructive?: boolean;
+  external?: boolean;
   onPress: () => void;
 }) {
   const theme = useTheme();
 
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={external ? 'link' : 'button'}
       onPress={onPress}
       style={({ pressed }) => pressed && styles.pressed}>
       <SettingsRow
+        icon={icon}
         title={title}
         description={description}
         titleColor={destructive ? theme.danger : undefined}
         trailing={
-          <SymbolView
-            name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
-            size={16}
-            tintColor={theme.textSecondary}
-          />
+          external ? (
+            <ExternalLink size={18} color={theme.textSecondary} strokeWidth={2} />
+          ) : (
+            <ChevronRight size={18} color={theme.textSecondary} strokeWidth={2} />
+          )
         }
       />
     </Pressable>
   );
 }
 
+function SettingsLinkedDocumentRow({
+  icon,
+  title,
+  onOpenExternal,
+  onOpenLocal,
+}: {
+  icon: LucideIcon;
+  title: string;
+  onOpenExternal: () => void;
+  onOpenLocal: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <SettingsRow
+      icon={icon}
+      title={title}
+      trailing={
+        <View style={styles.rowActions}>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={`Open ${title} website`}
+            hitSlop={4}
+            onPress={onOpenExternal}
+            style={({ pressed }) => [styles.rowAction, pressed && styles.pressed]}>
+            <ExternalLink size={18} color={theme.textSecondary} strokeWidth={2} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Open offline ${title}`}
+            hitSlop={4}
+            onPress={onOpenLocal}
+            style={({ pressed }) => [styles.rowAction, pressed && styles.pressed]}>
+            <ChevronRight size={18} color={theme.textSecondary} strokeWidth={2} />
+          </Pressable>
+        </View>
+      }
+    />
+  );
+}
+
 function SettingsRow({
+  icon,
   title,
   description,
   trailing,
   titleColor,
 }: {
+  icon?: LucideIcon;
   title: string;
   description?: string;
   trailing?: React.ReactNode;
   titleColor?: string;
 }) {
   const theme = useTheme();
+  const Icon = icon;
 
   return (
     <View style={[styles.row, { borderBottomColor: theme.backgroundSelected }]}>
+      {Icon !== undefined ? (
+        <View style={[styles.rowIcon, { backgroundColor: theme.accentBackground }]}>
+          <Icon size={18} color={theme.accent} strokeWidth={2} />
+        </View>
+      ) : null}
       <View style={styles.rowText}>
         <ThemedText style={titleColor === undefined ? undefined : { color: titleColor }}>
           {title}
@@ -515,6 +707,7 @@ const styles = StyleSheet.create({
   screen: {
     flexGrow: 1,
     alignItems: 'center',
+    paddingTop: Spacing.four,
     paddingBottom: Spacing.four,
   },
   screenContent: {
@@ -523,6 +716,7 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
     paddingHorizontal: Spacing.four,
   },
+  header: { gap: Spacing.one, paddingBottom: Spacing.two },
   section: {
     gap: Spacing.two,
   },
@@ -530,36 +724,77 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   sectionPanel: {
-    borderRadius: Spacing.three,
+    borderWidth: 1,
+    borderRadius: Radius.surface,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
-  controlGroup: {
-    gap: Spacing.two,
+  timeControl: {
+    alignItems: 'center',
+    gap: Spacing.one,
     padding: Spacing.three,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  nativeSegmentedControl: {
-    minHeight: 36,
-  },
-  accentGrid: {
+  timeLabel: { textAlign: 'center' },
+  timePickers: {
+    minHeight: 150,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  accentButton: {
-    width: 58,
-    minHeight: 58,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.one,
+    gap: Spacing.three,
+  },
+  timePickerColumn: {
+    width: '44%',
+    alignItems: 'center',
+    borderRadius: Radius.control,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+  },
+  timePicker: { width: '100%', minHeight: 140 },
+  themePicker: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    padding: Spacing.three,
+  },
+  themeOption: {
+    minHeight: 76,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: 14,
+    borderCurve: 'continuous',
+  },
+  accentControl: { gap: Spacing.two, paddingVertical: Spacing.three },
+  accentHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.three,
+  },
+  accentViewport: { height: 84, overflow: 'hidden' },
+  accentItem: {
+    width: accentItemWidth,
+    height: 80,
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingTop: Spacing.two,
   },
   accentSwatch: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
+  accentSelection: {
+    position: 'absolute',
+    top: 4,
+    width: 48,
+    height: 48,
+    borderWidth: 2,
+    borderRadius: 24,
+  },
+  accentHint: { textAlign: 'center', paddingHorizontal: Spacing.three },
   row: {
     minHeight: 72,
     flexDirection: 'row',
@@ -568,9 +803,27 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  rowIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    borderCurve: 'continuous',
+  },
   rowText: {
     flex: 1,
     gap: Spacing.one,
+  },
+  rowActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rowAction: {
+    width: 36,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pressed: {
     opacity: 0.72,

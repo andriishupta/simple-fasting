@@ -20,6 +20,7 @@ import {
   cancelScheduledNotification,
   scheduleFastEndNotification,
 } from '@/storage/notification-storage';
+import { updateFastingWidget } from '@/widgets/fasting-widget';
 
 const now = (): string => new Date().toISOString();
 
@@ -38,6 +39,7 @@ const createSessionId = (): string =>
 const saveActiveFastState = (activeFastState: ActiveFastState): ActiveFastState => {
   activeFastSnapshot = activeFastState;
   appStorage.insert(StorageKey.ActiveFast, activeFastState);
+  updateFastingWidget(activeFastState.session);
 
   return activeFastState;
 };
@@ -52,6 +54,7 @@ const saveHistoryState = (historyState: HistoryState): HistoryState => {
 export const refreshFastSnapshots = (): void => {
   activeFastSnapshot = readActiveFastState();
   historySnapshot = readHistoryState();
+  updateFastingWidget(activeFastSnapshot.session);
 };
 
 export const getActiveFastState = (): ActiveFastState => activeFastSnapshot;

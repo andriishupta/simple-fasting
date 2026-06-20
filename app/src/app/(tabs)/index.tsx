@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Alert,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,14 +10,22 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { Picker } from '@expo/ui/community/picker';
 import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import {
+  Check,
+  ChevronRight,
+  Infinity as InfinityIcon,
+  SlidersHorizontal,
+  SquarePen,
+  type LucideIcon,
+} from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 import { FeedbackState } from '@/components/feedback-state';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   cancelFast,
@@ -28,11 +37,18 @@ import {
   startFast,
   useActiveFastState,
 } from '@/storage/fasting-storage';
-import { getDefaultGoal, useSettings } from '@/storage/settings-storage';
+import {
+  setLastUsedGoalDurationHours,
+  useSettings,
+} from '@/storage/settings-storage';
 
 const customGoalId = 'custom-duration';
 const unlimitedGoalId = 'unlimited-duration';
 const maxCustomDurationHours = 7 * 24;
+const durationDays = Array.from({ length: 8 }, (_, day) => day);
+const durationHours = Array.from({ length: 24 }, (_, hour) => hour);
+const durationHoursWithoutZero = durationHours.slice(1);
+const bottomActionInset = process.env.EXPO_OS === 'ios' ? 152 : 96;
 
 const getInitialGoalId = (
   goals: readonly { id: string; targetDurationHours: number }[],
@@ -57,25 +73,39 @@ const formatDateTime = (date: Date): string =>
   new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 
 export default function HomeScreen() {
+  const { height } = useWindowDimensions();
   const settings = useSettings();
   const activeFastState = useActiveFastState();
-  const defaultGoal = getDefaultGoal(settings);
+  const enabledGoals = settings.goals.filter((goal) => goal.isEnabled);
+  const storedGoal =
+    enabledGoals.find(
+      (goal) => goal.targetDurationHours === settings.lastUsedGoalDurationHours,
+    ) ??
+    enabledGoals.find((goal) => goal.id === 'goal-16-hours') ??
+    enabledGoals[0] ??
+    settings.goals[0];
   const [selectedGoalId, setSelectedGoalId] = useState(() =>
-    getInitialGoalId(settings.goals, settings.lastUsedGoalDurationHours),
+    getInitialGoalId(
+      settings.goals.filter((goal) => goal.isEnabled),
+      settings.lastUsedGoalDurationHours,
+    ),
   );
   const [customDurationHours, setCustomDurationHours] = useState(() =>
     Math.max(1, settings.lastUsedGoalDurationHours || 24),
   );
   const [reason, setReason] = useState('');
+  const [noteVisible, setNoteVisible] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [operationError, setOperationError] = useState<string | null>(null);
   const activeSession = activeFastState.session;
+  const shouldScroll =
+    height < 700 || activeSession !== null || operationError !== null || noteVisible;
   const effectiveSelectedGoalId =
     selectedGoalId === customGoalId ||
     selectedGoalId === unlimitedGoalId ||
-    settings.goals.some((goal) => goal.id === selectedGoalId)
+    enabledGoals.some((goal) => goal.id === selectedGoalId)
       ? selectedGoalId
-      : getInitialGoalId(settings.goals, settings.lastUsedGoalDurationHours);
+      : getInitialGoalId(enabledGoals, settings.lastUsedGoalDurationHours);
 
   useEffect(() => {
     if (activeSession === null) return;
@@ -85,13 +115,28 @@ export default function HomeScreen() {
   }, [activeSession]);
 
   const selectedGoal =
-    settings.goals.find((goal) => goal.id === effectiveSelectedGoalId) ?? defaultGoal;
+    enabledGoals.find((goal) => goal.id === effectiveSelectedGoalId) ?? storedGoal;
   const selectedDurationHours =
     effectiveSelectedGoalId === unlimitedGoalId
       ? 0
       : effectiveSelectedGoalId === customGoalId
         ? customDurationHours
         : selectedGoal.targetDurationHours;
+  const selectGoal = (goalId: string): void => {
+    const durationHours =
+      goalId === unlimitedGoalId
+        ? 0
+        : goalId === customGoalId
+          ? customDurationHours
+          : (enabledGoals.find((goal) => goal.id === goalId)?.targetDurationHours ?? 16);
+
+    setSelectedGoalId(goalId);
+    setLastUsedGoalDurationHours(durationHours);
+  };
+  const updateCustomDuration = (hours: number): void => {
+    setCustomDurationHours(hours);
+    setLastUsedGoalDurationHours(hours);
+  };
 
   const startSelectedFast = async (): Promise<void> => {
     try {
@@ -100,6 +145,7 @@ export default function HomeScreen() {
         reason: reason.trim() || null,
       });
       setReason('');
+      setNoteVisible(false);
       setCurrentTime(Date.now());
       setOperationError(null);
     } catch {
@@ -134,13 +180,19 @@ export default function HomeScreen() {
 
   return (
     <ScrollView
+      style={styles.scroll}
+      scrollEnabled={shouldScroll}
+      bounces={shouldScroll}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.scrollContent}>
       <View style={styles.content}>
-        <Header />
-
+        <View style={styles.header}>
+          <ThemedText type="subtitle" accessibilityRole="header">
+            Simple Fasting
+          </ThemedText>
+        </View>
         {operationError !== null ? (
           <FeedbackState
             kind="error"
@@ -152,13 +204,15 @@ export default function HomeScreen() {
 
         {activeSession === null ? (
           <ReadyToFast
-            goals={settings.goals}
+            goals={enabledGoals}
             selectedGoalId={effectiveSelectedGoalId}
-            onSelectGoal={setSelectedGoalId}
+            onSelectGoal={selectGoal}
             customDurationHours={customDurationHours}
-            onCustomDurationChange={setCustomDurationHours}
+            onCustomDurationChange={updateCustomDuration}
             reason={reason}
             onReasonChange={setReason}
+            noteVisible={noteVisible}
+            onNoteVisibilityChange={setNoteVisible}
             onStart={() => void startSelectedFast()}
           />
         ) : (
@@ -183,26 +237,6 @@ export default function HomeScreen() {
   );
 }
 
-function Header() {
-  const theme = useTheme();
-
-  return (
-    <View style={styles.header}>
-      <ThemedText type="subtitle" accessibilityRole="header">
-        Fast
-      </ThemedText>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Settings"
-        hitSlop={12}
-        onPress={() => router.push('/settings')}
-        style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}>
-        <SymbolView name="gear" size={24} tintColor={theme.text} />
-      </Pressable>
-    </View>
-  );
-}
-
 function ReadyToFast({
   goals,
   selectedGoalId,
@@ -211,6 +245,8 @@ function ReadyToFast({
   onCustomDurationChange,
   reason,
   onReasonChange,
+  noteVisible,
+  onNoteVisibilityChange,
   onStart,
 }: {
   goals: readonly { id: string; name: string; targetDurationHours: number }[];
@@ -220,86 +256,334 @@ function ReadyToFast({
   onCustomDurationChange: (hours: number) => void;
   reason: string;
   onReasonChange: (reason: string) => void;
+  noteVisible: boolean;
+  onNoteVisibilityChange: (visible: boolean) => void;
   onStart: () => void;
 }) {
   const theme = useTheme();
+  const { height } = useWindowDimensions();
+  const [durationPickerVisible, setDurationPickerVisible] = useState(false);
+  const [draftDurationHours, setDraftDurationHours] = useState(customDurationHours);
+  const selectedGoal = goals.find((goal) => goal.id === selectedGoalId);
+  const selectedDuration =
+    selectedGoalId === unlimitedGoalId
+      ? 0
+      : selectedGoalId === customGoalId
+        ? customDurationHours
+        : (selectedGoal?.targetDurationHours ?? customDurationHours);
+  const selectedGoalName =
+    selectedGoalId === unlimitedGoalId
+      ? 'Open-ended Fast'
+      : selectedGoalId === customGoalId
+        ? 'Custom Duration'
+        : (selectedGoal?.name ?? 'Fasting Goal');
+
+  const openDurationPicker = (): void => {
+    setDraftDurationHours(customDurationHours);
+    setDurationPickerVisible(true);
+  };
 
   return (
-    <ThemedView style={styles.ready}>
-      <View style={styles.intro}>
-        <ThemedText type="subtitle" style={styles.centeredTitle}>
-          How long would you like to fast?
+    <View style={styles.ready}>
+      <View style={styles.hero}>
+        <ThemedText type="small" themeColor="textSecondary">
+          YOUR FASTING GOAL
         </ThemedText>
-        <ThemedText themeColor="textSecondary" style={styles.centeredText}>
-          You can change this anytime.
+        <ThemedText
+          selectable
+          style={[styles.goalHero, selectedGoalId === customGoalId && styles.customGoalHero]}>
+          {selectedGoalName}
+        </ThemedText>
+        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.goalDurationLabel}>
+          {selectedDuration === 0 ? 'No time limit' : formatGoalDuration(selectedDuration)}
         </ThemedText>
       </View>
 
-      <View style={styles.goalGrid}>
+      <View style={styles.presetRow}>
         {goals.map((goal) => (
           <GoalButton
             key={goal.id}
-            label={`${goal.targetDurationHours}h`}
+            label={goal.name}
             selected={goal.id === selectedGoalId}
             onPress={() => onSelectGoal(goal.id)}
           />
         ))}
       </View>
-      <View style={styles.goalGrid}>
-        <GoalButton
-          label="Custom"
-          icon="slider.horizontal.3"
-          wide
+
+      <View
+        style={[
+          styles.options,
+          { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
+        ]}>
+        <CustomDurationRow
+          icon={SlidersHorizontal}
+          value={formatGoalDuration(customDurationHours)}
           selected={selectedGoalId === customGoalId}
-          onPress={() => onSelectGoal(customGoalId)}
+          onSelect={() => onSelectGoal(customGoalId)}
+          onEdit={openDurationPicker}
         />
-        <GoalButton
-          label="Unlimited"
-          icon="infinity"
-          wide
+        <View style={[styles.optionDivider, { backgroundColor: theme.backgroundSelected }]} />
+        <OptionRow
+          icon={InfinityIcon}
+          label="Open-ended fast"
           selected={selectedGoalId === unlimitedGoalId}
+          showsChevron={false}
           onPress={() => onSelectGoal(unlimitedGoalId)}
+        />
+        <View style={[styles.optionDivider, { backgroundColor: theme.backgroundSelected }]} />
+        <FastNoteToggle
+          icon={SquarePen}
+          value={noteVisible}
+          onValueChange={(visible) => {
+            onNoteVisibilityChange(visible);
+            if (!visible) onReasonChange('');
+          }}
         />
       </View>
 
-      {selectedGoalId === customGoalId ? (
-        <DurationStepper
-          value={customDurationHours}
-          onChange={onCustomDurationChange}
-        />
-      ) : null}
-
-      <View style={styles.fieldGroup}>
-        <ThemedText type="small">Why are you fasting? (optional)</ThemedText>
+      {noteVisible ? (
         <TextInput
           accessibilityLabel="Reason for fasting"
           value={reason}
           onChangeText={onReasonChange}
-          placeholder="Add a reason…"
+          placeholder="Why are you fasting?"
           placeholderTextColor={theme.textSecondary}
           returnKeyType="done"
+          autoFocus={reason.length === 0}
           style={[
             styles.input,
-            { color: theme.text, borderColor: theme.backgroundSelected },
+            {
+              color: theme.text,
+              backgroundColor: theme.background,
+              borderColor: theme.backgroundSelected,
+            },
           ]}
         />
+      ) : null}
+
+      <View style={[styles.readyFooter, height >= 700 && styles.readyFooterAnchored]}>
+        <ActionButton label="Start fast" onPress={onStart} />
       </View>
 
-      <ActionButton label="Start fast" onPress={onStart} />
-    </ThemedView>
+      <DurationPickerSheet
+        visible={durationPickerVisible}
+        value={draftDurationHours}
+        onChange={setDraftDurationHours}
+        onCancel={() => setDurationPickerVisible(false)}
+        onDone={() => {
+          onSelectGoal(customGoalId);
+          onCustomDurationChange(draftDurationHours);
+          setDurationPickerVisible(false);
+        }}
+      />
+    </View>
   );
 }
 
+function CustomDurationRow({
+  icon,
+  value,
+  selected,
+  onSelect,
+  onEdit,
+}: {
+  icon: LucideIcon;
+  value: string;
+  selected: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+}) {
+  const theme = useTheme();
+  const Icon = icon;
+
+  return (
+    <View style={styles.optionRow}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Select custom duration"
+        accessibilityState={{ selected }}
+        onPress={onSelect}
+        style={({ pressed }) => [styles.optionPrimary, pressed && styles.pressed]}>
+        <View style={[styles.optionIcon, { backgroundColor: theme.accentBackground }]}>
+          <Icon size={18} color={theme.accent} strokeWidth={2} />
+        </View>
+        <ThemedText style={styles.optionLabel}>Custom duration</ThemedText>
+        {selected ? <Check size={16} color={theme.accent} strokeWidth={2.5} /> : null}
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Edit custom duration, currently ${value}`}
+        onPress={onEdit}
+        hitSlop={8}
+        style={({ pressed }) => [styles.optionEdit, pressed && styles.pressed]}>
+        <ThemedText type="small" themeColor="textSecondary">
+          {value}
+        </ThemedText>
+        <ChevronRight size={16} color={theme.textSecondary} />
+      </Pressable>
+    </View>
+  );
+}
+
+function FastNoteToggle({
+  icon,
+  value,
+  onValueChange,
+}: {
+  icon: LucideIcon;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+}) {
+  const theme = useTheme();
+  const Icon = icon;
+
+  return (
+    <View style={styles.optionRow}>
+      <View style={[styles.optionIcon, { backgroundColor: theme.accentBackground }]}>
+        <Icon size={18} color={theme.accent} strokeWidth={2} />
+      </View>
+      <View style={styles.optionLabel}>
+        <ThemedText>Note</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Optional
+        </ThemedText>
+      </View>
+      <Switch
+        accessibilityLabel="Note"
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ true: theme.accent }}
+      />
+    </View>
+  );
+}
+
+function OptionRow({
+  icon,
+  label,
+  value,
+  selected = false,
+  showsChevron = true,
+  onPress,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value?: string;
+  selected?: boolean;
+  showsChevron?: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const Icon = icon;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => [styles.optionRow, pressed && styles.pressed]}>
+      <View style={[styles.optionIcon, { backgroundColor: theme.accentBackground }]}>
+        <Icon size={18} color={theme.accent} strokeWidth={2} />
+      </View>
+      <ThemedText style={styles.optionLabel}>{label}</ThemedText>
+      {value !== undefined ? (
+        <ThemedText type="small" themeColor="textSecondary">
+          {value}
+        </ThemedText>
+      ) : null}
+      {selected ? <Check size={16} color={theme.accent} strokeWidth={2.5} /> : null}
+      {showsChevron ? <ChevronRight size={16} color={theme.textSecondary} /> : null}
+    </Pressable>
+  );
+}
+
+function DurationPickerSheet({
+  visible,
+  value,
+  onChange,
+  onCancel,
+  onDone,
+}: {
+  visible: boolean;
+  value: number;
+  onChange: (value: number) => void;
+  onCancel: () => void;
+  onDone: () => void;
+}) {
+  const theme = useTheme();
+  const days = Math.floor(value / 24);
+  const hours = value % 24;
+  const hourValues =
+    days >= 7 ? [0] : days === 0 ? durationHoursWithoutZero : durationHours;
+
+  return (
+    <Modal
+      animationType="slide"
+      presentationStyle="formSheet"
+      visible={visible}
+      onRequestClose={onCancel}>
+      <SafeAreaView style={[styles.sheet, { backgroundColor: theme.background }]}>
+        <View style={[styles.sheetHeader, { borderBottomColor: theme.backgroundSelected }]}>
+          <Pressable accessibilityRole="button" onPress={onCancel} hitSlop={12}>
+            <ThemedText style={{ color: theme.accent }}>Cancel</ThemedText>
+          </Pressable>
+          <ThemedText type="smallBold">Custom duration</ThemedText>
+          <Pressable accessibilityRole="button" onPress={onDone} hitSlop={12}>
+            <ThemedText type="smallBold" style={{ color: theme.accent }}>
+              Done
+            </ThemedText>
+          </Pressable>
+        </View>
+        <View style={styles.pickers}>
+          <View style={[styles.pickerColumn, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.pickerLabel}>
+              DAYS
+            </ThemedText>
+            <Picker
+              selectedValue={String(days)}
+              onValueChange={(nextDays) => {
+                const parsedDays = Number(nextDays);
+                const nextHours = parsedDays === 7 ? 0 : parsedDays === 0 && hours === 0 ? 1 : hours;
+                onChange(Math.min(maxCustomDurationHours, parsedDays * 24 + nextHours));
+              }}
+              style={styles.picker}>
+              {durationDays.map((day) => (
+                <Picker.Item key={day} label={String(day)} value={String(day)} />
+              ))}
+            </Picker>
+          </View>
+          <View style={[styles.pickerColumn, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.pickerLabel}>
+              HOURS
+            </ThemedText>
+            <Picker
+              selectedValue={String(hours)}
+              onValueChange={(nextHours) =>
+                onChange(Math.min(maxCustomDurationHours, days * 24 + Number(nextHours)))
+              }
+              style={styles.picker}>
+              {hourValues.map((hour) => (
+                <Picker.Item key={hour} label={String(hour)} value={String(hour)} />
+              ))}
+            </Picker>
+          </View>
+        </View>
+        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.centeredText}>
+          Not medical advice.
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.centeredText}>
+          Maximum duration is 7 days.
+        </ThemedText>
+      </SafeAreaView>
+    </Modal>
+  );
+}
 function GoalButton({
   label,
-  icon,
-  wide = false,
   selected,
   onPress,
 }: {
   label: string;
-  icon?: 'slider.horizontal.3' | 'infinity';
-  wide?: boolean;
   selected: boolean;
   onPress: () => void;
 }) {
@@ -312,60 +596,17 @@ function GoalButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.goal,
-        wide ? styles.goalWide : styles.goalPreset,
-        { borderColor: selected ? theme.accent : theme.backgroundSelected },
-        selected && { backgroundColor: theme.accent },
+        {
+          backgroundColor: selected ? theme.accent : theme.background,
+          borderColor: selected ? theme.accent : theme.backgroundSelected,
+        },
         pressed && styles.pressed,
       ]}>
-      {icon !== undefined ? (
-        <SymbolView
-          name={icon}
-          size={20}
-          tintColor={selected ? theme.accentForeground : theme.textSecondary}
-        />
-      ) : null}
       <ThemedText
         type="default"
         style={selected ? { color: theme.accentForeground } : undefined}>
         {label}
       </ThemedText>
-    </Pressable>
-  );
-}
-
-function DurationStepper({ value, onChange }: { value: number; onChange: (value: number) => void }) {
-  return (
-    <View style={styles.stepperRow}>
-      <StepperButton label="−" onPress={() => onChange(Math.max(1, value - 1))} />
-      <View style={styles.stepperValue}>
-        <ThemedText type="subtitle" selectable>
-          {value}h
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          Custom duration
-        </ThemedText>
-      </View>
-      <StepperButton
-        label="+"
-        onPress={() => onChange(Math.min(maxCustomDurationHours, value + 1))}
-      />
-    </View>
-  );
-}
-
-function StepperButton({ label, onPress }: { label: string; onPress: () => void }) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label === '+' ? 'Add one hour' : 'Remove one hour'}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.stepperButton,
-        { backgroundColor: theme.backgroundElement },
-        pressed && styles.pressed,
-      ]}>
-      <ThemedText type="subtitle">{label}</ThemedText>
     </Pressable>
   );
 }
@@ -403,7 +644,13 @@ function ActiveFast({
   const endDate = goalSeconds === null ? null : new Date(startedDate.getTime() + goalSeconds * 1000);
 
   return (
-    <ThemedView style={styles.active}>
+    <View style={styles.active}>
+      <View style={[styles.statusPill, { backgroundColor: theme.accentBackground }]}>
+        <View style={[styles.statusDot, { backgroundColor: theme.accent }]} />
+        <ThemedText type="smallBold" style={{ color: theme.accent }}>
+          Fasting
+        </ThemedText>
+      </View>
       <ProgressRing
         size={ringSize}
         progress={progress}
@@ -430,7 +677,11 @@ function ActiveFast({
         </Pressable>
       </ProgressRing>
 
-      <View style={styles.metrics}>
+      <View
+        style={[
+          styles.metrics,
+          { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
+        ]}>
         <Metric label="Started" value={formatDateTime(startedDate)} />
         <View style={[styles.metricDivider, { backgroundColor: theme.backgroundSelected }]} />
         <Metric label="Ends" value={endDate === null ? 'No planned end' : formatDateTime(endDate)} />
@@ -443,7 +694,11 @@ function ActiveFast({
       ) : null}
 
       {goalSeconds !== null ? (
-        <View style={styles.reminderRow}>
+        <View
+          style={[
+            styles.reminderRow,
+            { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
+          ]}>
           <View style={styles.reminderText}>
             <ThemedText>Fast reminder</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
@@ -466,7 +721,7 @@ function ActiveFast({
         style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}>
         <ThemedText style={{ color: theme.accent }}>Cancel fast</ThemedText>
       </Pressable>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -552,66 +807,149 @@ function ActionButton({
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { flexGrow: 1, alignItems: 'center', paddingBottom: Spacing.four },
+  scroll: { flex: 1 },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.two,
+  },
   content: {
     width: '100%',
     maxWidth: Math.min(MaxContentWidth, 560),
     flex: 1,
-    gap: Spacing.four,
+    gap: Spacing.three,
     paddingHorizontal: Spacing.four,
   },
-  header: {
-    minHeight: 64,
-    flexDirection: 'row',
+  header: { alignItems: 'flex-start' },
+  ready: { flex: 1, gap: Spacing.three },
+  hero: {
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: Spacing.one,
+    paddingTop: Spacing.two,
+    paddingHorizontal: Spacing.four,
   },
-  headerButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  ready: { flex: 1, gap: Spacing.four, paddingTop: Spacing.four },
-  intro: { alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.four },
-  centeredTitle: { textAlign: 'center', fontSize: 28, lineHeight: 34 },
+  goalHero: {
+    textAlign: 'center',
+    fontSize: 40,
+    lineHeight: 46,
+    fontWeight: '700',
+  },
+  customGoalHero: { fontSize: 34, lineHeight: 40 },
+  goalDurationLabel: { textAlign: 'center', fontVariant: ['tabular-nums'] },
   centeredText: { textAlign: 'center' },
-  goalGrid: { flexDirection: 'row', gap: Spacing.two },
+  presetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: Spacing.two,
+  },
   goal: {
-    minHeight: 58,
+    minWidth: 56,
+    minHeight: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.two,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: Radius.pill,
     borderCurve: 'continuous',
     paddingHorizontal: Spacing.two,
   },
-  goalPreset: { flex: 1 },
-  goalWide: { flex: 1 },
-  fieldGroup: { gap: Spacing.two },
+  options: {
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderRadius: Radius.surface,
+    borderCurve: 'continuous',
+  },
+  optionRow: {
+    minHeight: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.three,
+  },
+  optionIcon: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.control,
+    borderCurve: 'continuous',
+  },
+  optionLabel: { flex: 1 },
+  optionPrimary: {
+    minHeight: 60,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  optionEdit: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  optionDivider: { height: StyleSheet.hairlineWidth, marginLeft: 64 },
   input: {
     minHeight: 56,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: Radius.control,
     borderCurve: 'continuous',
     paddingHorizontal: Spacing.three,
     fontSize: 16,
   },
-  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
-  stepperButton: {
-    width: 52,
-    height: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    borderCurve: 'continuous',
+  readyFooter: { minHeight: 56, justifyContent: 'flex-end' },
+  readyFooterAnchored: {
+    position: 'absolute',
+    right: 0,
+    bottom: bottomActionInset,
+    left: 0,
   },
-  stepperValue: { flex: 1, alignItems: 'center' },
   actionButton: {
     minHeight: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
+    borderRadius: Radius.control,
     borderCurve: 'continuous',
   },
-  active: { alignItems: 'center', gap: Spacing.four, paddingTop: Spacing.two },
+  sheet: { flex: 1 },
+  sheetHeader: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: Spacing.three,
+  },
+  pickers: {
+    minHeight: 220,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.three,
+    margin: Spacing.three,
+    paddingHorizontal: Spacing.two,
+  },
+  pickerColumn: {
+    width: '44%',
+    alignItems: 'center',
+    borderRadius: Radius.control,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+  },
+  pickerLabel: { textAlign: 'center' },
+  picker: { width: '100%', minHeight: 180 },
+  active: { alignItems: 'center', gap: Spacing.four, paddingTop: Spacing.three },
+  statusPill: {
+    minHeight: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderRadius: 16,
+    paddingHorizontal: Spacing.three,
+  },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
   timerContent: {
     position: 'absolute',
     inset: 0,
@@ -620,10 +958,29 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   timer: { fontVariant: ['tabular-nums'], fontSize: 42, lineHeight: 50 },
-  metrics: { width: '100%', flexDirection: 'row', alignItems: 'stretch' },
+  metrics: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    borderWidth: 1,
+    borderRadius: 18,
+    borderCurve: 'continuous',
+    paddingVertical: Spacing.three,
+  },
   metric: { flex: 1, alignItems: 'center', gap: Spacing.one, paddingHorizontal: Spacing.two },
   metricDivider: { width: 1 },
-  reminderRow: { width: '100%', minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  reminderRow: {
+    width: '100%',
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    borderWidth: 1,
+    borderRadius: 18,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
   reminderText: { flex: 1, gap: Spacing.one },
   cancelButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.68 },

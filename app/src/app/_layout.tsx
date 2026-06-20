@@ -110,6 +110,26 @@ function RootLayoutContent() {
               headerBackButtonDisplayMode: 'minimal',
             }}
           />
+          <Stack.Screen
+            name="faq"
+            options={{ title: 'FAQ', headerShown: true, headerBackButtonDisplayMode: 'minimal' }}
+          />
+          <Stack.Screen
+            name="privacy"
+            options={{
+              title: 'Privacy Policy',
+              headerShown: true,
+              headerBackButtonDisplayMode: 'minimal',
+            }}
+          />
+          <Stack.Screen
+            name="terms"
+            options={{
+              title: 'Terms of Use',
+              headerShown: true,
+              headerBackButtonDisplayMode: 'minimal',
+            }}
+          />
         </Stack>
       ) : (
         <StartupScreen

@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type AppButtonVariant = 'primary' | 'secondary' | 'danger';
@@ -63,7 +63,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.control,
+    borderCurve: 'continuous',
     paddingHorizontal: Spacing.three,
   },
   fullWidth: {

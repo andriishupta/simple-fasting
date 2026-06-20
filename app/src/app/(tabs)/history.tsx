@@ -8,8 +8,8 @@ import {
   type GestureResponderEvent,
 } from 'react-native';
 import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { SegmentedControl as ExpoSegmentedControl } from '@expo/ui/community/segmented-control';
+import { Pencil, Trash2, type LucideIcon } from 'lucide-react-native';
 
 import { AppSurface } from '@/components/app-surface';
 import {
@@ -22,7 +22,7 @@ import {
 } from '@/components/graphs/simple-graphs';
 import { FeedbackState } from '@/components/feedback-state';
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
   deleteFastSession,
   formatDuration,
@@ -236,7 +236,7 @@ export default function DataScreen() {
       contentContainerStyle={styles.screen}>
       <View style={styles.screenContent}>
         <ThemedText type="subtitle" accessibilityRole="header">
-          History
+          Simple Fasting Data
         </ThemedText>
         <DataPanel showActiveFast />
       </View>
@@ -388,7 +388,7 @@ function HistoryItem({ session }: { session: FastSession }) {
       onPress={editSession}
       style={({ pressed }) => [
         styles.item,
-        { borderColor: theme.backgroundSelected },
+        { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
         pressed && styles.pressed,
       ]}>
       <View style={styles.itemText}>
@@ -401,10 +401,10 @@ function HistoryItem({ session }: { session: FastSession }) {
         />
       </View>
       <View style={styles.itemActions}>
-        <IconButton label="Edit fast" symbol={{ ios: 'pencil', android: 'edit', web: 'edit' }} onPress={editSession} />
+        <IconButton label="Edit fast" icon={Pencil} onPress={editSession} />
         <IconButton
           label="Delete fast"
-          symbol={{ ios: 'trash', android: 'delete', web: 'delete' }}
+          icon={Trash2}
           onPress={deleteSession}
         />
       </View>
@@ -414,14 +414,15 @@ function HistoryItem({ session }: { session: FastSession }) {
 
 function IconButton({
   label,
-  symbol,
+  icon,
   onPress,
 }: {
   label: string;
-  symbol: { ios: 'pencil' | 'trash'; android: 'edit' | 'delete'; web: 'edit' | 'delete' };
+  icon: LucideIcon;
   onPress: (event: GestureResponderEvent) => void;
 }) {
   const theme = useTheme();
+  const Icon = icon;
 
   return (
     <Pressable
@@ -429,16 +430,7 @@ function IconButton({
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-      <SymbolView
-        name={symbol}
-        size={20}
-        tintColor={theme.textSecondary}
-        fallback={
-          <ThemedText type="small" themeColor="textSecondary">
-            {label}
-          </ThemedText>
-        }
-      />
+      <Icon size={20} color={theme.textSecondary} strokeWidth={2} />
     </Pressable>
   );
 }
@@ -602,7 +594,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.surface,
+    borderCurve: 'continuous',
     padding: Spacing.three,
   },
   itemText: {

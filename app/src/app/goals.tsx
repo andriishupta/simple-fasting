@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { AppSurface } from '@/components/app-surface';
@@ -7,11 +7,11 @@ import { FeedbackState } from '@/components/feedback-state';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { type FastingGoal } from '@/storage/app-storage';
+import { FastingGoalType, type FastingGoal } from '@/storage/app-storage';
 import {
   createFastingGoal,
   deleteFastingGoal,
-  setDefaultFastingGoal,
+  setFastingGoalEnabled,
   updateFastingGoal,
   useSettings,
 } from '@/storage/settings-storage';
@@ -119,6 +119,8 @@ export default function GoalsScreen() {
   };
 
   const confirmDelete = (goal: FastingGoal): void => {
+    if (goal.type === FastingGoalType.Standard) return;
+
     Alert.alert(
       'Delete goal?',
       `Remove “${goal.name}”? Existing fasting history will keep its recorded duration.`,
@@ -155,7 +157,7 @@ export default function GoalsScreen() {
       contentContainerStyle={styles.screen}>
       <View style={styles.content}>
         <ThemedText themeColor="textSecondary">
-          Goals appear on the Fast screen. One goal is always kept as the default.
+          Standard goals can be shown or hidden. Custom goals can be edited or deleted.
         </ThemedText>
 
         <View style={styles.goalList}>
@@ -163,45 +165,53 @@ export default function GoalsScreen() {
             <AppSurface key={goal.id} style={styles.goalCard}>
               <View style={styles.goalHeader}>
                 <View style={styles.goalText}>
-                  <ThemedText type="smallBold" selectable>
-                    {goal.name}
-                  </ThemedText>
+                  <View style={styles.goalNameRow}>
+                    <ThemedText type="smallBold" selectable>
+                      {goal.name}
+                    </ThemedText>
+                    <View style={[styles.typeBadge, { backgroundColor: theme.backgroundSelected }]}>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {goal.type === FastingGoalType.Standard ? 'Standard' : 'Custom'}
+                      </ThemedText>
+                    </View>
+                  </View>
                   <ThemedText type="small" themeColor="textSecondary" selectable>
                     {formatGoalDuration(goal.targetDurationHours)}
                   </ThemedText>
                 </View>
-                {goal.isDefault ? (
-                  <View style={[styles.badge, { backgroundColor: theme.accentBackground }]}>
-                    <ThemedText type="smallBold" themeColor="accent">
-                      Default
-                    </ThemedText>
-                  </View>
-                ) : null}
               </View>
 
               <View style={styles.actions}>
-                {!goal.isDefault ? (
-                  <AppButton
-                    label="Make default"
-                    variant="secondary"
-                    onPress={() => {
-                      try {
-                        setDefaultFastingGoal(goal.id);
-                      } catch {
-                        Alert.alert('Default not changed', 'Your saved goals were not changed.');
-                      }
-                    }}
-                  />
+                {goal.type === FastingGoalType.Standard ? (
+                  <View style={styles.visibilityControl}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Show on Fast screen
+                    </ThemedText>
+                    <Switch
+                      accessibilityLabel={`Show ${goal.name} on Fast screen`}
+                      value={goal.isEnabled}
+                      onValueChange={(isEnabled) => {
+                        if (!setFastingGoalEnabled(goal.id, isEnabled)) {
+                          Alert.alert('Goal required', 'At least one fasting goal must stay enabled.');
+                        }
+                      }}
+                      trackColor={{ true: theme.accent }}
+                    />
+                  </View>
                 ) : null}
-                <AppButton
-                  label="Edit"
-                  variant="secondary"
-                  onPress={() => {
-                    setDraft(createGoalDraft(goal));
-                    setValidationError(null);
-                  }}
-                />
-                <AppButton label="Delete" variant="danger" onPress={() => confirmDelete(goal)} />
+                {goal.type === FastingGoalType.Custom ? (
+                  <>
+                    <AppButton
+                      label="Edit"
+                      variant="secondary"
+                      onPress={() => {
+                        setDraft(createGoalDraft(goal));
+                        setValidationError(null);
+                      }}
+                    />
+                    <AppButton label="Delete" variant="danger" onPress={() => confirmDelete(goal)} />
+                  </>
+                ) : null}
               </View>
             </AppSurface>
           ))}
@@ -328,15 +338,28 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: Spacing.one,
   },
-  badge: {
+  goalNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  typeBadge: {
     borderRadius: 999,
     paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
+    paddingVertical: Spacing.half,
   },
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
+  },
+  visibilityControl: {
+    width: '100%',
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   editor: {
     gap: Spacing.three,

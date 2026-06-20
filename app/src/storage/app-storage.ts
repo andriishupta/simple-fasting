@@ -45,6 +45,11 @@ export enum GoalKind {
   Duration = 'duration',
 }
 
+export enum FastingGoalType {
+  Standard = 'standard',
+  Custom = 'custom',
+}
+
 export type Timestamp = string;
 
 export type StorageMetadata = {
@@ -58,9 +63,10 @@ export type StorageMetadata = {
 export type FastingGoal = {
   id: string;
   kind: GoalKind.Duration;
+  type: FastingGoalType;
   name: string;
   targetDurationHours: number;
-  isDefault: boolean;
+  isEnabled: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };
@@ -167,36 +173,50 @@ export const createDefaultGoals = (createdAt: Timestamp): readonly FastingGoal[]
   {
     id: 'goal-12-hours',
     kind: GoalKind.Duration,
-    name: '12 hours',
+    type: FastingGoalType.Standard,
+    name: '12:12',
     targetDurationHours: 12,
-    isDefault: false,
+    isEnabled: true,
     createdAt,
     updatedAt: createdAt,
   },
   {
     id: 'goal-14-hours',
     kind: GoalKind.Duration,
-    name: '14 hours',
+    type: FastingGoalType.Standard,
+    name: '14:10',
     targetDurationHours: 14,
-    isDefault: false,
+    isEnabled: true,
     createdAt,
     updatedAt: createdAt,
   },
   {
     id: 'goal-16-hours',
     kind: GoalKind.Duration,
-    name: '16 hours',
+    type: FastingGoalType.Standard,
+    name: '16:8',
     targetDurationHours: 16,
-    isDefault: true,
+    isEnabled: true,
     createdAt,
     updatedAt: createdAt,
   },
   {
     id: 'goal-18-hours',
     kind: GoalKind.Duration,
-    name: '18 hours',
+    type: FastingGoalType.Standard,
+    name: '18:6',
     targetDurationHours: 18,
-    isDefault: false,
+    isEnabled: true,
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: 'goal-20-hours',
+    kind: GoalKind.Duration,
+    type: FastingGoalType.Standard,
+    name: '20:4',
+    targetDurationHours: 20,
+    isEnabled: true,
     createdAt,
     updatedAt: createdAt,
   },

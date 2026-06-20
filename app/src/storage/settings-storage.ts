@@ -10,6 +10,7 @@ import {
   createDefaultAppSettings,
   StorageKey,
   AccentColorName,
+  FastingGoalType,
   GoalKind,
   ThemePreference,
   type AccentColorName as AccentColorNameType,
@@ -226,9 +227,10 @@ export const createFastingGoal = ({
   const goal: FastingGoal = {
     id: createGoalId(),
     kind: GoalKind.Duration,
+    type: FastingGoalType.Custom,
     name,
     targetDurationHours,
-    isDefault: getSettings().goals.length === 0,
+    isEnabled: true,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -254,7 +256,7 @@ export const updateFastingGoal = ({
   const settings = getSettings();
   const currentGoal = settings.goals.find((goal) => goal.id === goalId);
 
-  if (currentGoal === undefined) {
+  if (currentGoal === undefined || currentGoal.type === FastingGoalType.Standard) {
     return undefined;
   }
 
@@ -281,52 +283,68 @@ export const updateFastingGoal = ({
   return goal;
 };
 
-export const setDefaultFastingGoal = (goalId: string): boolean => {
+export const deleteFastingGoal = (goalId: string): boolean => {
   const settings = getSettings();
-  const defaultGoal = settings.goals.find((goal) => goal.id === goalId);
+  const deletedGoal = settings.goals.find((goal) => goal.id === goalId);
 
-  if (defaultGoal === undefined) {
+  if (
+    deletedGoal === undefined ||
+    deletedGoal.type === FastingGoalType.Standard ||
+    settings.goals.length <= 1
+  ) {
     return false;
   }
 
+  const remainingGoals = settings.goals.filter((goal) => goal.id !== goalId);
+  const fallbackGoal =
+    remainingGoals.find((goal) => goal.id === 'goal-16-hours' && goal.isEnabled) ??
+    remainingGoals.find((goal) => goal.isEnabled) ??
+    remainingGoals[0];
   const timestamp = now();
 
   updateSettings((currentSettings) => ({
     ...currentSettings,
-    goals: currentSettings.goals.map((goal) => ({
-      ...goal,
-      isDefault: goal.id === goalId,
-      updatedAt: goal.id === goalId || goal.isDefault ? timestamp : goal.updatedAt,
-    })),
-    lastUsedGoalDurationHours: defaultGoal.targetDurationHours,
+    goals: remainingGoals,
+    lastUsedGoalDurationHours:
+      currentSettings.lastUsedGoalDurationHours === deletedGoal.targetDurationHours
+        ? fallbackGoal.targetDurationHours
+        : currentSettings.lastUsedGoalDurationHours,
     updatedAt: timestamp,
   }));
 
   return true;
 };
 
-export const deleteFastingGoal = (goalId: string): boolean => {
+export const setFastingGoalEnabled = (goalId: string, isEnabled: boolean): boolean => {
   const settings = getSettings();
-  const deletedGoal = settings.goals.find((goal) => goal.id === goalId);
+  const selectedGoal = settings.goals.find((goal) => goal.id === goalId);
 
-  if (deletedGoal === undefined || settings.goals.length <= 1) {
+  if (selectedGoal === undefined || selectedGoal.isEnabled === isEnabled) {
+    return selectedGoal !== undefined;
+  }
+
+  const enabledGoals = settings.goals.filter(
+    (goal) => goal.id !== goalId && goal.isEnabled,
+  );
+
+  if (!isEnabled && enabledGoals.length === 0) {
     return false;
   }
 
-  const remainingGoals = settings.goals.filter((goal) => goal.id !== goalId);
   const fallbackGoal =
-    remainingGoals.find((goal) => goal.isDefault) ?? remainingGoals[0];
+    enabledGoals.find((goal) => goal.id === 'goal-16-hours') ?? enabledGoals[0];
   const timestamp = now();
 
   updateSettings((currentSettings) => ({
     ...currentSettings,
-    goals: remainingGoals.map((goal) => ({
+    goals: currentSettings.goals.map((goal) => ({
       ...goal,
-      isDefault: goal.id === fallbackGoal.id,
-      updatedAt: goal.id === fallbackGoal.id ? timestamp : goal.updatedAt,
+      isEnabled: goal.id === goalId ? isEnabled : goal.isEnabled,
+      updatedAt: goal.id === goalId ? timestamp : goal.updatedAt,
     })),
     lastUsedGoalDurationHours:
-      currentSettings.lastUsedGoalDurationHours === deletedGoal.targetDurationHours
+      !isEnabled &&
+      currentSettings.lastUsedGoalDurationHours === selectedGoal.targetDurationHours
         ? fallbackGoal.targetDurationHours
         : currentSettings.lastUsedGoalDurationHours,
     updatedAt: timestamp,
@@ -414,11 +432,6 @@ export const updateWidgetSettings = (
     widgets: update(settings.widgets),
     updatedAt: now(),
   }));
-
-export const getDefaultGoal = (settings: AppSettings): FastingGoal =>
-  settings.goals.find((goal) => goal.targetDurationHours === settings.lastUsedGoalDurationHours) ??
-  settings.goals.find((goal) => goal.isDefault) ??
-  settings.goals[0];
 
 export const getAccentPalette = ({
   accentColorName,
@@ -569,7 +582,6 @@ export { requestLocalNotificationPermission };
 
 const websiteUrl = 'https://simplefasting.app';
 const supportEmail = 'support@simplefasting.app';
-const devEmail = 'dev@simplefasting.app';
 
 const openWebsitePath = async (path: string): Promise<void> => {
   await WebBrowser.openBrowserAsync(`${websiteUrl}${path}`);
@@ -586,14 +598,8 @@ export const openPrivacyPolicy = async (): Promise<void> => openWebsitePath('/pr
 
 export const openTerms = async (): Promise<void> => openWebsitePath('/terms');
 
-export const openFeedbackEmail = async (): Promise<void> =>
-  Linking.openURL(`mailto:${supportEmail}?subject=Simple%20Fasting%20feedback`);
-
 export const openSupportEmail = async (): Promise<void> =>
   Linking.openURL(`mailto:${supportEmail}?subject=Simple%20Fasting%20support`);
-
-export const openDevEmail = async (): Promise<void> =>
-  Linking.openURL(`mailto:${devEmail}?subject=Simple%20Fasting`);
 
 export const openBugReportEmail = async (): Promise<void> =>
   Linking.openURL(`mailto:${supportEmail}?subject=Simple%20Fasting%20bug%20report`);

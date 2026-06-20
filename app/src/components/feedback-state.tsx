@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type FeedbackStateKind = 'empty' | 'error' | 'loading';
@@ -37,7 +37,7 @@ export function FeedbackState({
         styles.container,
         {
           borderColor: kind === 'error' ? theme.danger : theme.backgroundSelected,
-          backgroundColor: kind === 'error' ? theme.dangerBackground : 'transparent',
+          backgroundColor: kind === 'error' ? theme.dangerBackground : theme.background,
         },
       ]}>
       <ThemedText type="smallBold">{title}</ThemedText>
@@ -74,7 +74,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.two,
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.surface,
+    borderCurve: 'continuous',
     padding: Spacing.four,
   },
   description: {

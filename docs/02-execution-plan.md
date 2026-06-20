@@ -1,99 +1,99 @@
-# Simple Fasting — Task Breakdown & AI Agent Execution Plan
+# Simple Fasting — Execution Plan
 
-Structured breakdown of epics and tasks for building Simple Fasting, ordered by execution priority.
+This plan reflects the current `/app` implementation. Checked items exist in code; unchecked items remain work and must not be described as shipped.
 
-## Epic 1 — Foundation
+## 1. Foundation
 
-- [x] Create Expo project
-- [ ] Configure EAS
-- [x] Setup TypeScript
-- [ ] Setup ESLint and Prettier
-- [x] Setup MMKV
-- [x] Setup Navigation
-- [x] Setup Theme System
-- [x] Setup Accent Colors
+- [x] Expo React Native application with TypeScript strict mode
+- [x] Expo Router native tabs and stack navigation
+- [x] MMKV local storage and startup repair flow
+- [x] Theme and accent-color system
+- [x] Shared spacing, radius, surface, button, and feedback primitives
+- [x] ESLint configuration
+- [x] EAS project linkage in Expo config
+- [ ] Add and review `eas.json` build profiles
+- [ ] Add formatting command/configuration if the project needs automated formatting
 
-## Epic 2 — Domain Models
+Separate repository and selector layers are intentionally not planned while direct typed storage functions remain simpler.
 
-- [x] Create FastSession model
-- [x] Create Settings model
-- [x] Create Goals model
-- [x] Create GraphCache model
-- [ ] Create repositories
-- [ ] Create selectors
+## 2. Core Fasting
 
-## Epic 3 — Core Fasting
+- [x] Standard presets (`12:12` through `20:4`)
+- [x] Persist last selected duration; fresh install starts at `16:8`
+- [x] Custom duration wheel with seven-day maximum
+- [x] Open-ended fast
+- [x] Optional note toggle
+- [x] Start, active, end, and cancel flows
+- [x] Progress ring and elapsed/remaining timer
+- [x] Fast-end reminder
+- [x] Idle Fast screen fits a normal viewport without scrolling
 
-- [x] Start Fast
-- [x] End Fast
-- [x] Continue Fast
-- [x] Progress Ring
-- [x] Timer
-- [x] Presets
-- [x] Custom Duration
-- [x] Fast Reasons
+## 3. Goals
 
-## Epic 4 — History
+- [x] Standard and custom goal types
+- [x] Show/hide standard goals
+- [x] Create, edit, and delete custom goals
+- [x] Prevent disabling the final enabled goal
+- [x] Remove redundant default-goal state and UI
 
-- [x] History Screen
-- [x] Fast Details
-- [x] Delete Fast
-- [x] History Empty State
+## 4. Data and History
 
-## Epic 5 — Statistics
+- [x] Data tab with Stats, Graphs, and History segments
+- [x] Current/longest streak, longest/average fast, completion, goal achievement, totals
+- [x] Weekly, monthly, and yearly heatmaps
+- [x] Monthly hours and duration distribution
+- [x] History empty state
+- [x] Edit Fast native stack screen
+- [x] Single-entry delete
+- [ ] Native swipe-to-delete
+- [ ] Multi-select and bulk delete
 
-- [x] Current Streak
-- [x] Longest Streak
-- [x] Longest Fast
-- [x] Average Duration
-- [x] Completion Rate
-- [x] Total Hours
+## 5. Settings and Offline Information
 
-## Epic 6 — Graph Engine
+- [x] System/Light/Dark theme selector
+- [x] Settled-scroll accent selector
+- [x] Goal management
+- [x] Fast-end and daily local reminders
+- [x] Reminder time wheel
+- [x] JSON and CSV export with share sheet
+- [x] Clear local data
+- [x] Website, support, and bug-report actions
+- [x] Offline FAQ, Privacy Policy, and Terms of Use routes
+- [ ] Network-aware muted state for external-link actions
+- [ ] Final copy review for FAQ and legal documents before release
 
-- [x] Weekly Heatmap
-- [x] Monthly Heatmap
-- [x] Yearly Heatmap
-- [x] Monthly Hours
-- [x] Completion Rate Chart
-- [x] Goal Achievement
+## 6. Widgets and Platform Features
 
-## Epic 7 — Export
+- [x] iOS small home-screen widget
+- [x] Android small home-screen widget
+- [x] Widget refresh from active-fast state changes
+- [x] Deep link from widget to app
+- [ ] Medium widget
+- [ ] Large widget
+- [ ] iOS lock-screen widgets
+- [ ] iOS Live Activities and Dynamic Island
+- [ ] Android ongoing notification
+- [ ] User-facing widget/platform settings when the corresponding features exist
 
-- [x] JSON Export
-- [x] CSV Export
-- [x] Share Sheet
+## 7. Quality and Release
 
-## Epic 8 — Settings
+- [x] Statistics unit tests for local date boundaries and rates
+- [x] TypeScript, lint, test, and static Expo export workflow
+- [x] Simulator screenshot-based UI review on iPhone 17 Pro
+- [ ] Add targeted storage and fasting-flow tests
+- [ ] Test small/large phones, dark mode, and accessibility text sizes
+- [ ] Test current Android device/emulator UI and widget behavior
+- [ ] Test long-running sessions and notification restoration
+- [ ] Final app icon and splash review
+- [ ] Store screenshots and metadata
+- [ ] TestFlight release
+- [ ] Google Play internal test
+- [ ] Production submissions
 
-- [x] Theme
-- [x] Accent Colors
-- [x] Goals
-- [x] Notifications
-- [ ] Widgets
-- [ ] Live Activities
-- [ ] Support Creator
-- [x] Privacy
+## Recommended Next Order
 
-## Epic 9 — Widgets
-
-- [ ] Small Widget
-- [ ] Medium Widget
-- [ ] Large Widget
-
-## Epic 10 — Platform Features
-
-- [ ] iOS Lock Screen Widgets
-- [ ] iOS Live Activities
-- [ ] Dynamic Island
-- [ ] Android Ongoing Notifications
-
-## Epic 11 — Release
-
-- [ ] App Icon
-- [ ] Screenshots
-- [x] Privacy Policy
-- [ ] Store Metadata
-- [ ] TestFlight
-- [ ] Google Play Internal Testing
-- [ ] Store Submission
+1. Run a focused iOS and Android regression pass for Fast, Data, Settings, exports, notifications, and widgets.
+2. Add release build profiles and validate signing/configuration.
+3. Finish store assets and metadata.
+4. Decide whether bulk history actions are required for v1.
+5. Decide whether medium widgets and advanced platform surfaces ship in v1 or a later release.
