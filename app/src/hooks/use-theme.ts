@@ -2,12 +2,14 @@ import {
   createContext,
   createElement,
   useContext,
+  useLayoutEffect,
   useMemo,
   type ReactNode,
 } from 'react';
-import { useColorScheme } from 'react-native';
+import { Appearance, useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
+import { ThemePreference } from '@/storage/app-storage';
 import { getAccentPalette, getEffectiveColorScheme, useSettings } from '@/storage/settings-storage';
 
 type ResolvedTheme = Record<keyof typeof Colors.light, string>;
@@ -40,6 +42,11 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     }),
     [colorScheme, settings.accentColorName],
   );
+  useLayoutEffect(() => {
+    Appearance.setColorScheme(
+      settings.themePreference === ThemePreference.System ? 'unspecified' : colorScheme,
+    );
+  }, [colorScheme, settings.themePreference]);
   const value = useMemo(() => ({ colorScheme, theme }), [colorScheme, theme]);
 
   return createElement(AppThemeContext.Provider, { value }, children);

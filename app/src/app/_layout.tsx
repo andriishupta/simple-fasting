@@ -1,12 +1,13 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { FeedbackState } from '@/components/feedback-state';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { AppThemeProvider, useAppThemeColorScheme } from '@/hooks/use-theme';
+import { AppThemeProvider, useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
 import { appStorage } from '@/storage/app-storage';
 import {
   reconcileActiveFastEndNotification,
@@ -25,16 +26,54 @@ type StartupState =
   | { status: 'error'; message: string };
 
 export default function RootLayout() {
+  const [startupState, setStartupState] = useState<StartupState>(() => {
+    try {
+      initializeAppStorage();
+      refreshSettingsSnapshot();
+      refreshFastSnapshots();
+      return { status: 'ready' };
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Storage could not be initialized.',
+      };
+    }
+  });
+
   return (
-    <AppThemeProvider>
-      <RootLayoutContent />
-    </AppThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppThemeProvider>
+        <RootLayoutContent startupState={startupState} setStartupState={setStartupState} />
+      </AppThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
-function RootLayoutContent() {
-  const [startupState, setStartupState] = useState<StartupState>({ status: 'loading' });
+function RootLayoutContent({
+  startupState,
+  setStartupState,
+}: {
+  startupState: StartupState;
+  setStartupState: React.Dispatch<React.SetStateAction<StartupState>>;
+}) {
   const colorScheme = useAppThemeColorScheme();
+  const theme = useTheme();
+  const navigationTheme = useMemo(() => {
+    const baseTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+
+    return {
+      ...baseTheme,
+      colors: {
+        ...baseTheme.colors,
+        primary: theme.accent,
+        background: theme.backgroundElement,
+        card: theme.background,
+        text: theme.text,
+        border: theme.backgroundSelected,
+        notification: theme.danger,
+      },
+    };
+  }, [colorScheme, theme]);
 
   const initializeStorage = (): void => {
     try {
@@ -42,16 +81,6 @@ function RootLayoutContent() {
       refreshSettingsSnapshot();
       refreshFastSnapshots();
       setStartupState({ status: 'ready' });
-      void Promise.all([
-        configureLocalNotificationBehavior(),
-        reconcileDailyReminderNotification(),
-        reconcileActiveFastEndNotification(),
-      ]).catch(() => {
-        setStartupState({
-          status: 'error',
-          message: 'Local data loaded, but reminders could not be restored.',
-        });
-      });
     } catch (error) {
       setStartupState({
         status: 'error',
@@ -86,11 +115,22 @@ function RootLayoutContent() {
   };
 
   useEffect(() => {
-    queueMicrotask(initializeStorage);
-  }, []);
+    if (startupState.status !== 'ready') return;
+
+    void Promise.all([
+      configureLocalNotificationBehavior(),
+      reconcileDailyReminderNotification(),
+      reconcileActiveFastEndNotification(),
+    ]).catch(() => {
+      setStartupState({
+        status: 'error',
+        message: 'Local data loaded, but reminders could not be restored.',
+      });
+    });
+  }, [setStartupState, startupState.status]);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={navigationTheme}>
       {startupState.status === 'ready' ? (
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
@@ -105,8 +145,12 @@ function RootLayoutContent() {
           <Stack.Screen
             name="goals"
             options={{
-              title: 'Fasting Goals',
+              title: 'Goals',
               headerShown: true,
+              headerLargeTitle: true,
+              headerTransparent: true,
+              headerShadowVisible: false,
+              headerBlurEffect: 'none',
               headerBackButtonDisplayMode: 'minimal',
             }}
           />

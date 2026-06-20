@@ -20,19 +20,21 @@ Separate repository and selector layers are intentionally not planned while dire
 
 - [x] Standard presets (`12:12` through `20:4`)
 - [x] Persist last selected duration; fresh install starts at `16:8`
-- [x] Custom duration wheel with seven-day maximum
+- [x] Inline This-time duration wheel with seven-day maximum
 - [x] Open-ended fast
 - [x] Optional note toggle
 - [x] Start, active, end, and cancel flows
 - [x] Progress ring and elapsed/remaining timer
 - [x] Fast-end reminder
 - [x] Idle Fast screen fits a normal viewport without scrolling
+- [x] Destructive Cancel and accent End actions in one active-fast action row
+- [x] Immediate end-and-save flow with a five-second saved card and View fast action
 
 ## 3. Goals
 
 - [x] Standard and custom goal types
-- [x] Show/hide standard goals
-- [x] Create, edit, and delete custom goals
+- [x] Enable/disable standard and custom goals
+- [x] Create, edit, and delete custom goals from a floating add action
 - [x] Prevent disabling the final enabled goal
 - [x] Remove redundant default-goal state and UI
 
@@ -40,12 +42,14 @@ Separate repository and selector layers are intentionally not planned while dire
 
 - [x] Data tab with Stats, Graphs, and History segments
 - [x] Current/longest streak, longest/average fast, completion, goal achievement, totals
+- [x] Two-column statistics metric grid
 - [x] Weekly, monthly, and yearly heatmaps
 - [x] Monthly hours and duration distribution
 - [x] History empty state
 - [x] Edit Fast native stack screen
+- [x] Shared Fast/Edit Fast goal and note controls; required themed End time editor
 - [x] Single-entry delete
-- [ ] Native swipe-to-delete
+- [x] Counted History segment, labeled rows, goal pills, and cross-platform swipe-to-delete action
 - [ ] Multi-select and bulk delete
 
 ## 5. Settings and Offline Information
@@ -54,10 +58,10 @@ Separate repository and selector layers are intentionally not planned while dire
 - [x] Settled-scroll accent selector
 - [x] Goal management
 - [x] Fast-end and daily local reminders
-- [x] Reminder time wheel
+- [x] Minimal, theme-aware reminder time wheel without nested chrome
 - [x] JSON and CSV export with share sheet
 - [x] Clear local data
-- [x] Website, support, and bug-report actions
+- [x] Website, support, and dedicated bug-report email actions
 - [x] Offline FAQ, Privacy Policy, and Terms of Use routes
 - [ ] Network-aware muted state for external-link actions
 - [ ] Final copy review for FAQ and legal documents before release

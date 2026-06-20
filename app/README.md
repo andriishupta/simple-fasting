@@ -24,9 +24,9 @@ The app uses native Expo Router tabs in this order:
 
 Data has a native segmented control:
 
-- **Stats** — streaks, longest/average fast, completion, goal achievement, total hours, and total fasts.
+- **Stats** — a neutral two-column metric grid for streaks, longest/average fast, completion, goal achievement, total hours, and total fasts.
 - **Graphs** — weekly/monthly/yearly heatmaps, monthly hours, duration distribution, completion, and goal achievement.
-- **History** — active summary plus completed sessions, with edit and single-entry delete actions.
+- **History** — completed sessions only; its segment label includes the completed count (capped at `99+`). Rows use labeled duration/start/end information, goal pills, tap-to-edit, and a native-feeling left swipe that reveals Delete on iOS and Android.
 
 Tapping a history entry pushes **Edit Fast**, a native stack screen for dates, duration/goal, and note editing.
 
@@ -35,35 +35,35 @@ Tapping a history entry pushes **Edit Fast**, a native stack screen for dates, d
 The ready state includes:
 
 - standard presets `12:12`, `14:10`, `16:8`, `18:6`, and `20:4`;
-- Custom duration with separate select and edit actions;
+- This time, for a one-off custom duration, with a shortcut explaining that reusable goals live in Settings;
 - Open-ended fast;
 - optional Note;
 - Start fast fixed above the native tab bar.
 
 A fresh install starts on `16:8`. Every goal selection is persisted immediately and restored later. There is no separate default-goal property.
 
-Custom duration uses native Days/Hours wheels and is capped at seven days. The normal idle screen does not scroll when its content fits; responsive scroll remains available for small screens and expanded/error states.
+The selected goal is presented directly as its name and duration without a redundant section label. **This time** expands an inline native Days/Hours wheel editor and is capped at seven days. Selecting another goal closes the editor. The normal idle and active states keep the same viewport and fixed native tab-bar footprint; responsive growth is reserved for expanded controls and small screens.
 
-The active state shows the timer, progress, start/end times, local reminder, optional note, End fast, and Cancel fast.
+The active state shows a compact progress timer, start/end times, local reminder, optional note, a ghost-style Cancel fast action, and accent-colored End fast. Ending saves immediately and returns to the ready state with a **Fast saved** card below Start fast; its top-right countdown dismisses the card after five seconds and **View fast** opens the saved entry.
 
 ### Settings
 
 - **Appearance** — System/Light/Dark and settled-scroll accent selection.
-- **Goals** — opens Fasting Goals.
-- **Notifications** — fast-end reminder and daily reminder with Hours/Minutes wheel.
+- **Goals** — opens Goals.
+- **Notifications** — fast-end reminder and daily reminder with a minimal Hours/Minutes wheel that follows the active theme without a nested card or redundant label.
 - **Data** — JSON export, CSV export, and Clear data.
-- **About** — website, FAQ, bug-report email, support email, and build version.
+- **About** — website, FAQ, bug-report email (`bugs@simplefasting.app`), support email, and build version.
 - **Legal** — external and offline Privacy Policy and Terms.
 
 ### Supporting Stack Screens
 
-- **Fasting Goals** — standard goals can be shown/hidden; custom goals can be added, edited, or deleted. At least one remains enabled.
-- **Edit Fast** — edits a saved history session.
+- **Goals** — standard and custom goals can be enabled/disabled; custom goals can also be edited or deleted. A floating plus opens the add-goal editor. At least one goal remains enabled.
+- **Edit Fast** — reuses the Fast screen’s active goal selector, Custom/Open-ended actions, and Note control; Start and End use theme-aware native date/time controls. End time is required. Save and Delete are the only bottom actions.
 - **FAQ** — offline local help.
 - **Privacy Policy** — offline local copy.
 - **Terms of Use** — offline local copy.
 
-These are standard native stack pushes with system headers and back buttons. The Custom duration editor is a form-sheet modal.
+These are standard native stack pushes with system headers and back buttons. This-time duration remains inline on Fast rather than creating another navigation layer.
 
 ## Widgets
 

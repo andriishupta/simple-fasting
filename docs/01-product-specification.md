@@ -37,14 +37,14 @@ The ready screen is designed to fit in one normal phone viewport. Scrolling and 
 The screen provides:
 
 - standard presets: `12:12`, `14:10`, `16:8`, `18:6`, and `20:4`;
-- a custom duration;
+- a one-off **This time** duration, with reusable custom goals managed in Settings;
 - an open-ended fast;
 - an optional note;
 - a Start fast action positioned above the native tab bar.
 
 The first fresh-install selection is `16:8`. Selecting a goal immediately persists its duration as `lastUsedGoalDurationHours`; the next visit restores that choice. There is no separate default-goal state.
 
-Tapping the Custom duration row selects it. Tapping its displayed duration or chevron opens the native wheel editor. Custom duration is limited to seven days; selecting seven days forces hours to zero. The editor includes a “Not medical advice” notice.
+The selected goal is shown directly as its name and duration without a redundant “Your fasting goal” label. Tapping **This time** selects it and expands the native Days/Hours wheel editor inline. Tapping its displayed duration or chevron toggles the same editor. Selecting another goal closes it. This-time duration is limited to seven days; selecting seven days forces hours to zero. The editor includes a “Not medical advice” notice and points users to reusable goals in Settings.
 
 ### Active state
 
@@ -54,16 +54,18 @@ An active fast shows:
 - elapsed/remaining toggle for planned fasts;
 - start and planned end times;
 - optional note;
-- local end reminder control;
-- End fast and Cancel fast actions.
+- local end reminder control that schedules a notification when the planned goal is reached;
+- a compact action row with destructive Cancel fast on the left and accent-colored End fast on the right.
 
-Ending a fast saves it to History and opens Edit Fast. Cancelling does not add a completed history entry.
+Ending a fast saves it to History immediately and returns to the ready state with a **Fast saved** card below Start fast. A top-right countdown removes it after five seconds; **View fast** opens the entry. Edit Fast otherwise opens from History. Cancel is a ghost-style destructive text action and does not add a completed history entry.
 
 ## Data Screen
 
 Data contains a native segmented control with three views:
 
 ### Stats
+
+Stats are presented as separate neutral two-column metric tiles without accent-only emphasis.
 
 - current streak;
 - longest streak;
@@ -87,10 +89,13 @@ Data contains a native segmented control with three views:
 ### History
 
 - completed fasting sessions;
-- active session summary when applicable;
-- entry details including duration, dates, status, goal, and note;
-- edit and single-entry delete actions;
+- entry details including duration, dates, goal, and note; the redundant completed status is omitted;
+- the History segment includes a completed-session count capped at `99+`;
+- labeled duration, start, and end values plus a goal pill;
+- tap-to-edit and a native-feeling left swipe that reveals destructive Delete on iOS and Android;
 - native stack Edit Fast screen for changing dates, goal duration, and note.
+
+Edit Fast reuses the Fast screen’s goal selector, inline This-time editor, Open-ended action, and Note control. Only enabled goals are offered. Start and required End values use theme-aware native date/time controls. The screen has Save and Delete actions; there is no redundant Cancel or Clear End action.
 
 History is the source of truth for statistics and graph calculations. Bulk delete and swipe-to-delete are not implemented.
 
@@ -106,10 +111,11 @@ Settings uses consistent grouped native-style surfaces.
 
 ### Goals
 
-Fasting Goals is a native stack screen.
+Goals is a native stack screen with a transparent large-title header.
 
-- standard goals can be shown or hidden but not deleted;
-- custom goals can be created, edited, and deleted;
+- standard goals can be enabled or disabled but not deleted;
+- custom goals can be enabled/disabled, created, edited, and deleted;
+- add goal is a floating plus action;
 - at least one goal must remain enabled;
 - the selected Fast-screen goal is persisted directly;
 - there is no Default badge or Make default action.
@@ -118,7 +124,7 @@ Fasting Goals is a native stack screen.
 
 - local fast-end reminder;
 - local daily fasting reminder;
-- native Hours/Minutes wheel for reminder time;
+- minimal grouped native Hours/Minutes wheel for reminder time with theme-aware item colors and no nested card or redundant label;
 - notification state is reconciled at startup.
 
 No push-notification backend is used.
@@ -134,7 +140,8 @@ No push-notification backend is used.
 
 - Website opens the external website;
 - FAQ has an external action and an offline local copy;
-- Report bug and Support email use the device email flow;
+- Report bug opens the device email flow for `bugs@simplefasting.app`;
+- Support email opens the device email flow for `support@simplefasting.app`;
 - Privacy Policy and Terms of Use have external actions and offline local copies;
 - app version/build is displayed locally.
 
@@ -173,6 +180,9 @@ The application should feel calm, minimal, fast, and native.
 - Native Expo Router tabs and stack navigation.
 - Native switches, segmented controls, wheel pickers, alerts, and share sheets where available.
 - Shared theme colors, spacing, surface radius, and control radius.
+- Expo Router navigation, stack headers, native tab chrome, and picker items resolve from the same app theme and accent palette.
+- Native tab bars use an opaque themed background during tab transitions; native segmented and date/time controls receive the resolved app appearance explicitly.
+- Persisted MMKV settings are loaded before the first themed render, and explicit Light/Dark preferences are synchronized with native `Appearance` so UIKit/Android controls do not briefly use the wrong scheme.
 - Neutral page background with consistent white/dark surfaces, thin borders, and grouped rows.
 - Safe-area and native tab-bar spacing on both platforms.
 - Minimal animation; platform-native transitions are preferred.

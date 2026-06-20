@@ -582,6 +582,7 @@ export { requestLocalNotificationPermission };
 
 const websiteUrl = 'https://simplefasting.app';
 const supportEmail = 'support@simplefasting.app';
+const bugReportEmail = 'bugs@simplefasting.app';
 
 const openWebsitePath = async (path: string): Promise<void> => {
   await WebBrowser.openBrowserAsync(`${websiteUrl}${path}`);
@@ -602,4 +603,4 @@ export const openSupportEmail = async (): Promise<void> =>
   Linking.openURL(`mailto:${supportEmail}?subject=Simple%20Fasting%20support`);
 
 export const openBugReportEmail = async (): Promise<void> =>
-  Linking.openURL(`mailto:${supportEmail}?subject=Simple%20Fasting%20bug%20report`);
+  Linking.openURL(`mailto:${bugReportEmail}?subject=Simple%20Fasting%20bug%20report`);

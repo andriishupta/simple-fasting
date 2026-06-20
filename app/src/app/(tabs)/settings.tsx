@@ -105,6 +105,10 @@ const reminderMinutes = Array.from({ length: 60 }, (_, minute) => minute);
 
 export default function SettingsScreen() {
   const settings = useSettings();
+  const [installedAt] = useState(
+    () => appStorage.get(StorageKey.Metadata)?.initializedAt ?? new Date().toISOString(),
+  );
+  const buildDescription = `${getAppVersionLabel()} · Installed ${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(installedAt))}`;
   const runNotificationUpdate = async (update: () => Promise<void>): Promise<void> => {
     try {
       await update();
@@ -205,14 +209,9 @@ export default function SettingsScreen() {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.screen}>
       <View style={styles.screenContent}>
-        <View style={styles.header}>
-          <ThemedText type="subtitle" accessibilityRole="header">
-            Simple Fasting Settings
-          </ThemedText>
-          <ThemedText themeColor="textSecondary">
-            Private by design. Everything stays on this device.
-          </ThemedText>
-        </View>
+        <ThemedText type="subtitle" accessibilityRole="header">
+          Settings
+        </ThemedText>
         <SettingsSection title="Appearance">
           <ThemePicker
             selectedValue={settings.themePreference}
@@ -250,7 +249,6 @@ export default function SettingsScreen() {
           />
           {settings.notifications.dailyReminderEnabled && (
             <TimePicker
-              label="Reminder time"
               value={settings.notifications.dailyReminderTime ?? '20:00'}
               onChange={(dailyReminderTime) => {
                 void runNotificationUpdate(async () => {
@@ -299,6 +297,7 @@ export default function SettingsScreen() {
           <SettingsActionRow
             icon={Bug}
             title="Report bug"
+            description="bugs@simplefasting.app"
             onPress={() => openExternalAction(openBugReportEmail)}
           />
           <SettingsActionRow
@@ -310,7 +309,7 @@ export default function SettingsScreen() {
           <SettingsRow
             icon={Info}
             title="Build"
-            description={getAppVersionLabel()}
+            description={buildDescription}
           />
         </SettingsSection>
 
@@ -379,7 +378,6 @@ function ThemePicker({
               styles.themeOption,
               {
                 backgroundColor: selected ? theme.accentBackground : 'transparent',
-                borderColor: selected ? theme.accentBorder : theme.backgroundSelected,
               },
               pressed && styles.pressed,
             ]}>
@@ -399,11 +397,9 @@ function ThemePicker({
 }
 
 function TimePicker({
-  label,
   value,
   onChange,
 }: {
-  label: string;
   value: string;
   onChange: (value: string) => void;
 }) {
@@ -414,11 +410,8 @@ function TimePicker({
 
   return (
     <View style={styles.timeControl}>
-      <ThemedText type="smallBold" style={styles.timeLabel}>
-        {label}
-      </ThemedText>
       <View style={styles.timePickers}>
-        <View style={[styles.timePickerColumn, { backgroundColor: theme.backgroundElement }]}>
+        <View style={styles.timePickerColumn}>
           <ThemedText type="smallBold" themeColor="textSecondary" style={styles.timeLabel}>
             HOURS
           </ThemedText>
@@ -427,11 +420,16 @@ function TimePicker({
             onValueChange={(nextHour) => updatePart(nextHour, minute)}
             style={styles.timePicker}>
             {reminderHours.map((option) => (
-              <Picker.Item key={option} label={String(option).padStart(2, '0')} value={String(option)} />
+              <Picker.Item
+                key={option}
+                label={String(option).padStart(2, '0')}
+                value={String(option)}
+                color={theme.text}
+              />
             ))}
           </Picker>
         </View>
-        <View style={[styles.timePickerColumn, { backgroundColor: theme.backgroundElement }]}>
+        <View style={styles.timePickerColumn}>
           <ThemedText type="smallBold" themeColor="textSecondary" style={styles.timeLabel}>
             MINUTES
           </ThemedText>
@@ -440,7 +438,12 @@ function TimePicker({
             onValueChange={(nextMinute) => updatePart(hour, nextMinute)}
             style={styles.timePicker}>
             {reminderMinutes.map((option) => (
-              <Picker.Item key={option} label={String(option).padStart(2, '0')} value={String(option)} />
+              <Picker.Item
+                key={option}
+                label={String(option).padStart(2, '0')}
+                value={String(option)}
+                color={theme.text}
+              />
             ))}
           </Picker>
         </View>
@@ -546,9 +549,6 @@ function AccentPicker({
           ]}
         />
       </View>
-      <ThemedText type="small" themeColor="textSecondary" style={styles.accentHint}>
-        Swipe to choose. The color updates when scrolling stops.
-      </ThemedText>
     </View>
   );
 }
@@ -574,12 +574,14 @@ function SettingsSwitch({
       title={title}
       description={description}
       trailing={
-        <Switch
-          value={value}
-          onValueChange={onValueChange}
-          trackColor={{ true: theme.accent }}
-          thumbColor={Platform.OS === 'android' && value ? theme.accentForeground : undefined}
-        />
+        <View style={styles.switchTrailing}>
+          <Switch
+            value={value}
+            onValueChange={onValueChange}
+            trackColor={{ true: theme.accent }}
+            thumbColor={Platform.OS === 'android' && value ? theme.accentForeground : undefined}
+          />
+        </View>
       }
     />
   );
@@ -716,7 +718,6 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
     paddingHorizontal: Spacing.four,
   },
-  header: { gap: Spacing.one, paddingBottom: Spacing.two },
   section: {
     gap: Spacing.two,
   },
@@ -732,24 +733,23 @@ const styles = StyleSheet.create({
   timeControl: {
     alignItems: 'center',
     gap: Spacing.one,
-    padding: Spacing.three,
+    padding: Spacing.two,
   },
   timeLabel: { textAlign: 'center' },
   timePickers: {
-    minHeight: 150,
+    width: '82%',
+    minHeight: 132,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.three,
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.two,
   },
   timePickerColumn: {
-    width: '44%',
+    flex: 1,
     alignItems: 'center',
-    borderRadius: Radius.control,
-    borderCurve: 'continuous',
-    overflow: 'hidden',
   },
-  timePicker: { width: '100%', minHeight: 140 },
+  timePicker: { width: '100%', minHeight: 116 },
   themePicker: {
     flexDirection: 'row',
     gap: Spacing.two,
@@ -762,7 +762,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.two,
-    borderWidth: 1,
     borderRadius: 14,
     borderCurve: 'continuous',
   },
@@ -794,7 +793,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 24,
   },
-  accentHint: { textAlign: 'center', paddingHorizontal: Spacing.three },
   row: {
     minHeight: 72,
     flexDirection: 'row',
@@ -819,6 +817,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  switchTrailing: { width: 52, alignItems: 'flex-end', justifyContent: 'center' },
   rowAction: {
     width: 36,
     minHeight: 40,

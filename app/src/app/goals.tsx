@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { Plus } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/app-button';
 import { AppSurface } from '@/components/app-surface';
@@ -58,6 +60,7 @@ const formatGoalDuration = (hours: number): string => {
 export default function GoalsScreen() {
   const settings = useSettings();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState<GoalDraft | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -150,16 +153,13 @@ export default function GoalsScreen() {
   };
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.screen}>
-      <View style={styles.content}>
-        <ThemedText themeColor="textSecondary">
-          Standard goals can be shown or hidden. Custom goals can be edited or deleted.
-        </ThemedText>
-
+    <View style={styles.root}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.screen}>
+        <View style={styles.content}>
         <View style={styles.goalList}>
           {settings.goals.map((goal) => (
             <AppSurface key={goal.id} style={styles.goalCard}>
@@ -179,27 +179,20 @@ export default function GoalsScreen() {
                     {formatGoalDuration(goal.targetDurationHours)}
                   </ThemedText>
                 </View>
+                <Switch
+                  accessibilityLabel={`${goal.name} available on Fast screen`}
+                  value={goal.isEnabled}
+                  onValueChange={(isEnabled) => {
+                    if (!setFastingGoalEnabled(goal.id, isEnabled)) {
+                      Alert.alert('Goal required', 'At least one fasting goal must stay enabled.');
+                    }
+                  }}
+                  trackColor={{ true: theme.accent }}
+                />
               </View>
 
-              <View style={styles.actions}>
-                {goal.type === FastingGoalType.Standard ? (
-                  <View style={styles.visibilityControl}>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      Show on Fast screen
-                    </ThemedText>
-                    <Switch
-                      accessibilityLabel={`Show ${goal.name} on Fast screen`}
-                      value={goal.isEnabled}
-                      onValueChange={(isEnabled) => {
-                        if (!setFastingGoalEnabled(goal.id, isEnabled)) {
-                          Alert.alert('Goal required', 'At least one fasting goal must stay enabled.');
-                        }
-                      }}
-                      trackColor={{ true: theme.accent }}
-                    />
-                  </View>
-                ) : null}
-                {goal.type === FastingGoalType.Custom ? (
+              {goal.type === FastingGoalType.Custom ? (
+                <View style={styles.actions}>
                   <>
                     <AppButton
                       label="Edit"
@@ -211,22 +204,13 @@ export default function GoalsScreen() {
                     />
                     <AppButton label="Delete" variant="danger" onPress={() => confirmDelete(goal)} />
                   </>
-                ) : null}
-              </View>
+                </View>
+              ) : null}
             </AppSurface>
           ))}
         </View>
 
-        {draft === null ? (
-          <AppButton
-            label="Add goal"
-            style={styles.fullButton}
-            onPress={() => {
-              setDraft(createEmptyDraft(settings.goals));
-              setValidationError(null);
-            }}
-          />
-        ) : (
+        {draft !== null ? (
           <AppSurface style={styles.editor}>
             <ThemedText type="subtitle">
               {draft.goalId === null ? 'New goal' : 'Edit goal'}
@@ -304,17 +288,35 @@ export default function GoalsScreen() {
               <AppButton label="Save goal" fullWidth onPress={saveDraft} />
             </View>
           </AppSurface>
-        )}
-      </View>
-    </ScrollView>
+        ) : null}
+        </View>
+      </ScrollView>
+      {draft === null ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add goal"
+          onPress={() => {
+            setDraft(createEmptyDraft(settings.goals));
+            setValidationError(null);
+          }}
+          style={({ pressed }) => [
+            styles.fab,
+            { backgroundColor: theme.accent, bottom: insets.bottom + Spacing.three },
+            pressed && styles.pressed,
+          ]}>
+          <Plus size={26} color={theme.accentForeground} strokeWidth={2.5} />
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   screen: {
     flexGrow: 1,
     alignItems: 'center',
-    paddingBottom: Spacing.four,
+    paddingBottom: Spacing.six,
   },
   content: {
     width: '100%',
@@ -326,7 +328,8 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   goalCard: {
-    gap: Spacing.three,
+    gap: Spacing.two,
+    padding: 12,
   },
   goalHeader: {
     flexDirection: 'row',
@@ -354,13 +357,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.two,
   },
-  visibilityControl: {
-    width: '100%',
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
   editor: {
     gap: Spacing.three,
   },
@@ -374,7 +370,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     fontSize: 16,
   },
-  fullButton: {
-    width: '100%',
+  fab: {
+    position: 'absolute',
+    right: Spacing.four,
+    bottom: Spacing.four,
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 28,
+    boxShadow: '0 6px 16px rgba(0, 0, 0, 0.22)',
   },
+  pressed: { opacity: 0.72 },
 });
