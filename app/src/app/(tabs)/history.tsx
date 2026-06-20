@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type GestureResponderEvent,
+} from 'react-native';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
+import { SegmentedControl as ExpoSegmentedControl } from '@expo/ui/community/segmented-control';
 
 import { AppSurface } from '@/components/app-surface';
 import {
@@ -13,9 +21,8 @@ import {
   type HeatmapCell,
 } from '@/components/graphs/simple-graphs';
 import { FeedbackState } from '@/components/feedback-state';
-import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import {
   deleteFastSession,
   formatDuration,
@@ -34,6 +41,15 @@ import {
 } from '@/storage/app-storage';
 import { useTheme } from '@/hooks/use-theme';
 import { setDataViewPreference, useSettings } from '@/storage/settings-storage';
+import {
+  getCompletionRate,
+  getGoalAchievementRate,
+  getLocalDayKey,
+  getLocalMonthKey,
+  getPreviousLocalDayKey,
+  getRecentLocalDayKeys,
+  getRecentLocalMonthKeys,
+} from '@/utils/fasting-statistics';
 
 type DataView = DataViewPreference;
 
@@ -43,6 +59,7 @@ type FastingStats = {
   longestFastHours: number;
   averageDurationHours: number;
   completionRate: number;
+  goalAchievementRate: number;
   totalHours: number;
   totalFasts: number;
 };
@@ -54,44 +71,36 @@ type GraphData = {
   monthlyHours: readonly BarDatum[];
   durationDistribution: readonly BarDatum[];
   completionRate: number;
+  goalAchievementRate: number;
 };
 
-const dayMilliseconds = 24 * 60 * 60 * 1000;
 const dataViews: readonly { label: string; value: DataView }[] = [
   { label: 'Stats', value: DataViewPreference.Stats },
   { label: 'Graphs', value: DataViewPreference.Graphs },
   { label: 'History', value: DataViewPreference.History },
 ];
 
-const getDayKey = (date: Date): string => date.toISOString().slice(0, 10);
-
-const getMonthKey = (date: Date): string => date.toISOString().slice(0, 7);
-
-const getPreviousDayKey = (dayKey: string): string => {
-  const date = new Date(`${dayKey}T00:00:00.000Z`);
-
-  return getDayKey(new Date(date.getTime() - dayMilliseconds));
-};
-
 const getCompletedSessions = (history: HistoryState): readonly FastSession[] =>
   history.sessions.filter((session) => session.status === FastStatus.Completed);
 
 const getCompletedDayKeys = (completedSessions: readonly FastSession[]): readonly string[] =>
-  Array.from(new Set(completedSessions.map((session) => getDayKey(new Date(session.startedAt)))))
+  Array.from(
+    new Set(completedSessions.map((session) => getLocalDayKey(new Date(session.startedAt)))),
+  )
     .sort()
     .reverse();
 
 const getCurrentStreakDays = (completedDayKeys: readonly string[]): number => {
   const completedDaySet = new Set(completedDayKeys);
-  const todayKey = getDayKey(new Date());
-  const yesterdayKey = getPreviousDayKey(todayKey);
+  const todayKey = getLocalDayKey(new Date());
+  const yesterdayKey = getPreviousLocalDayKey(todayKey);
   const streakStartKey = completedDaySet.has(todayKey) ? todayKey : yesterdayKey;
   let streak = 0;
   let cursor = streakStartKey;
 
   while (completedDaySet.has(cursor)) {
     streak += 1;
-    cursor = getPreviousDayKey(cursor);
+    cursor = getPreviousLocalDayKey(cursor);
   }
 
   return streak;
@@ -104,7 +113,7 @@ const getLongestStreakDays = (completedDayKeys: readonly string[]): number => {
 
   [...completedDayKeys].reverse().forEach((dayKey) => {
     currentStreak =
-      previousDayKey !== null && getPreviousDayKey(dayKey) === previousDayKey
+      previousDayKey !== null && getPreviousLocalDayKey(dayKey) === previousDayKey
         ? currentStreak + 1
         : 1;
     longestStreak = Math.max(longestStreak, currentStreak);
@@ -112,25 +121,6 @@ const getLongestStreakDays = (completedDayKeys: readonly string[]): number => {
   });
 
   return longestStreak;
-};
-
-const getCompletionRate = (sessions: readonly FastSession[]): number => {
-  const plannedSessions = sessions.filter((session) => session.goalDurationHours > 0);
-  const totalGoalHours = plannedSessions.reduce(
-    (total, session) => total + session.goalDurationHours,
-    0,
-  );
-
-  if (totalGoalHours === 0) {
-    return 0;
-  }
-
-  const totalFastedHours = plannedSessions.reduce(
-    (total, session) => total + getSessionDurationHours(session),
-    0,
-  );
-
-  return totalFastedHours / totalGoalHours;
 };
 
 const getFastingStats = (history: HistoryState): FastingStats => {
@@ -146,25 +136,15 @@ const getFastingStats = (history: HistoryState): FastingStats => {
     averageDurationHours:
       completedSessions.length === 0 ? 0 : totalHours / completedSessions.length,
     completionRate: getCompletionRate(completedSessions),
+    goalAchievementRate: getGoalAchievementRate(completedSessions),
     totalHours,
     totalFasts: completedSessions.length,
   };
 };
 
-const getRangeDayKeys = (days: number): readonly string[] => {
-  const today = new Date();
-  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-
-  return Array.from({ length: days }, (_, index) => {
-    const offset = days - index - 1;
-
-    return getDayKey(new Date(todayUtc - offset * dayMilliseconds));
-  });
-};
-
 const getHoursByDay = (sessions: readonly FastSession[]): Record<string, number> =>
   sessions.reduce<Record<string, number>>((result, session) => {
-    const dayKey = getDayKey(new Date(session.startedAt));
+    const dayKey = getLocalDayKey(new Date(session.startedAt));
 
     return {
       ...result,
@@ -184,19 +164,9 @@ const getHeatmap = ({
     value: hoursByDay[dateKey] ?? 0,
   }));
 
-const getLastMonthKeys = (): readonly string[] => {
-  const now = new Date();
-
-  return Array.from({ length: 6 }, (_, index) => {
-    const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (5 - index), 1));
-
-    return getMonthKey(date);
-  });
-};
-
 const getMonthlyHours = (sessions: readonly FastSession[]): readonly BarDatum[] => {
   const hoursByMonth = sessions.reduce<Record<string, number>>((result, session) => {
-    const monthKey = getMonthKey(new Date(session.startedAt));
+    const monthKey = getLocalMonthKey(new Date(session.startedAt));
 
     return {
       ...result,
@@ -204,7 +174,7 @@ const getMonthlyHours = (sessions: readonly FastSession[]): readonly BarDatum[] 
     };
   }, {});
 
-  return getLastMonthKeys().map((monthKey) => ({
+  return getRecentLocalMonthKeys(6).map((monthKey) => ({
     label: monthKey.slice(5),
     value: hoursByMonth[monthKey] ?? 0,
   }));
@@ -233,12 +203,13 @@ const getGraphData = (history: HistoryState): GraphData => {
   const hoursByDay = getHoursByDay(completedSessions);
 
   return {
-    weeklyHeatmap: getHeatmap({ dayKeys: getRangeDayKeys(7), hoursByDay }),
-    monthlyHeatmap: getHeatmap({ dayKeys: getRangeDayKeys(30), hoursByDay }),
-    yearlyHeatmap: getHeatmap({ dayKeys: getRangeDayKeys(365), hoursByDay }),
+    weeklyHeatmap: getHeatmap({ dayKeys: getRecentLocalDayKeys(7), hoursByDay }),
+    monthlyHeatmap: getHeatmap({ dayKeys: getRecentLocalDayKeys(30), hoursByDay }),
+    yearlyHeatmap: getHeatmap({ dayKeys: getRecentLocalDayKeys(365), hoursByDay }),
     monthlyHours: getMonthlyHours(completedSessions),
     durationDistribution: getDurationDistribution(completedSessions),
     completionRate: getCompletionRate(completedSessions),
+    goalAchievementRate: getGoalAchievementRate(completedSessions),
   };
 };
 
@@ -259,13 +230,21 @@ const formatLocaleDateTime = (timestamp: string): string =>
 
 export default function DataScreen() {
   return (
-    <ScreenScaffold title="Data" eyebrow="History and trends">
-      <DataPanel showActiveFast />
-    </ScreenScaffold>
+    <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.screen}>
+      <View style={styles.screenContent}>
+        <ThemedText type="subtitle" accessibilityRole="header">
+          History
+        </ThemedText>
+        <DataPanel showActiveFast />
+      </View>
+    </ScrollView>
   );
 }
 
-export function DataPanel({ showActiveFast = false }: { showActiveFast?: boolean }) {
+function DataPanel({ showActiveFast = false }: { showActiveFast?: boolean }) {
   const historyState = useHistoryState();
   const activeFastState = useActiveFastState();
   const settings = useSettings();
@@ -276,10 +255,12 @@ export function DataPanel({ showActiveFast = false }: { showActiveFast?: boolean
   const hasData = hasActiveFast || historyState.sessions.length > 0;
 
   useEffect(() => {
+    if (!hasActiveFast) return;
+
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [hasActiveFast]);
   const selectDataView = (view: DataView): void => {
     setSelectedView(view);
 
@@ -289,11 +270,11 @@ export function DataPanel({ showActiveFast = false }: { showActiveFast?: boolean
   };
 
   return (
-    <>
+    <View style={styles.panel}>
       <DataViewPicker selectedView={selectedView} onSelect={selectDataView} />
       {hasData ? (
         <>
-          {hasActiveFast && (
+          {hasActiveFast && selectedView === DataViewPreference.History && (
             <ActiveHistoryItem session={activeSession} currentTime={currentTime} />
           )}
           {selectedView === DataViewPreference.History && (
@@ -310,7 +291,7 @@ export function DataPanel({ showActiveFast = false }: { showActiveFast?: boolean
           action={{ label: 'Start a Fast', onPress: () => router.push('/') }}
         />
       )}
-    </>
+    </View>
   );
 }
 
@@ -321,48 +302,23 @@ function DataViewPicker({
   selectedView: DataView;
   onSelect: (view: DataView) => void;
 }) {
-  return (
-    <View style={styles.viewPicker}>
-      {dataViews.map((view) => (
-        <DataViewButton
-          key={view.value}
-          label={view.label}
-          selected={view.value === selectedView}
-          onPress={() => onSelect(view.value)}
-        />
-      ))}
-    </View>
-  );
-}
-
-function DataViewButton({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
   const theme = useTheme();
+  const selectedIndex = Math.max(
+    0,
+    dataViews.findIndex((view) => view.value === selectedView),
+  );
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.viewButton,
-        {
-          backgroundColor: selected ? theme.accentBackground : 'transparent',
-          borderColor: selected ? theme.accentBorder : theme.backgroundSelected,
-        },
-        pressed && styles.pressed,
-      ]}>
-      <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textSecondary'}>
-        {label}
-      </ThemedText>
-    </Pressable>
+    <ExpoSegmentedControl
+      values={dataViews.map((view) => view.label)}
+      selectedIndex={selectedIndex}
+      onValueChange={(label) => {
+        const view = dataViews.find((option) => option.label === label);
+        if (view !== undefined) onSelect(view.value);
+      }}
+      tintColor={theme.accent}
+      style={styles.viewPicker}
+    />
   );
 }
 
@@ -521,41 +477,45 @@ function StatsPanel({ history }: { history: HistoryState }) {
   const stats = getFastingStats(history);
 
   return (
-    <View style={styles.grid}>
-      <StatCard label="Current streak" value={`${stats.currentStreakDays}`} suffix="days" />
-      <StatCard label="Longest streak" value={`${stats.longestStreakDays}`} suffix="days" />
-      <StatCard label="Longest fast" value={formatHours(stats.longestFastHours)} suffix="h" />
-      <StatCard label="Average duration" value={formatHours(stats.averageDurationHours)} suffix="h" />
-      <StatCard label="Completion rate" value={formatPercent(stats.completionRate)} />
-      <StatCard label="Total hours" value={formatHours(stats.totalHours)} suffix="h" />
-      <StatCard label="Total fasts" value={`${stats.totalFasts}`} />
-    </View>
+    <AppSurface padded={false} style={styles.statList}>
+      <StatRow label="Current streak" value={`${stats.currentStreakDays} days`} />
+      <StatRow label="Longest streak" value={`${stats.longestStreakDays} days`} />
+      <StatRow label="Longest fast" value={`${formatHours(stats.longestFastHours)} h`} />
+      <StatRow label="Average duration" value={`${formatHours(stats.averageDurationHours)} h`} />
+      <StatRow label="Completion rate" value={formatPercent(stats.completionRate)} />
+      <StatRow label="Goal achievement" value={formatPercent(stats.goalAchievementRate)} />
+      <StatRow label="Total hours" value={`${formatHours(stats.totalHours)} h`} emphasized />
+      <StatRow label="Total fasts" value={`${stats.totalFasts}`} last />
+    </AppSurface>
   );
 }
 
-function StatCard({
+function StatRow({
   label,
   value,
-  suffix,
+  emphasized = false,
+  last = false,
 }: {
   label: string;
   value: string;
-  suffix?: string;
+  emphasized?: boolean;
+  last?: boolean;
 }) {
+  const theme = useTheme();
+
   return (
-    <AppSurface style={styles.card}>
-      <ThemedText type="small" themeColor="textSecondary">
-        {label}
+    <View
+      style={[
+        styles.statRow,
+        !last && { borderBottomColor: theme.backgroundSelected, borderBottomWidth: 1 },
+      ]}>
+      <ThemedText>{label}</ThemedText>
+      <ThemedText
+        selectable
+        style={[styles.statValue, emphasized && { color: theme.accent }]}>
+        {value}
       </ThemedText>
-      <View style={styles.valueRow}>
-        <ThemedText type="subtitle">{value}</ThemedText>
-        {suffix !== undefined && (
-          <ThemedText type="smallBold" themeColor="textSecondary">
-            {suffix}
-          </ThemedText>
-        )}
-      </View>
-    </AppSurface>
+    </View>
   );
 }
 
@@ -591,6 +551,14 @@ function GraphsPanel({ history }: { history: HistoryState }) {
           formatValue={formatPercent}
         />
       </GraphSection>
+
+      <GraphSection title="Goal achievement">
+        <ProgressMetric
+          label="Goals reached"
+          value={graphData.goalAchievementRate}
+          formatValue={formatPercent}
+        />
+      </GraphSection>
     </View>
   );
 }
@@ -605,17 +573,22 @@ function GraphSection({ title, children }: { title: string; children: React.Reac
 }
 
 const styles = StyleSheet.create({
-  viewPicker: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  viewButton: {
-    minHeight: 40,
-    flex: 1,
+  screen: {
+    flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderRadius: Spacing.two,
+    paddingBottom: Spacing.four,
+  },
+  screenContent: {
+    width: '100%',
+    maxWidth: Math.min(MaxContentWidth, 640),
+    gap: Spacing.four,
+    paddingHorizontal: Spacing.four,
+  },
+  panel: {
+    gap: Spacing.three,
+  },
+  viewPicker: {
+    minHeight: 36,
   },
   activeItem: {
     gap: Spacing.one,
@@ -646,21 +619,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
+  statList: {
+    overflow: 'hidden',
   },
-  card: {
-    width: '48%',
-    minWidth: 136,
-    minHeight: 112,
+  statRow: {
+    minHeight: 68,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.three,
   },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: Spacing.one,
+  statValue: {
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
   content: {
     gap: Spacing.three,

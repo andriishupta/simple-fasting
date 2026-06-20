@@ -34,6 +34,8 @@ export function HeatmapGrid({
         return (
           <View
             key={cell.id}
+            accessible
+            accessibilityLabel={`${cell.id}: ${cell.value.toFixed(1)} fasting hours`}
             style={[
               compact ? styles.compactHeatmapCell : styles.heatmapCell,
               {
@@ -61,7 +63,11 @@ export function VerticalBars({
   return (
     <View style={styles.verticalBars}>
       {data.map((item) => (
-        <View key={item.label} style={styles.verticalBarItem}>
+        <View
+          key={item.label}
+          accessible
+          accessibilityLabel={`${item.label}: ${formatValue(item.value)}`}
+          style={styles.verticalBarItem}>
           <View style={styles.verticalBarTrack}>
             <View
               style={[
@@ -96,7 +102,11 @@ export function HorizontalBars({
   return (
     <View style={styles.horizontalBars}>
       {data.map((item) => (
-        <View key={item.label} style={styles.horizontalBarRow}>
+        <View
+          key={item.label}
+          accessible
+          accessibilityLabel={`${item.label}: ${formatValue(item.value)}`}
+          style={styles.horizontalBarRow}>
           <ThemedText type="small" style={styles.horizontalBarLabel}>
             {item.label}
           </ThemedText>
@@ -106,7 +116,8 @@ export function HorizontalBars({
                 styles.horizontalBarFill,
                 {
                   backgroundColor: theme.accent,
-                  width: `${Math.max(2, (item.value / maxValue) * 100)}%`,
+                  width:
+                    item.value === 0 ? '0%' : `${Math.max(2, (item.value / maxValue) * 100)}%`,
                 },
               ]}
             />
@@ -141,7 +152,7 @@ export function ProgressMetric({
             styles.progressFill,
             {
               backgroundColor: theme.accent,
-              width: `${Math.round(value * 100)}%`,
+              width: `${Math.min(100, Math.max(0, Math.round(value * 100)))}%`,
             },
           ]}
         />

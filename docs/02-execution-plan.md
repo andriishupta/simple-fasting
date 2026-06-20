@@ -4,76 +4,76 @@ Structured breakdown of epics and tasks for building Simple Fasting, ordered by 
 
 ## Epic 1 — Foundation
 
-- [ ] Create Expo project
+- [x] Create Expo project
 - [ ] Configure EAS
-- [ ] Setup TypeScript
+- [x] Setup TypeScript
 - [ ] Setup ESLint and Prettier
-- [ ] Setup MMKV
-- [ ] Setup Navigation
-- [ ] Setup Theme System
-- [ ] Setup Accent Colors
+- [x] Setup MMKV
+- [x] Setup Navigation
+- [x] Setup Theme System
+- [x] Setup Accent Colors
 
 ## Epic 2 — Domain Models
 
-- [ ] Create FastSession model
-- [ ] Create Settings model
-- [ ] Create Goals model
-- [ ] Create GraphCache model
+- [x] Create FastSession model
+- [x] Create Settings model
+- [x] Create Goals model
+- [x] Create GraphCache model
 - [ ] Create repositories
 - [ ] Create selectors
 
 ## Epic 3 — Core Fasting
 
-- [ ] Start Fast
-- [ ] End Fast
-- [ ] Continue Fast
-- [ ] Progress Ring
-- [ ] Timer
-- [ ] Presets
-- [ ] Custom Duration
-- [ ] Fast Reasons
+- [x] Start Fast
+- [x] End Fast
+- [x] Continue Fast
+- [x] Progress Ring
+- [x] Timer
+- [x] Presets
+- [x] Custom Duration
+- [x] Fast Reasons
 
 ## Epic 4 — History
 
-- [ ] History Screen
-- [ ] Fast Details
-- [ ] Delete Fast
-- [ ] History Empty State
+- [x] History Screen
+- [x] Fast Details
+- [x] Delete Fast
+- [x] History Empty State
 
 ## Epic 5 — Statistics
 
-- [ ] Current Streak
-- [ ] Longest Streak
-- [ ] Longest Fast
-- [ ] Average Duration
-- [ ] Completion Rate
-- [ ] Total Hours
+- [x] Current Streak
+- [x] Longest Streak
+- [x] Longest Fast
+- [x] Average Duration
+- [x] Completion Rate
+- [x] Total Hours
 
 ## Epic 6 — Graph Engine
 
-- [ ] Weekly Heatmap
-- [ ] Monthly Heatmap
-- [ ] Yearly Heatmap
-- [ ] Monthly Hours
-- [ ] Completion Rate Chart
-- [ ] Goal Achievement
+- [x] Weekly Heatmap
+- [x] Monthly Heatmap
+- [x] Yearly Heatmap
+- [x] Monthly Hours
+- [x] Completion Rate Chart
+- [x] Goal Achievement
 
 ## Epic 7 — Export
 
-- [ ] JSON Export
-- [ ] CSV Export
-- [ ] Share Sheet
+- [x] JSON Export
+- [x] CSV Export
+- [x] Share Sheet
 
 ## Epic 8 — Settings
 
-- [ ] Theme
-- [ ] Accent Colors
-- [ ] Goals
-- [ ] Notifications
+- [x] Theme
+- [x] Accent Colors
+- [x] Goals
+- [x] Notifications
 - [ ] Widgets
 - [ ] Live Activities
 - [ ] Support Creator
-- [ ] Privacy
+- [x] Privacy
 
 ## Epic 9 — Widgets
 
@@ -92,7 +92,7 @@ Structured breakdown of epics and tasks for building Simple Fasting, ordered by 
 
 - [ ] App Icon
 - [ ] Screenshots
-- [ ] Privacy Policy
+- [x] Privacy Policy
 - [ ] Store Metadata
 - [ ] TestFlight
 - [ ] Google Play Internal Testing

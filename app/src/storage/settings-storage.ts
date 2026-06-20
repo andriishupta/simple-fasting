@@ -10,6 +10,7 @@ import {
   createDefaultAppSettings,
   StorageKey,
   AccentColorName,
+  GoalKind,
   ThemePreference,
   type AccentColorName as AccentColorNameType,
   type AppSettings,
@@ -178,8 +179,8 @@ export const refreshSettingsSnapshot = (): AppSettings => {
 };
 
 export const saveSettings = (settings: AppSettings): void => {
-  settingsSnapshot = settings;
   appStorage.insert(StorageKey.Settings, settings);
+  settingsSnapshot = settings;
 };
 
 export const updateSettings = (update: (settings: AppSettings) => AppSettings): AppSettings => {
@@ -210,6 +211,129 @@ export const setLastUsedGoalDurationHours = (lastUsedGoalDurationHours: number):
     lastUsedGoalDurationHours,
     updatedAt: now(),
   }));
+
+const createGoalId = (): string =>
+  `goal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+export const createFastingGoal = ({
+  name,
+  targetDurationHours,
+}: {
+  name: string;
+  targetDurationHours: number;
+}): FastingGoal => {
+  const timestamp = now();
+  const goal: FastingGoal = {
+    id: createGoalId(),
+    kind: GoalKind.Duration,
+    name,
+    targetDurationHours,
+    isDefault: getSettings().goals.length === 0,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+
+  updateSettings((settings) => ({
+    ...settings,
+    goals: [...settings.goals, goal],
+    updatedAt: timestamp,
+  }));
+
+  return goal;
+};
+
+export const updateFastingGoal = ({
+  goalId,
+  name,
+  targetDurationHours,
+}: {
+  goalId: string;
+  name: string;
+  targetDurationHours: number;
+}): FastingGoal | undefined => {
+  const settings = getSettings();
+  const currentGoal = settings.goals.find((goal) => goal.id === goalId);
+
+  if (currentGoal === undefined) {
+    return undefined;
+  }
+
+  const timestamp = now();
+  const goal: FastingGoal = {
+    ...currentGoal,
+    name,
+    targetDurationHours,
+    updatedAt: timestamp,
+  };
+
+  updateSettings((currentSettings) => ({
+    ...currentSettings,
+    goals: currentSettings.goals.map((candidate) =>
+      candidate.id === goalId ? goal : candidate,
+    ),
+    lastUsedGoalDurationHours:
+      currentSettings.lastUsedGoalDurationHours === currentGoal.targetDurationHours
+        ? targetDurationHours
+        : currentSettings.lastUsedGoalDurationHours,
+    updatedAt: timestamp,
+  }));
+
+  return goal;
+};
+
+export const setDefaultFastingGoal = (goalId: string): boolean => {
+  const settings = getSettings();
+  const defaultGoal = settings.goals.find((goal) => goal.id === goalId);
+
+  if (defaultGoal === undefined) {
+    return false;
+  }
+
+  const timestamp = now();
+
+  updateSettings((currentSettings) => ({
+    ...currentSettings,
+    goals: currentSettings.goals.map((goal) => ({
+      ...goal,
+      isDefault: goal.id === goalId,
+      updatedAt: goal.id === goalId || goal.isDefault ? timestamp : goal.updatedAt,
+    })),
+    lastUsedGoalDurationHours: defaultGoal.targetDurationHours,
+    updatedAt: timestamp,
+  }));
+
+  return true;
+};
+
+export const deleteFastingGoal = (goalId: string): boolean => {
+  const settings = getSettings();
+  const deletedGoal = settings.goals.find((goal) => goal.id === goalId);
+
+  if (deletedGoal === undefined || settings.goals.length <= 1) {
+    return false;
+  }
+
+  const remainingGoals = settings.goals.filter((goal) => goal.id !== goalId);
+  const fallbackGoal =
+    remainingGoals.find((goal) => goal.isDefault) ?? remainingGoals[0];
+  const timestamp = now();
+
+  updateSettings((currentSettings) => ({
+    ...currentSettings,
+    goals: remainingGoals.map((goal) => ({
+      ...goal,
+      isDefault: goal.id === fallbackGoal.id,
+      updatedAt: goal.id === fallbackGoal.id ? timestamp : goal.updatedAt,
+    })),
+    lastUsedGoalDurationHours:
+      currentSettings.lastUsedGoalDurationHours === deletedGoal.targetDurationHours
+        ? fallbackGoal.targetDurationHours
+        : currentSettings.lastUsedGoalDurationHours,
+    updatedAt: timestamp,
+  }));
+
+  return true;
+};
 
 export const setDataViewPreference = (dataViewPreference: DataViewPreferenceType): AppSettings =>
   updateSettings((settings) => ({
@@ -456,7 +580,7 @@ export const getAppVersionLabel = (): string =>
 
 export const openWebsite = async (): Promise<void> => openWebsitePath('');
 
-export const openFaq = async (): Promise<void> => openWebsitePath('/faq');
+export const openFaq = async (): Promise<void> => openWebsitePath('/#faq');
 
 export const openPrivacyPolicy = async (): Promise<void> => openWebsitePath('/privacy');
 

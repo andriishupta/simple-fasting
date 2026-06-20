@@ -102,12 +102,7 @@ const migrateSettingsToV1 = (
   const goals: readonly FastingGoal[] =
     settings?.goals === undefined || settings.goals.length === 0
       ? defaultSettings.goals
-      : [
-          ...settings.goals,
-          ...defaultSettings.goals.filter(
-            (defaultGoal) => !settings.goals.some((goal) => goal.id === defaultGoal.id),
-          ),
-        ];
+      : settings.goals;
 
   return {
     ...defaultSettings,

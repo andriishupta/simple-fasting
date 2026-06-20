@@ -1,0 +1,144 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const effectiveDate = 'June 19, 2026';
+const description =
+  'Terms of Use for Simple Fasting, including health disclaimers, acceptable use, local data responsibility, and service limitations.';
+---
+
+<Layout title="Terms of Use — Simple Fasting" description={description} legal>
+  <header class="legal-hero">
+    <div class="shell">
+      <p class="legal-meta">Effective {effectiveDate}</p>
+      <h1>Terms of Use</h1>
+      <p>
+        These terms govern your use of the Simple Fasting mobile application and website. Please
+        read the health and data-responsibility sections carefully.
+      </p>
+    </div>
+  </header>
+
+  <div class="legal-content shell">
+    <nav class="legal-toc" aria-label="Terms sections">
+      <a href="#acceptance">Acceptance</a>
+      <a href="#health">Health disclaimer</a>
+      <a href="#license">App license</a>
+      <a href="#use">Acceptable use</a>
+      <a href="#data">Your data</a>
+      <a href="#services">Availability</a>
+      <a href="#warranty">Disclaimers</a>
+      <a href="#liability">Liability</a>
+      <a href="#changes">Changes</a>
+      <a href="#contact">Contact</a>
+    </nav>
+
+    <article class="prose">
+      <section id="acceptance">
+        <h2>1. Acceptance</h2>
+        <p>
+          By downloading, accessing, or using Simple Fasting, you agree to these Terms of Use and
+          the <a href="/privacy">Privacy Policy</a>. If you do not agree, do not use the app or
+          website.
+        </p>
+      </section>
+
+      <section id="health">
+        <h2>2. Health and medical disclaimer</h2>
+        <p>
+          Simple Fasting is a tracking tool. It does not provide medical advice, diagnosis,
+          treatment, nutrition advice, or emergency services. Timers, reminders, statistics, and
+          goals are informational only and do not determine whether fasting is safe for you.
+        </p>
+        <p>
+          Consult a qualified healthcare professional before fasting, especially if you are
+          pregnant or breastfeeding, under 18, have diabetes or another medical condition, take
+          medication, have a history of an eating disorder, or experience symptoms while fasting.
+          Stop fasting and seek appropriate care if you feel unwell. Do not delay professional care
+          because of information shown by the app.
+        </p>
+      </section>
+
+      <section id="license">
+        <h2>3. Permission to use the app</h2>
+        <p>
+          Subject to these terms and applicable store rules, you receive a limited, personal,
+          non-exclusive, non-transferable, revocable permission to install and use Simple Fasting
+          for lawful personal purposes. No ownership rights are transferred to you.
+        </p>
+      </section>
+
+      <section id="use">
+        <h2>4. Acceptable use</h2>
+        <p>You agree not to:</p>
+        <ul>
+          <li>Use the app or website unlawfully or to harm another person.</li>
+          <li>Misrepresent the app as medical advice or a substitute for professional care.</li>
+          <li>Interfere with, damage, or attempt unauthorized access to the app or website.</li>
+          <li>Remove ownership notices or distribute modified copies in violation of applicable law.</li>
+        </ul>
+      </section>
+
+      <section id="data">
+        <h2>5. Local data and backups</h2>
+        <p>
+          The current app stores fasting history and preferences locally. You are responsible for
+          maintaining access to your device, creating exports you wish to keep, and selecting safe
+          export destinations. Clearing data, uninstalling the app, device loss, storage failure,
+          or operating-system behavior may result in data loss. We cannot recover data that was
+          never transmitted to us.
+        </p>
+      </section>
+
+      <section id="services">
+        <h2>6. Stores, devices, and third-party services</h2>
+        <p>
+          App stores, device operating systems, email providers, export destinations, and links to
+          third-party sites are operated by others. Their terms and privacy policies apply to their
+          services. Features may vary by device, operating-system version, permission settings, and
+          platform availability.
+        </p>
+      </section>
+
+      <section id="warranty">
+        <h2>7. Availability and warranty disclaimer</h2>
+        <p>
+          The app and website are provided on an “as available” basis. To the extent permitted by
+          law, we do not promise uninterrupted operation, perfect accuracy, compatibility with every
+          device, or preservation of local data. Mandatory warranties and consumer rights that
+          cannot legally be excluded remain unaffected.
+        </p>
+      </section>
+
+      <section id="liability">
+        <h2>8. Limitation of liability</h2>
+        <p>
+          To the extent permitted by applicable law, Simple Fasting and its contributors are not
+          liable for indirect, incidental, special, consequential, or punitive losses arising from
+          use of the app or website, including health decisions, missed notifications, or local data
+          loss. This limitation does not apply where liability cannot legally be limited.
+        </p>
+      </section>
+
+      <section id="changes">
+        <h2>9. Changes and termination</h2>
+        <p>
+          We may update the app, website, or these terms. Revised terms will be posted with a new
+          effective date. You may stop using the service at any time. We may restrict access when
+          reasonably necessary to address unlawful use, security, or discontinued operation.
+        </p>
+        <p>
+          These terms are governed by applicable law. Mandatory consumer protections and rights in
+          your place of residence remain in effect.
+        </p>
+      </section>
+
+      <section id="contact">
+        <h2>10. Contact</h2>
+        <p>
+          Questions about these terms can be sent to
+          <a href="mailto:support@simplefasting.app">support@simplefasting.app</a>.
+        </p>
+      </section>
+    </article>
+  </div>
+</Layout>

@@ -1,14 +1,14 @@
-import { Alert, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
-import { router } from 'expo-router';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { router, type Href } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { SegmentedControl as ExpoSegmentedControl } from '@expo/ui/community/segmented-control';
 
-import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import {
   setAccentColorName,
   setThemePreference,
@@ -31,7 +31,12 @@ import {
   shareDataExport,
   SettingsExportFormat,
 } from '@/storage/settings-storage';
-import { AccentColorName, StorageKey, ThemePreference, appStorage } from '@/storage/app-storage';
+import {
+  AccentColorName,
+  StorageKey,
+  ThemePreference,
+  appStorage,
+} from '@/storage/app-storage';
 import { useTheme } from '@/hooks/use-theme';
 import {
   getActiveFastState,
@@ -49,7 +54,13 @@ const themeOptions = [
 
 const accentOptions = [
   AccentColorName.Red,
+  AccentColorName.Orange,
+  AccentColorName.Amber,
+  AccentColorName.Green,
+  AccentColorName.Teal,
   AccentColorName.Blue,
+  AccentColorName.Purple,
+  AccentColorName.Pink,
 ] as const;
 
 const timeToDate = (time: string): Date => {
@@ -161,129 +172,118 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScreenScaffold
-      title="Settings"
-      eyebrow="App preferences"
-      action={
-        <Pressable accessibilityRole="button" onPress={() => router.back()}>
-          <ThemedText type="smallBold" themeColor="accent">
-            Done
-          </ThemedText>
-        </Pressable>
-      }>
-      <SettingsSection title="Appearance">
-        <SegmentedControl
-          label="Theme"
-          values={themeOptions}
-          selectedValue={settings.themePreference}
-          onSelect={setThemePreference}
-        />
-        <AccentPicker
-          selectedAccentName={settings.accentColorName}
-          onSelect={setAccentColorName}
-        />
-      </SettingsSection>
-
-      <SettingsSection title="Notifications">
-        <SettingsSwitch
-          title="Fast end reminder"
-          description="Local notification when the goal is reached."
-          value={settings.notifications.fastEndReminderEnabled}
-          onValueChange={setFastEndReminderEnabled}
-        />
-        <SettingsSwitch
-          title="Daily fasting reminder"
-          description="A local reminder to start your regular fast."
-          value={settings.notifications.dailyReminderEnabled}
-          onValueChange={setDailyReminderEnabled}
-        />
-        {settings.notifications.dailyReminderEnabled && (
-          <TimePicker
-            label="Reminder time"
-            value={settings.notifications.dailyReminderTime ?? '20:00'}
-            onChange={(dailyReminderTime) => {
-              void runNotificationUpdate(async () => {
-                await setDailyReminderTimeAndSchedule(dailyReminderTime);
-              });
-            }}
+    <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.screen}>
+      <View style={styles.screenContent}>
+        <ThemedText type="subtitle" accessibilityRole="header">
+          Settings
+        </ThemedText>
+        <SettingsSection title="Appearance">
+          <SegmentedControl
+            label="Theme"
+            values={themeOptions}
+            selectedValue={settings.themePreference}
+            onSelect={setThemePreference}
           />
-        )}
-      </SettingsSection>
+          <AccentPicker
+            selectedAccentName={settings.accentColorName}
+            onSelect={setAccentColorName}
+          />
+        </SettingsSection>
 
-      <WidgetSettingsSection />
+        <SettingsSection title="Goals">
+          <SettingsActionRow
+            title="Manage fasting goals"
+            description={`${settings.goals.length} saved goal${settings.goals.length === 1 ? '' : 's'}`}
+            onPress={() => router.push('/goals' as Href)}
+          />
+        </SettingsSection>
 
-      <SettingsSection title="Data">
-        <SettingsRow
-          title="Export"
-          description="Fasting data and app metadata."
-          trailing={
-            <View style={styles.exportButtons}>
-              <SmallActionButton label="JSON" onPress={() => exportData(SettingsExportFormat.Json)} />
-              <SmallActionButton label="CSV" onPress={() => exportData(SettingsExportFormat.Csv)} />
-            </View>
-          }
-        />
-        <SettingsActionRow
-          title="Clear data"
-          description="Delete local history, graphs, settings, and active fast."
-          actionLabel="Delete"
-          onPress={clearLocalData}
-        />
-      </SettingsSection>
+        <SettingsSection title="Notifications">
+          <SettingsSwitch
+            title="Fast end reminder"
+            description="Local notification when the goal is reached."
+            value={settings.notifications.fastEndReminderEnabled}
+            onValueChange={setFastEndReminderEnabled}
+          />
+          <SettingsSwitch
+            title="Daily fasting reminder"
+            description="A local reminder to start your regular fast."
+            value={settings.notifications.dailyReminderEnabled}
+            onValueChange={setDailyReminderEnabled}
+          />
+          {settings.notifications.dailyReminderEnabled && (
+            <TimePicker
+              label="Reminder time"
+              value={settings.notifications.dailyReminderTime ?? '20:00'}
+              onChange={(dailyReminderTime) => {
+                void runNotificationUpdate(async () => {
+                  await setDailyReminderTimeAndSchedule(dailyReminderTime);
+                });
+              }}
+            />
+          )}
+        </SettingsSection>
 
-      <SettingsSection title="Support">
-        <SettingsActionRow
-          title="FAQ"
-          description="Open common questions on the website."
-          onPress={() => openExternalAction(openFaq)}
-        />
-        <SettingsActionRow
-          title="Website"
-          description="Visit simplefasting.app."
-          onPress={() => openExternalAction(openWebsite)}
-        />
-        <SettingsActionRow
-          title="Feedback"
-          description="Share an idea or tell us what is not working well."
-          onPress={() => openExternalAction(openFeedbackEmail)}
-        />
-        <SettingsActionRow
-          title="Contact developer"
-          description="Email the developer directly."
-          onPress={() => openExternalAction(openDevEmail)}
-        />
-        <SettingsActionRow
-          title="Report bug"
-          description="Send a bug report by email."
-          onPress={() => openExternalAction(openBugReportEmail)}
-        />
-      </SettingsSection>
+        <SettingsSection title="Data">
+          <SettingsActionRow
+            title="Export JSON"
+            description="Fasting data and app metadata."
+            onPress={() => exportData(SettingsExportFormat.Json)}
+          />
+          <SettingsActionRow
+            title="Export CSV"
+            description="Session history in spreadsheet format."
+            onPress={() => exportData(SettingsExportFormat.Csv)}
+          />
+          <SettingsActionRow
+            title="Clear data"
+            description="Delete local history, graphs, settings, and active fast."
+            destructive
+            onPress={clearLocalData}
+          />
+        </SettingsSection>
 
-      <SettingsSection title="Legal">
-        <SettingsActionRow
-          title="Privacy Policy"
-          description="Local-first, no account, no tracking."
-          onPress={() => openExternalAction(openPrivacyPolicy)}
-        />
-        <SettingsActionRow
-          title="Terms of Use"
-          description="Read app terms and tracking-only disclaimer."
-          onPress={() => openExternalAction(openTerms)}
-        />
-      </SettingsSection>
+        <SettingsSection title="Support">
+          <SettingsActionRow title="FAQ" onPress={() => openExternalAction(openFaq)} />
+          <SettingsActionRow title="Website" onPress={() => openExternalAction(openWebsite)} />
+          <SettingsActionRow
+            title="Feedback"
+            onPress={() => openExternalAction(openFeedbackEmail)}
+          />
+          <SettingsActionRow
+            title="Contact developer"
+            onPress={() => openExternalAction(openDevEmail)}
+          />
+          <SettingsActionRow
+            title="Report bug"
+            onPress={() => openExternalAction(openBugReportEmail)}
+          />
+        </SettingsSection>
 
-      <SettingsSection title="About">
-        <SettingsActionRow
-          title="Support email"
-          description="Contact support@simplefasting.app."
-          onPress={() => openExternalAction(openSupportEmail)}
-        />
-        <SettingsRow
-          title="Build"
-          description={getAppVersionLabel()}
-        />
-      </SettingsSection>
-    </ScreenScaffold>
+        <SettingsSection title="Legal">
+          <SettingsActionRow
+            title="Privacy Policy"
+            onPress={() => openExternalAction(openPrivacyPolicy)}
+          />
+          <SettingsActionRow
+            title="Terms of Use"
+            onPress={() => openExternalAction(openTerms)}
+          />
+        </SettingsSection>
+
+        <SettingsSection title="About">
+          <SettingsActionRow
+            title="Support email"
+            description="support@simplefasting.app"
+            onPress={() => openExternalAction(openSupportEmail)}
+          />
+          <SettingsRow title="Build" description={getAppVersionLabel()} />
+        </SettingsSection>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -293,15 +293,11 @@ function SettingsSection({ title, children }: { title: string; children: React.R
       <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
         {title}
       </ThemedText>
-      <ThemedView type="background" style={styles.sectionPanel}>
+      <ThemedView type="backgroundElement" style={styles.sectionPanel}>
         {children}
       </ThemedView>
     </ThemedView>
   );
-}
-
-function WidgetSettingsSection() {
-  return null;
 }
 
 function SegmentedControl<Value extends string>({
@@ -329,7 +325,8 @@ function SegmentedControl<Value extends string>({
   };
 
   return (
-    <ThemedView style={styles.controlGroup}>
+    <ThemedView
+      style={[styles.controlGroup, { borderBottomColor: theme.backgroundSelected }]}>
       <ThemedText type="smallBold">{label}</ThemedText>
       <ExpoSegmentedControl
         values={values.map((option) => option.label)}
@@ -351,6 +348,7 @@ function TimePicker({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const theme = useTheme();
   const updateTime = (_event: DateTimePickerEvent, date?: Date): void => {
     if (date !== undefined) {
       onChange(dateToTime(date));
@@ -358,7 +356,8 @@ function TimePicker({
   };
 
   return (
-    <ThemedView style={styles.controlGroup}>
+    <ThemedView
+      style={[styles.controlGroup, { borderBottomColor: theme.backgroundSelected }]}>
       <ThemedText type="smallBold">{label}</ThemedText>
       <DateTimePicker
         mode="time"
@@ -380,7 +379,8 @@ function AccentPicker({
   const theme = useTheme();
 
   return (
-    <ThemedView style={styles.controlGroup}>
+    <ThemedView
+      style={[styles.controlGroup, { borderBottomColor: theme.backgroundSelected }]}>
       <ThemedText type="smallBold">Accent color</ThemedText>
       <View style={styles.accentGrid}>
         {accentOptions.map((accentName) => {
@@ -450,14 +450,16 @@ function SettingsSwitch({
 function SettingsActionRow({
   title,
   description,
-  actionLabel = 'Open',
+  destructive = false,
   onPress,
 }: {
   title: string;
-  description: string;
-  actionLabel?: string;
+  description?: string;
+  destructive?: boolean;
   onPress: () => void;
 }) {
+  const theme = useTheme();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -466,27 +468,15 @@ function SettingsActionRow({
       <SettingsRow
         title={title}
         description={description}
-        trailing={<ThemedText themeColor="accent">{actionLabel}</ThemedText>}
+        titleColor={destructive ? theme.danger : undefined}
+        trailing={
+          <SymbolView
+            name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
+            size={16}
+            tintColor={theme.textSecondary}
+          />
+        }
       />
-    </Pressable>
-  );
-}
-
-function SmallActionButton({ label, onPress }: { label: string; onPress: () => void }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.smallButton,
-        { borderColor: theme.accentBorder, backgroundColor: theme.accentBackground },
-        pressed && styles.pressed,
-      ]}>
-      <ThemedText type="smallBold" themeColor="accent">
-        {label}
-      </ThemedText>
     </Pressable>
   );
 }
@@ -495,18 +485,26 @@ function SettingsRow({
   title,
   description,
   trailing,
+  titleColor,
 }: {
   title: string;
-  description: string;
+  description?: string;
   trailing?: React.ReactNode;
+  titleColor?: string;
 }) {
+  const theme = useTheme();
+
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, { borderBottomColor: theme.backgroundSelected }]}>
       <View style={styles.rowText}>
-        <ThemedText>{title}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {description}
+        <ThemedText style={titleColor === undefined ? undefined : { color: titleColor }}>
+          {title}
         </ThemedText>
+        {description !== undefined ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {description}
+          </ThemedText>
+        ) : null}
       </View>
       {trailing}
     </View>
@@ -514,6 +512,17 @@ function SettingsRow({
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingBottom: Spacing.four,
+  },
+  screenContent: {
+    width: '100%',
+    maxWidth: Math.min(MaxContentWidth, 640),
+    gap: Spacing.four,
+    paddingHorizontal: Spacing.four,
+  },
   section: {
     gap: Spacing.two,
   },
@@ -527,6 +536,7 @@ const styles = StyleSheet.create({
   controlGroup: {
     gap: Spacing.two,
     padding: Spacing.three,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   nativeSegmentedControl: {
     minHeight: 36,
@@ -537,8 +547,8 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   accentButton: {
-    width: 94,
-    minHeight: 72,
+    width: 58,
+    minHeight: 58,
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.one,
@@ -556,23 +566,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
     padding: Spacing.three,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   rowText: {
     flex: 1,
     gap: Spacing.one,
-  },
-  exportButtons: {
-    flexDirection: 'row',
-    gap: Spacing.one,
-  },
-  smallButton: {
-    minHeight: 36,
-    minWidth: 58,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.two,
   },
   pressed: {
     opacity: 0.72,

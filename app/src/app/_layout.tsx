@@ -94,7 +94,22 @@ function RootLayoutContent() {
       {startupState.status === 'ready' ? (
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="history/[id]" />
+          <Stack.Screen
+            name="history/[id]"
+            options={{
+              title: 'Edit Fast',
+              headerShown: true,
+              headerBackButtonDisplayMode: 'minimal',
+            }}
+          />
+          <Stack.Screen
+            name="goals"
+            options={{
+              title: 'Fasting Goals',
+              headerShown: true,
+              headerBackButtonDisplayMode: 'minimal',
+            }}
+          />
         </Stack>
       ) : (
         <StartupScreen

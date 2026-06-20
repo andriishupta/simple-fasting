@@ -108,14 +108,20 @@ const normalizeGoals = (
     return fallbackGoals;
   }
 
-  const hasDefaultGoal = goals.some((goal) => goal.isDefault);
+  const uniqueGoals = goals.filter(
+    (goal, index) =>
+      goals.findIndex(
+        (candidate) =>
+          candidate.id === goal.id ||
+          candidate.targetDurationHours === goal.targetDurationHours,
+      ) === index,
+  );
+  const defaultGoal = uniqueGoals.find((goal) => goal.isDefault) ?? uniqueGoals[0];
 
-  return hasDefaultGoal
-    ? goals
-    : goals.map((goal, index) => ({
-        ...goal,
-        isDefault: index === 0,
-      }));
+  return uniqueGoals.map((goal) => ({
+    ...goal,
+    isDefault: goal.id === defaultGoal.id,
+  }));
 };
 
 export const repairSettings = (

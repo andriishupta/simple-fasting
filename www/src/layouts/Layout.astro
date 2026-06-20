@@ -1,23 +1,85 @@
+---
+import '../styles/global.css';
+
+type Props = {
+  title: string;
+  description: string;
+  canonicalPath?: string;
+  image?: string;
+  legal?: boolean;
+  structuredData?: Record<string, unknown>;
+};
+
+const {
+  title,
+  description,
+  canonicalPath = Astro.url.pathname,
+  image = '/images/main-screen.jpg',
+  legal = false,
+  structuredData,
+} = Astro.props;
+const canonicalUrl = new URL(canonicalPath, Astro.site ?? Astro.url.origin);
+const imageUrl = new URL(image, Astro.site ?? Astro.url.origin);
+const year = new Date().getFullYear();
+---
+
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body>
-		<slot />
-	</body>
-</html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light" />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Simple Fasting" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={imageUrl} />
+    <meta property="og:image:alt" content="Simple Fasting app screens" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={imageUrl} />
+    <title>{title}</title>
+    {structuredData && (
+      <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+    )}
+  </head>
+  <body class:list={{ 'legal-page': legal }}>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header">
+      <div class="site-header__inner shell">
+        <a class="brand" href="/" aria-label="Simple Fasting home">
+          <span class="brand__mark" aria-hidden="true"></span>
+          Simple Fasting
+        </a>
+        <nav aria-label="Main navigation">
+          <a href="/#features">Features</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/#faq">FAQ</a>
+        </nav>
+        <a class="button button--small" href="/#download">Get the app</a>
+      </div>
+    </header>
 
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>
+    <main id="main-content">
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell site-footer__inner">
+        <p>© {year} Simple Fasting</p>
+        <nav aria-label="Legal and support">
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/legal">Legal</a>
+          <a href="mailto:support@simplefasting.app">Support</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

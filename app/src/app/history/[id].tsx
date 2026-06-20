@@ -6,6 +6,7 @@ import {
   Alert,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -16,9 +17,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { AppButton } from '@/components/app-button';
 import { AppSurface } from '@/components/app-surface';
 import { FeedbackState } from '@/components/feedback-state';
-import { ScreenScaffold } from '@/components/screen-scaffold';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   deleteFastSession,
@@ -89,21 +89,27 @@ export default function HistoryDetailScreen() {
 
   if (session === undefined) {
     return (
-      <ScreenScaffold title="Edit Fast" eyebrow="History">
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.screen}>
         <FeedbackState
           kind="error"
           title="Fast not found"
           description="This session may have been deleted from local history."
           action={{ label: 'Back to History', onPress: () => router.replace('/history') }}
         />
-      </ScreenScaffold>
+      </ScrollView>
     );
   }
 
   return (
-    <ScreenScaffold title="Edit Fast" eyebrow="History">
+    <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.screen}>
       <DetailContent session={session} />
-    </ScreenScaffold>
+    </ScrollView>
   );
 }
 
@@ -444,6 +450,13 @@ function EditField({
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flexGrow: 1,
+    width: '100%',
+    maxWidth: Math.min(MaxContentWidth, 640),
+    alignSelf: 'center',
+    padding: Spacing.four,
+  },
   content: {
     gap: Spacing.three,
   },

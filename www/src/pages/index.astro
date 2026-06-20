@@ -1,11 +1,188 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const description =
+  'A private, offline fasting timer for iOS and Android with history, statistics, widgets, local reminders, and data export.';
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Simple Fasting',
+  applicationCategory: 'HealthApplication',
+  operatingSystem: 'iOS, Android',
+  description,
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
+  featureList: [
+    'Fasting timer',
+    'Fasting history',
+    'Statistics and heatmaps',
+    'Local notifications',
+    'Home screen widgets',
+    'JSON and CSV export',
+  ],
+};
 ---
 
-<Layout>
-	<Welcome />
+<Layout
+  title="Simple Fasting — Private, offline fasting timer"
+  description={description}
+  structuredData={structuredData}>
+  <section class="hero shell">
+    <div class="hero__copy">
+      <h1>Fasting, without the noise.</h1>
+      <p>
+        A private, offline fasting timer with history, statistics, widgets, and local reminders.
+        No account required.
+      </p>
+      <div class="actions">
+        <a class="button" href="#download">Get the app</a>
+        <a class="button button--secondary" href="#how-it-works">See how it works</a>
+      </div>
+    </div>
+    <figure class="hero__art">
+      <img
+        src="/images/main-screen.jpg"
+        alt="Simple Fasting ready-to-start and active fasting timer screens"
+        width="853"
+        height="1280"
+        loading="eager"
+        fetchpriority="high"
+      />
+    </figure>
+  </section>
+
+  <aside class="trust-band" aria-label="Privacy and ownership">
+    <ul class="trust-list shell">
+      <li>No account</li>
+      <li>No tracking</li>
+      <li>Works offline</li>
+      <li>Export anytime</li>
+    </ul>
+  </aside>
+
+  <section class="section shell" id="how-it-works">
+    <div class="section-heading">
+      <h2>Start in seconds.</h2>
+      <p>One clear flow. No setup ceremony, account, or connection required.</p>
+    </div>
+    <div class="workflow">
+      <article>
+        <h3>Open the app</h3>
+        <p>Your fasting controls are ready immediately.</p>
+      </article>
+      <article>
+        <h3>Choose a goal</h3>
+        <p>Pick a preset, custom duration, or an unlimited fast.</p>
+      </article>
+      <article>
+        <h3>Start fasting</h3>
+        <p>Tap once and let the timer run locally on your phone.</p>
+      </article>
+      <article>
+        <h3>Check your progress</h3>
+        <p>Use the app, local reminder, or widget when you need it.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section section--soft" id="features">
+    <div class="split shell">
+      <div class="split__copy">
+        <h2>Your progress stays useful.</h2>
+        <p>
+          Review completed fasts, understand your routine, and see patterns without sending your
+          history to a service.
+        </p>
+        <ul class="feature-list">
+          <li>Editable fasting history with optional reasons</li>
+          <li>Streaks, duration totals, averages, and completion rate</li>
+          <li>Weekly, monthly, and yearly heatmaps</li>
+        </ul>
+      </div>
+      <figure class="product-frame">
+        <img
+          src="/images/data-screen.jpg"
+          alt="Simple Fasting statistics, graphs, and history screens"
+          width="1280"
+          height="853"
+          loading="lazy"
+          decoding="async"
+        />
+      </figure>
+    </div>
+  </section>
+
+  <section class="section shell">
+    <div class="privacy-statement">
+      <h2>Your data stays yours.</h2>
+      <p>
+        Fasting history and preferences stay on your device. There is no account, advertising SDK,
+        analytics SDK, or custom backend. Export your data as JSON or CSV, or delete it locally at
+        any time.
+      </p>
+    </div>
+  </section>
+
+  <section class="section section--soft">
+    <div class="split split--reverse shell">
+      <figure class="product-frame">
+        <img
+          src="/images/settings-screen.jpg"
+          alt="Simple Fasting appearance, reminder, widget, export, and privacy settings"
+          width="1280"
+          height="853"
+          loading="lazy"
+          decoding="async"
+        />
+      </figure>
+      <div class="split__copy">
+        <h2>Made for the phone in your hand.</h2>
+        <p>
+          Calm, native controls on iOS and Android. Use your system theme, choose an accent, and
+          configure only the reminders and widgets you want.
+        </p>
+        <ul class="feature-list">
+          <li>Local fast-end and daily reminders</li>
+          <li>Home screen widgets and platform-native activity surfaces</li>
+          <li>System, light, and dark appearance</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section shell faq" id="faq">
+    <h2>Frequently asked questions</h2>
+    <details>
+      <summary>Does Simple Fasting need an account?</summary>
+      <p>No. The app does not require registration, a login, or personal information.</p>
+    </details>
+    <details>
+      <summary>Does it work offline?</summary>
+      <p>Yes. Timing, history, statistics, reminders, and settings work without a network connection.</p>
+    </details>
+    <details>
+      <summary>Where is my data stored?</summary>
+      <p>Your active fast, settings, and history are stored locally on your device.</p>
+    </details>
+    <details>
+      <summary>Can I export my data?</summary>
+      <p>Yes. You can create JSON or CSV exports from Settings and share or save them yourself.</p>
+    </details>
+  </section>
+
+  <section class="final-cta" id="download">
+    <div class="shell">
+      <h2>Start a fast. Keep your data.</h2>
+      <p>
+        Simple Fasting is being prepared for iOS and Android. Store links will appear here when the
+        first public release is available.
+      </p>
+      <a class="button" href="mailto:support@simplefasting.app?subject=Simple%20Fasting%20release">
+        Ask about the release
+      </a>
+    </div>
+  </section>
 </Layout>
