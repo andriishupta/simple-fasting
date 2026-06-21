@@ -1,14 +1,3 @@
-jest.mock('expo-notifications', () => ({
-  AndroidImportance: { DEFAULT: 3 },
-  SchedulableTriggerInputTypes: { DATE: 'date', DAILY: 'daily' },
-  setNotificationHandler: jest.fn(),
-  setNotificationChannelAsync: jest.fn(),
-  getPermissionsAsync: jest.fn(),
-  requestPermissionsAsync: jest.fn(),
-  cancelScheduledNotificationAsync: jest.fn(),
-  scheduleNotificationAsync: jest.fn(),
-}));
-
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
@@ -24,12 +13,24 @@ import {
 } from '@/storage/notification-storage';
 import { createSession } from '../../test/fixtures';
 
+jest.mock('expo-notifications', () => ({
+  AndroidImportance: { DEFAULT: 3 },
+  SchedulableTriggerInputTypes: { DATE: 'date', DAILY: 'daily' },
+  setNotificationHandler: jest.fn(),
+  setNotificationChannelAsync: jest.fn(),
+  getPermissionsAsync: jest.fn(),
+  requestPermissionsAsync: jest.fn(),
+  cancelScheduledNotificationAsync: jest.fn(),
+  scheduleNotificationAsync: jest.fn(),
+}));
+
 const setPlatform = (os: typeof Platform.OS): void => {
   Object.defineProperty(Platform, 'OS', { configurable: true, value: os });
 };
 
 describe('notification storage', () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     jest.useFakeTimers().setSystemTime(new Date('2026-06-21T10:00:00.000Z'));
     setPlatform('ios');
     jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({ granted: true } as never);

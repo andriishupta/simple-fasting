@@ -16,9 +16,12 @@ name: Open settings and offline documents
     element: Privacy Policy
     direction: DOWN
 - tapOn: Open offline Privacy Policy
-- assertVisible: Version 1.1
+- assertVisible: Version 1.2
 - assertVisible: No accounts, tracking, advertising, or sale
 - back
+- scrollUntilVisible:
+    element: Terms of Use
+    direction: DOWN
 - tapOn: Open offline Terms of Use
 - assertVisible: Terms of Use
 - assertVisible: Health and emergency disclaimer

@@ -11,7 +11,7 @@ This plan reflects the current `/app` implementation. Checked items exist in cod
 - [x] Shared spacing, radius, surface, button, and feedback primitives
 - [x] ESLint configuration
 - [x] EAS project linkage in Expo config
-- [ ] Add and review `eas.json` build profiles
+- [x] Add and review `eas.json` build profiles
 - [ ] Add formatting command/configuration if the project needs automated formatting
 
 Separate repository and selector layers are intentionally not planned while direct typed storage functions remain simpler.
@@ -84,7 +84,10 @@ Separate repository and selector layers are intentionally not planned while dire
 - [x] Statistics unit tests for local date boundaries and rates
 - [x] TypeScript, lint, test, and static Expo export workflow
 - [x] Simulator screenshot-based UI review on iPhone 17 Pro
-- [ ] Add targeted storage and fasting-flow tests
+- [x] Add targeted storage and fasting-flow tests
+- [x] Add calculation, charts/statistics, notification, export, widget-model, migration, and shared-document tests
+- [x] Add GitHub CI for app quality, website shared-doc verification, and iOS/Android bundle exports
+- [x] Add validated EAS Maestro workflows for iOS and Android primary flows
 - [ ] Test small/large phones, dark mode, and accessibility text sizes
 - [ ] Test current Android device/emulator UI and widget behavior
 - [ ] Test long-running sessions and notification restoration

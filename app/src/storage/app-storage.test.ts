@@ -8,6 +8,7 @@ import {
   appStorage,
   createDefaultAppSettings,
   createDefaultGoals,
+  createEmptyDiagnosticsState,
   createEmptyActiveFastState,
   createEmptyHistoryState,
 } from '@/storage/app-storage';
@@ -31,6 +32,7 @@ describe('app storage', () => {
     });
     expect(createEmptyActiveFastState(timestamp).session).toBeNull();
     expect(createEmptyHistoryState(timestamp).sessions).toEqual([]);
+    expect(createEmptyDiagnosticsState(timestamp).events).toEqual([]);
   });
 
   test('round-trips typed values and supplies defaults', () => {

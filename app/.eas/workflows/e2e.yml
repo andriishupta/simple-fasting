@@ -1,6 +1,7 @@
 name: Native E2E
 
 on:
+  workflow_dispatch: {}
   pull_request:
     branches: [main]
     paths:
@@ -37,6 +38,8 @@ jobs:
         - .maestro/fasting-lifecycle.yml
         - .maestro/settings-and-legal.yml
         - .maestro/goals.yml
+        - .maestro/open-ended-and-data.yml
+        - .maestro/data-views.yml
 
   test_ios:
     name: Test iOS flows
@@ -48,3 +51,5 @@ jobs:
         - .maestro/fasting-lifecycle.yml
         - .maestro/settings-and-legal.yml
         - .maestro/goals.yml
+        - .maestro/open-ended-and-data.yml
+        - .maestro/data-views.yml

@@ -164,11 +164,14 @@ MMKV keys:
 | `settings` | Theme, accent, goals, last selected duration, Data view, and notifications |
 | `activeFast` | Active session and reminder state |
 | `history` | Completed fasting sessions; source of truth |
+| `diagnostics` | Up to 50 recent privacy-filtered local error events; never uploaded automatically |
 
 State management uses React state, small hooks, and MMKV subscriptions. No global state framework is used.
 Statistics and charts are derived directly from History; no unused persisted cache or speculative widget settings are kept.
 
 Storage initialization failures show retry and explicit reset controls. Optional notification restoration failures do not block access to fasting data or the core timer.
+
+Storage initialization, reminder restoration, and render failures can add a limited local diagnostic event. Diagnostic exports exclude fasting history, notes, goals, settings, and device identifiers, redact common email/URL/file-path text, and are shared only through an explicit Settings action. The app does not include remote crash reporting or analytics.
 
 Before the first public release, storage changes may be breaking and development data may be reset when explicitly approved. After the first public release, persisted schema changes require migrations and backward compatibility.
 

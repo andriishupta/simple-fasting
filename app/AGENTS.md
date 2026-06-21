@@ -523,6 +523,16 @@ Canonical Privacy Policy, Terms of Use, and FAQ Markdown lives under `/docs`, ou
 - Keep `content:check` in lint/test or CI so stale generated content fails validation.
 - Commit source Markdown and generated app/website JSON together.
 
+## Automated Testing
+
+- Keep storage, migration, notification, calculation, chart/statistics, export, and widget-model behavior covered by deterministic Jest tests.
+- Use storage-level integration tests for complete local workflows and side-effect coordination.
+- Use React Native Testing Library for component interaction or native-render integration where it adds evidence.
+- Keep `.maestro` flows accessibility-label based and platform-neutral; the EAS workflow must run the same flow list on iOS and Android.
+- `pnpm test:coverage`, TypeScript, lint, shared-content checks, and both native bundle exports must remain CI gates.
+- Never commit `coverage/`; CI may upload it as an artifact.
+- Native widget correctness still requires a rebuilt dev/EAS binary and runtime validation; bundle or unit success alone is not proof of launcher installation.
+
 ---
 
 # Decision Framework

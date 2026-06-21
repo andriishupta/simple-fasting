@@ -13,6 +13,7 @@ import {
 import { router, type Href } from 'expo-router';
 import { Picker } from '@expo/ui/community/picker';
 import {
+  Activity,
   Bell,
   Bug,
   ChevronRight,
@@ -69,6 +70,7 @@ import {
 } from '@/storage/fasting-storage';
 import { cancelScheduledNotification } from '@/storage/notification-storage';
 import { initializeAppStorage } from '@/storage/storage-migrations';
+import { shareDiagnosticReport } from '@/storage/diagnostic-storage';
 
 const themeOptions = [
   {
@@ -158,6 +160,13 @@ export default function SettingsScreen() {
       await shareDataExport(format);
     } catch {
       Alert.alert('Export failed', 'The export file could not be created.');
+    }
+  };
+  const exportDiagnostics = async (): Promise<void> => {
+    try {
+      await shareDiagnosticReport();
+    } catch {
+      Alert.alert('Share failed', 'The local diagnostic report could not be created.');
     }
   };
   const clearLocalData = (): void => {
@@ -299,6 +308,12 @@ export default function SettingsScreen() {
             title="Report bug"
             description="bugs@simplefasting.app"
             onPress={() => openExternalAction(openBugReportEmail)}
+          />
+          <SettingsActionRow
+            icon={Activity}
+            title="Share diagnostics"
+            description="Local errors only. Review before sharing."
+            onPress={exportDiagnostics}
           />
           <SettingsActionRow
             icon={Mail}

@@ -5,6 +5,7 @@ export enum StorageKey {
   Settings = 'settings',
   ActiveFast = 'activeFast',
   History = 'history',
+  Diagnostics = 'diagnostics',
 }
 
 export enum StorageSchemaVersion {
@@ -52,6 +53,12 @@ export enum GoalKind {
 export enum FastingGoalType {
   Standard = 'standard',
   Custom = 'custom',
+}
+
+export enum DiagnosticEventKind {
+  StorageInitialization = 'storage_initialization',
+  ReminderReconciliation = 'reminder_reconciliation',
+  Render = 'render',
 }
 
 export type Timestamp = string;
@@ -119,11 +126,27 @@ export type HistoryState = {
   updatedAt: Timestamp;
 };
 
+export type DiagnosticEvent = {
+  id: string;
+  kind: DiagnosticEventKind;
+  occurredAt: Timestamp;
+  errorName: string;
+  message: string;
+  context: string | null;
+};
+
+export type DiagnosticsState = {
+  schemaVersion: StorageSchemaVersion.V1;
+  events: readonly DiagnosticEvent[];
+  updatedAt: Timestamp;
+};
+
 export type AppStorageValueMap = {
   [StorageKey.Metadata]: StorageMetadata;
   [StorageKey.Settings]: AppSettings;
   [StorageKey.ActiveFast]: ActiveFastState;
   [StorageKey.History]: HistoryState;
+  [StorageKey.Diagnostics]: DiagnosticsState;
 };
 
 export type AppStorage = {
@@ -239,6 +262,12 @@ export const createEmptyHistoryState = (updatedAt: Timestamp): HistoryState => (
   updatedAt,
 });
 
+export const createEmptyDiagnosticsState = (updatedAt: Timestamp): DiagnosticsState => ({
+  schemaVersion: StorageSchemaVersion.V1,
+  events: [],
+  updatedAt,
+});
+
 const appStorageConfiguration: Configuration = {
   id: 'simple-fasting',
   compareBeforeSet: true,
@@ -251,6 +280,7 @@ const storageKeys = [
   StorageKey.Settings,
   StorageKey.ActiveFast,
   StorageKey.History,
+  StorageKey.Diagnostics,
 ] as const;
 
 const parseStoredValue = <Value>(rawValue: string | undefined): Value | undefined => {

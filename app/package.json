@@ -72,6 +72,7 @@
       "<rootDir>/jest.setup.ts"
     ],
     "moduleNameMapper": {
+      "\\.css$": "<rootDir>/test/style-mock.js",
       "^@/(.*)$": "<rootDir>/src/$1"
     },
     "transformIgnorePatterns": [
@@ -80,6 +81,7 @@
     "collectCoverageFrom": [
       "src/storage/**/*.{ts,tsx}",
       "src/utils/**/*.{ts,tsx}",
+      "src/widgets/fasting-widget-model.ts",
       "!src/**/*.d.ts"
     ],
     "coverageDirectory": "coverage",

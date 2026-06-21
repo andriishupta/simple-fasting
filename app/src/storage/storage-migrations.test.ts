@@ -29,6 +29,7 @@ describe('storage initialization and migration', () => {
     expect(appStorage.get(StorageKey.Settings)?.goals).toHaveLength(5);
     expect(appStorage.get(StorageKey.ActiveFast)?.session).toBeNull();
     expect(appStorage.get(StorageKey.History)?.sessions).toEqual([]);
+    expect(appStorage.get(StorageKey.Diagnostics)?.events).toEqual([]);
   });
 
   test('normalizes legacy values and preserves the original initialization time', () => {

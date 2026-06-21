@@ -1,6 +1,7 @@
 import {
   AccentColorName,
   DataViewPreference,
+  DiagnosticEventKind,
   FastStatus,
   FastingGoalType,
   GoalKind,
@@ -11,10 +12,13 @@ import {
   appStorage,
   createDefaultGoals,
   createDefaultAppSettings,
+  createEmptyDiagnosticsState,
   createEmptyActiveFastState,
   createEmptyHistoryState,
   type ActiveFastState,
   type AppSettings,
+  type DiagnosticEvent,
+  type DiagnosticsState,
   type FastSession,
   type FastingGoal,
   type HistoryState,
@@ -59,6 +63,7 @@ const dataViewPreferences = Object.values(DataViewPreference);
 const timerViewPreferences = Object.values(TimerViewPreference);
 const fastStatuses = Object.values(FastStatus);
 const fastingGoalTypes = Object.values(FastingGoalType);
+const diagnosticEventKinds = Object.values(DiagnosticEventKind);
 
 const sanitizeTimestamp = (value: unknown, fallback: Timestamp): Timestamp =>
   isTimestamp(value) ? value : fallback;
@@ -326,6 +331,62 @@ export const repairMetadata = (
     },
     repaired: true,
     reason: 'Metadata was normalized.',
+  };
+};
+
+const sanitizeDiagnosticEvent = (value: unknown): DiagnosticEvent | null => {
+  if (
+    !isRecord(value) ||
+    !isString(value.id) ||
+    !isEnumValue(diagnosticEventKinds, value.kind) ||
+    !isTimestamp(value.occurredAt) ||
+    !isString(value.errorName) ||
+    !isString(value.message)
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    kind: value.kind,
+    occurredAt: value.occurredAt,
+    errorName: value.errorName,
+    message: value.message,
+    context: isNullableString(value.context) ? value.context : null,
+  };
+};
+
+export const repairDiagnostics = (
+  value: unknown,
+  timestamp: Timestamp,
+): RepairResult<DiagnosticsState> => {
+  if (value === undefined) {
+    return { value: undefined, repaired: false, reason: null };
+  }
+
+  if (!isRecord(value)) {
+    return {
+      value: createEmptyDiagnosticsState(timestamp),
+      repaired: true,
+      reason: 'Diagnostics root was not an object.',
+    };
+  }
+
+  const events = Array.isArray(value.events)
+    ? value.events.flatMap((event) => {
+        const sanitizedEvent = sanitizeDiagnosticEvent(event);
+        return sanitizedEvent === null ? [] : [sanitizedEvent];
+      }).slice(-50)
+    : [];
+
+  return {
+    value: {
+      schemaVersion: StorageSchemaVersion.V1,
+      events,
+      updatedAt: sanitizeTimestamp(value.updatedAt, timestamp),
+    },
+    repaired: true,
+    reason: 'Diagnostics were normalized.',
   };
 };
 

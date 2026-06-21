@@ -10,10 +10,9 @@ import {
   appStorage,
   createEmptyActiveFastState,
   StorageKey,
-  TimerViewPreference,
   type ActiveFastState,
-  type FastSession,
 } from '@/storage/app-storage';
+import { createFastingWidgetModel } from '@/widgets/fasting-widget-model';
 
 const widgetName = 'FastingWidget';
 const appUrl = 'simple-fasting://';
@@ -39,26 +38,6 @@ const darkTheme: WidgetTheme = {
   secondary: '#A9AFBD',
 };
 
-const formatTimer = (
-  session: FastSession,
-  timerViewPreference: TimerViewPreference,
-  currentTime = Date.now(),
-): string => {
-  const elapsedMinutes = Math.max(
-    0,
-    Math.floor((currentTime - Date.parse(session.startedAt)) / 60_000),
-  );
-  const goalMinutes = session.goalDurationHours * 60;
-  const shownMinutes =
-    timerViewPreference === TimerViewPreference.Remaining && goalMinutes > 0
-      ? Math.max(0, goalMinutes - elapsedMinutes)
-      : elapsedMinutes;
-  const hours = Math.floor(shownMinutes / 60);
-  const minutes = shownMinutes % 60;
-
-  return `${hours}h ${String(minutes).padStart(2, '0')}m`;
-};
-
 function AndroidFastingWidget({
   state,
   theme,
@@ -66,16 +45,14 @@ function AndroidFastingWidget({
   state: ActiveFastState;
   theme: WidgetTheme;
 }) {
-  const { session, timerViewPreference } = state;
-  const isActive = session !== null;
+  const model = createFastingWidgetModel(state);
+  const isActive = model.status === 'active';
 
   return (
     <FlexWidget
       clickAction="OPEN_URI"
       clickActionData={{ uri: appUrl }}
-      accessibilityLabel={
-        isActive ? `Fasting timer ${formatTimer(session, timerViewPreference)}` : 'Open Simple Fasting to start a fast'
-      }
+      accessibilityLabel={model.accessibilityLabel}
       style={{
         width: 'match_parent',
         height: 'match_parent',
@@ -93,7 +70,7 @@ function AndroidFastingWidget({
       {isActive ? (
         <FlexWidget style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
           <TextWidget
-            text={formatTimer(session, timerViewPreference)}
+            text={model.displayTime}
             maxLines={1}
             style={{
               color: theme.primary,
@@ -103,7 +80,7 @@ function AndroidFastingWidget({
             }}
           />
           <TextWidget
-            text={session.goalDurationHours > 0 ? `${session.goalDurationHours}h goal` : 'Open-ended fast'}
+            text={model.subtitle}
             maxLines={1}
             style={{ color: theme.secondary, fontSize: 12, fontWeight: '500' }}
           />
@@ -111,12 +88,12 @@ function AndroidFastingWidget({
       ) : (
         <FlexWidget style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
           <TextWidget
-            text="Ready to fast?"
+            text={model.headline}
             maxLines={2}
             style={{ color: theme.primary, fontSize: 21, fontWeight: '700' }}
           />
           <TextWidget
-            text="Tap to start"
+            text={model.subtitle}
             style={{ color: theme.secondary, fontSize: 12, fontWeight: '500' }}
           />
         </FlexWidget>

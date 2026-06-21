@@ -10,6 +10,7 @@ import {
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 
 import { TimerViewPreference, type ActiveFastState } from '@/storage/app-storage';
+import { createFastingWidgetModel } from '@/widgets/fasting-widget-model';
 
 type FastingWidgetProps = {
   goalDurationHours: number;
@@ -101,10 +102,9 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
 const fastingWidget = createWidget<FastingWidgetProps>('FastingWidget', FastingWidgetView);
 
 export const updateFastingWidget = (state: ActiveFastState): void => {
-  const { session, timerViewPreference } = state;
-  const startedAt = session === null ? 0 : new Date(session.startedAt).getTime();
+  const model = createFastingWidgetModel(state);
   const props: FastingWidgetProps =
-    session === null
+    model.status === 'inactive'
       ? {
           goalDurationHours: 0,
           goalEndsAt: 0,
@@ -113,11 +113,11 @@ export const updateFastingWidget = (state: ActiveFastState): void => {
           timerView: TimerViewPreference.Elapsed,
         }
       : {
-          goalDurationHours: session.goalDurationHours,
-          goalEndsAt: startedAt + session.goalDurationHours * 3_600_000,
-          startedAt,
+          goalDurationHours: model.goalDurationHours,
+          goalEndsAt: model.goalEndsAt,
+          startedAt: model.startedAt,
           status: 'active',
-          timerView: timerViewPreference,
+          timerView: model.timerView,
         };
 
   try {

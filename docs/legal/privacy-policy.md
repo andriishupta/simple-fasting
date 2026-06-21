@@ -1,9 +1,9 @@
 ---
 id: privacy-policy
 title: Privacy Policy
-version: 1.1
+version: 1.2
 effectiveDate: 2026-06-21
-description: How Simple Fasting handles local app data, website requests, support emails, exports, privacy rights, and future product changes.
+description: How Simple Fasting handles local app data, local diagnostics, website requests, support emails, exports, privacy rights, and future product changes.
 intro: Simple Fasting is built so fasting information can remain on your device. This policy describes the current app and website, what information may be handled, and the choices available to you.
 ---
 
@@ -22,6 +22,7 @@ The app stores the information needed to provide its features locally on your de
 - Reminder, appearance, accent, and widget preferences.
 - Statistics, charts, streaks, and heatmaps derived locally from fasting history.
 - Local storage metadata needed to validate and maintain app data.
+- A limited local diagnostic log when storage initialization, reminder restoration, or app rendering fails.
 
 This information is used on your device to operate the timer, history, statistics, local notifications, supported widgets, settings, and exports. We do not intentionally receive this local app information.
 
@@ -51,13 +52,17 @@ Email is not a secure channel for sensitive health information. Do not send fast
 
 Support messages are kept only as long as reasonably needed for the request, security, legal obligations, and legitimate recordkeeping, then deleted or de-identified where practicable. You may ask us to delete a support conversation, subject to legal and security retention requirements.
 
-## 6. Permissions, notifications, widgets, and exports
+## 6. Permissions, notifications, widgets, exports, and diagnostics
 
 Notification permission is requested only when you enable reminders. Notifications are scheduled locally through the operating system. Supported widgets receive the limited local fasting state needed to display them.
 
 You can change notification permissions in device settings and reminder or widget preferences in the app. Denying optional permissions may disable the related feature but does not prevent basic local fasting tracking.
 
 Exports are created only when you request them. An export leaves the app when you choose a destination through the operating-system share sheet. You are responsible for the destination, recipients, security, and later deletion of exported files.
+
+When certain app errors occur, Simple Fasting may keep up to 50 recent diagnostic events in local app storage. A diagnostic event can include its time and category, a sanitized error name and message, limited component context, app version, build version, and platform. The diagnostic report is designed not to include fasting history, goals, notes, settings, account identifiers, advertising identifiers, or device identifiers. Potential email addresses, web addresses, and local file paths in error text are redacted where recognized, but you should still review a report before sharing it.
+
+Diagnostic events are not analytics and are not automatically transmitted. They remain on the device until they are removed by the rolling limit, app-data clearing, or uninstall behavior. The report leaves the app only when you choose Share diagnostics and select a destination in the operating-system share sheet. If you attach it to an email, the email practices in Section 5 apply.
 
 ## 7. Purposes and legal grounds
 
@@ -74,6 +79,7 @@ You control information stored by the app and can:
 - Clear local app data from Settings.
 - Remove app data by uninstalling the app, subject to operating-system backups and retention behavior.
 - Disable notifications or remove widgets through app or device settings.
+- Review and explicitly share a local diagnostic report; clearing app data also clears local diagnostics.
 
 Clearing or uninstalling may be irreversible. Create and safely store an export first if you need a copy. We cannot restore information that was never transmitted to us.
 

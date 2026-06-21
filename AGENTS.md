@@ -68,6 +68,13 @@ Shared-content synchronization is a mandatory build invariant:
 - CI should run `node scripts/sync-shared-content.mjs --check` to detect stale generated files;
 - changes to the Markdown schema, generator, targets, or lifecycle hooks must be reflected in the root, app, and website README and AGENTS files.
 
+Automated verification is also a repository invariant:
+
+- keep GitHub CI checks for app type/lint/coverage, the website shared-doc production verifier, and both iOS/Android bundle exports;
+- keep native E2E flows platform-neutral and run the same Maestro set on iOS and Android through the validated EAS workflow;
+- do not commit generated coverage output;
+- when behavior changes, update the narrowest useful unit or integration test and the relevant primary E2E flow.
+
 The current implementation in `/app` is the source of truth for behavior that already exists. Documentation is the source of truth for product intent, remaining work, release requirements, and future scope.
 
 Keep implementation and documentation synchronized. Do not silently diverge from documented requirements or describe unimplemented behavior as shipped.

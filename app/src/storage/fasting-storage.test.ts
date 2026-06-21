@@ -1,11 +1,3 @@
-jest.mock('@/storage/notification-storage', () => ({
-  cancelScheduledNotification: jest.fn(),
-  requestLocalNotificationPermission: jest.fn(),
-  scheduleDailyReminderNotification: jest.fn(),
-  scheduleFastEndNotification: jest.fn(),
-}));
-jest.mock('@/widgets/fasting-widget', () => ({ updateFastingWidget: jest.fn() }));
-
 import {
   FastStatus,
   StorageKey,
@@ -32,6 +24,14 @@ import {
 import * as notificationStorage from '@/storage/notification-storage';
 import { getSettings, refreshSettingsSnapshot, saveSettings } from '@/storage/settings-storage';
 import * as fastingWidget from '@/widgets/fasting-widget';
+
+jest.mock('@/storage/notification-storage', () => ({
+  cancelScheduledNotification: jest.fn(),
+  requestLocalNotificationPermission: jest.fn(),
+  scheduleDailyReminderNotification: jest.fn(),
+  scheduleFastEndNotification: jest.fn(),
+}));
+jest.mock('@/widgets/fasting-widget', () => ({ updateFastingWidget: jest.fn() }));
 
 const initialTime = new Date('2026-06-21T10:00:00.000Z');
 const mockCancelScheduledNotification = jest.mocked(

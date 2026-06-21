@@ -1,3 +1,4 @@
+import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { type FastSession } from '@/storage/app-storage';
@@ -8,8 +9,6 @@ export const configureLocalNotificationBehavior = async (): Promise<void> => {
   if (Platform.OS === 'web') {
     return;
   }
-
-  const Notifications = await import('expo-notifications');
 
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -46,8 +45,6 @@ export const requestLocalNotificationPermission = async (): Promise<boolean> => 
     return false;
   }
 
-  const Notifications = await import('expo-notifications');
-
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(notificationChannelId, {
       name: 'Fasting reminders',
@@ -71,7 +68,6 @@ export const hasLocalNotificationPermission = async (): Promise<boolean> => {
     return false;
   }
 
-  const Notifications = await import('expo-notifications');
   const permissions = await Notifications.getPermissionsAsync();
 
   return permissions.granted;
@@ -83,8 +79,6 @@ export const cancelScheduledNotification = async (
   if (notificationId === null || Platform.OS === 'web') {
     return;
   }
-
-  const Notifications = await import('expo-notifications');
 
   await Notifications.cancelScheduledNotificationAsync(notificationId);
 };
@@ -104,7 +98,6 @@ export const scheduleFastEndNotification = async ({
     return null;
   }
 
-  const Notifications = await import('expo-notifications');
   const triggerDate = new Date(
     new Date(session.startedAt).getTime() + session.goalDurationHours * 3_600_000,
   );
@@ -138,8 +131,6 @@ export const scheduleDailyReminderNotification = async (
   if (reminderTime === null || !(await hasLocalNotificationPermission())) {
     return null;
   }
-
-  const Notifications = await import('expo-notifications');
 
   return Notifications.scheduleNotificationAsync({
     content: {

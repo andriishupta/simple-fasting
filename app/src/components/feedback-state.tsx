@@ -32,6 +32,7 @@ export function FeedbackState({
 
   return (
     <View
+      accessible
       accessibilityRole={kind === 'error' ? 'alert' : 'summary'}
       style={[
         styles.container,

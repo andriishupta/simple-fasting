@@ -28,3 +28,13 @@ node scripts/sync-shared-content.mjs
 Use `node scripts/sync-shared-content.mjs --check` in CI to fail when generated content is stale. Do not edit either generated `shared-documents.json` file directly.
 
 Synchronization is mandatory before builds. `www` runs it through `prebuild`; `app` runs it through its Expo `prebuild` command and the EAS `eas-build-pre-install` hook. App start, native run, web, lint, and tests also synchronize or check content as appropriate.
+
+## Automated verification
+
+GitHub Actions runs on pull requests and pushes to `main`:
+
+- app TypeScript, lint, Jest coverage, and shared-content drift checks;
+- the Astro production build plus a static verifier that compares all rendered legal/FAQ content with the generated source and checks internal routes;
+- independent Expo bundle exports for iOS and Android.
+
+Native Maestro flows live in `app/.maestro`. The validated EAS workflow in `app/.eas/workflows/e2e.yml` builds credential-free simulator/APK binaries and runs the same fasting, history, goals, settings, legal, and cancellation flows on both iOS and Android for app-related pull requests.

@@ -2,9 +2,9 @@
   "privacy": {
     "id": "privacy-policy",
     "title": "Privacy Policy",
-    "version": "1.1",
+    "version": "1.2",
     "effectiveDate": "2026-06-21",
-    "description": "How Simple Fasting handles local app data, website requests, support emails, exports, privacy rights, and future product changes.",
+    "description": "How Simple Fasting handles local app data, local diagnostics, website requests, support emails, exports, privacy rights, and future product changes.",
     "intro": "Simple Fasting is built so fasting information can remain on your device. This policy describes the current app and website, what information may be handled, and the choices available to you.",
     "sections": [
       {
@@ -36,7 +36,8 @@
               "Fasting goals and optional notes you enter.",
               "Reminder, appearance, accent, and widget preferences.",
               "Statistics, charts, streaks, and heatmaps derived locally from fasting history.",
-              "Local storage metadata needed to validate and maintain app data."
+              "Local storage metadata needed to validate and maintain app data.",
+              "A limited local diagnostic log when storage initialization, reminder restoration, or app rendering fails."
             ]
           },
           {
@@ -104,8 +105,8 @@
         ]
       },
       {
-        "id": "permissions-notifications-widgets-and-exports",
-        "title": "6. Permissions, notifications, widgets, and exports",
+        "id": "permissions-notifications-widgets-exports-and-diagnostics",
+        "title": "6. Permissions, notifications, widgets, exports, and diagnostics",
         "blocks": [
           {
             "type": "paragraph",
@@ -118,6 +119,14 @@
           {
             "type": "paragraph",
             "text": "Exports are created only when you request them. An export leaves the app when you choose a destination through the operating-system share sheet. You are responsible for the destination, recipients, security, and later deletion of exported files."
+          },
+          {
+            "type": "paragraph",
+            "text": "When certain app errors occur, Simple Fasting may keep up to 50 recent diagnostic events in local app storage. A diagnostic event can include its time and category, a sanitized error name and message, limited component context, app version, build version, and platform. The diagnostic report is designed not to include fasting history, goals, notes, settings, account identifiers, advertising identifiers, or device identifiers. Potential email addresses, web addresses, and local file paths in error text are redacted where recognized, but you should still review a report before sharing it."
+          },
+          {
+            "type": "paragraph",
+            "text": "Diagnostic events are not analytics and are not automatically transmitted. They remain on the device until they are removed by the rolling limit, app-data clearing, or uninstall behavior. The report leaves the app only when you choose Share diagnostics and select a destination in the operating-system share sheet. If you attach it to an email, the email practices in Section 5 apply."
           }
         ]
       },
@@ -150,7 +159,8 @@
               "Export app data in JSON or CSV format.",
               "Clear local app data from Settings.",
               "Remove app data by uninstalling the app, subject to operating-system backups and retention behavior.",
-              "Disable notifications or remove widgets through app or device settings."
+              "Disable notifications or remove widgets through app or device settings.",
+              "Review and explicitly share a local diagnostic report; clearing app data also clears local diagnostics."
             ]
           },
           {
@@ -264,7 +274,7 @@
   "terms": {
     "id": "terms-of-use",
     "title": "Terms of Use",
-    "version": "1.1",
+    "version": "1.2",
     "effectiveDate": "2026-06-21",
     "description": "Terms governing Simple Fasting, including eligibility, health disclaimers, app-store terms, local data, acceptable use, sanctions, and future features.",
     "intro": "These terms govern use of the Simple Fasting app and website. They include important health, local-data, app-store, and legal-compliance provisions.",
@@ -389,11 +399,11 @@
         "blocks": [
           {
             "type": "paragraph",
-            "text": "The Privacy Policy explains current data practices. The current app has no free or paid account, advertising SDK, analytics SDK, cross-app tracking, or Simple Fasting backend. Local-first does not mean that your unlocked device, notifications, widgets, device backups, emails, or exported files cannot expose information to others."
+            "text": "The Privacy Policy explains current data practices, including limited privacy-filtered diagnostic events stored locally after certain app errors. The current app has no free or paid account, advertising SDK, analytics SDK, cross-app tracking, or Simple Fasting backend. Local-first does not mean that your unlocked device, notifications, widgets, device backups, emails, diagnostic reports, or exported files cannot expose information to others."
           },
           {
             "type": "paragraph",
-            "text": "You are responsible for information you choose to place in notes, emails, exports, and third-party destinations. Do not submit content you lack the right to use or disclose."
+            "text": "You are responsible for information you choose to place in notes, emails, exports, diagnostic-report destinations, and other third-party destinations. Review files before sharing and do not submit content you lack the right to use or disclose."
           }
         ]
       },
@@ -546,8 +556,8 @@
   "faq": {
     "id": "faq",
     "title": "Frequently Asked Questions",
-    "version": "1.1",
-    "description": "Answers about Simple Fasting accounts, privacy, tracking, email, local data, exports, health, availability, and future changes.",
+    "version": "1.2",
+    "description": "Answers about Simple Fasting accounts, privacy, tracking, email, local diagnostics, exports, health, availability, and future changes.",
     "intro": "Practical answers about the current Simple Fasting app. Features described as future or planned are not part of the current release.",
     "sections": [
       {
@@ -641,6 +651,20 @@
           {
             "type": "paragraph",
             "text": "Do not email medical records, passwords, government identifiers, payment information, or full fasting exports. Send only what is needed to explain the issue. You may ask us to delete a support conversation, subject to legal and security retention requirements."
+          }
+        ]
+      },
+      {
+        "id": "does-the-app-collect-crash-or-diagnostic-information",
+        "title": "Does the app collect crash or diagnostic information?",
+        "blocks": [
+          {
+            "type": "paragraph",
+            "text": "It does not send analytics or crash reports automatically. After certain storage, reminder-restoration, or rendering errors, the app may keep up to 50 recent diagnostic events locally. These events contain limited error and app-build context and are designed not to contain fasting history, goals, notes, settings, advertising identifiers, or device identifiers."
+          },
+          {
+            "type": "paragraph",
+            "text": "In Settings, Share diagnostics creates a JSON report and opens the operating-system share sheet. Nothing is sent unless you choose a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the diagnostic log."
           }
         ]
       },

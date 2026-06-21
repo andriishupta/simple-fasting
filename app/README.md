@@ -52,7 +52,7 @@ The active state shows a compact progress timer, start/end times, local reminder
 - **Goals** — opens Goals.
 - **Notifications** — fast-end reminder and daily reminder with a minimal Hours/Minutes wheel that follows the active theme without a nested card or redundant label.
 - **Data** — JSON export, CSV export, and Clear data.
-- **About** — website, FAQ, bug-report email (`bugs@simplefasting.app`), support email, and build version.
+- **About** — website, FAQ, bug-report email (`bugs@simplefasting.app`), privacy-filtered local diagnostic export, support email, and build version.
 - **Legal** — external and offline Privacy Policy and Terms.
 
 ### Supporting Stack Screens
@@ -77,6 +77,12 @@ Small home-screen widgets are implemented on both platforms.
 iOS uses `expo-widgets`; Android uses `react-native-android-widget`. Medium/large widgets, lock-screen widgets, Live Activities, Dynamic Island, and Android ongoing notifications are not implemented.
 The local `with-widget-version` config plugin keeps the generated iOS extension version aligned with the containing app, working around the widget generator's fixed Xcode marketing version.
 
+### Widget installation checks
+
+Widgets are native extensions/providers and are not available from Expo Go or a JavaScript-only update. After changing widget code, plugins, bundle identifiers, or app groups, regenerate and reinstall a development/EAS build, launch the app once, then use the system widget picker. On Android, use a launcher/emulator image that supports home-screen widgets. If an old binary was installed before widget plugins were configured, uninstall it before installing the rebuilt binary.
+
+`expo config --type prebuild` should show the iOS `ExpoWidgetsTarget`, `app.simplefasting.ExpoWidgetsTarget`, and `group.app.simplefasting`. A generated Android prebuild should contain the `FastingWidget` receiver and `widgetprovider_fastingwidget.xml`.
+
 ## Notifications
 
 Notifications are local only through `expo-notifications`.
@@ -96,10 +102,13 @@ MMKV stores:
 - `settings`;
 - `activeFast`;
 - `history`.
+- `diagnostics` — at most 50 recent privacy-filtered local app errors.
 
 History is the source of truth for statistics and charts, which are derived in memory rather than persisted in a separate cache. Users can export JSON or CSV through the native share sheet and can clear all local data with confirmation.
 
 Core fasting writes complete before optional notification cleanup or rescheduling. If the platform notification service fails, local fasting state remains usable and startup does not enter a blocking recovery screen.
+
+Storage initialization, reminder restoration, and render errors can be recorded locally. Nothing is uploaded automatically. The diagnostic JSON excludes fasting history, notes, goals, settings, and device identifiers, redacts common email/URL/path text, and leaves the app only after **Share diagnostics** is selected. Clear data also clears diagnostics.
 
 Before the first public release, breaking local schema changes are acceptable. After release, persisted changes require explicit migrations and backward compatibility.
 
@@ -158,12 +167,23 @@ Common commands:
 pnpm exec tsc --noEmit
 pnpm lint
 pnpm test
+pnpm test:coverage
 pnpm exec expo export --platform web --output-dir /tmp/simple-fasting-web
 pnpm exec expo export --platform ios --output-dir /tmp/simple-fasting-ios
 pnpm exec expo export --platform android --output-dir /tmp/simple-fasting-android
 ```
 
 Static exports verify bundling but do not replace simulator/device testing for notifications, MMKV, gestures, and widgets.
+
+## Testing and CI
+
+- Jest unit tests cover calculations, statistics/charts, goal selection, reminders, validation/migrations, exports, and widget view models.
+- Storage integration tests exercise start/end/cancel/edit/delete/reconcile flows against the MMKV adapter and verify notification/widget coordination.
+- React Native Testing Library checks shared-document rendering and interaction semantics.
+- Maestro flows in `.maestro` cover the primary user paths. `.eas/workflows/e2e.yml` runs them against both iOS simulator and Android APK builds.
+- `.github/workflows/ci.yml` runs deterministic checks and both platform bundle gates; EAS owns native emulator E2E.
+
+Coverage output is generated under `coverage/` and is not committed. Appium is intentionally not part of the current stack.
 
 ## Shared legal and FAQ content
 
@@ -184,7 +204,6 @@ Commit canonical Markdown and both generated JSON files together.
 - native Android visual/regression pass;
 - release build profiles and signing validation;
 - store assets, screenshots, and metadata;
-- broader automated tests;
 - decide whether bulk history actions or medium widgets belong in v1.
 
 See `../docs/plan/02-execution-plan.md` and `../docs/plan/03-release-deployment-guide.md` for the authoritative remaining-work lists.

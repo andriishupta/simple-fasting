@@ -4,6 +4,7 @@ import {
   appStorage,
   createDefaultAppSettings,
   createDefaultStorageMetadata,
+  createEmptyDiagnosticsState,
   createEmptyActiveFastState,
   createEmptyHistoryState,
   StorageKey,
@@ -17,6 +18,7 @@ import {
 import {
   quarantineIfRawParseFailed,
   repairActiveFast,
+  repairDiagnostics,
   repairHistory,
   repairMetadata,
   repairSettings,
@@ -149,6 +151,11 @@ export const initializeAppStorage = (): void => {
     timestamp,
     repair: repairHistory,
   });
+  const diagnostics = readRepairedValue({
+    key: StorageKey.Diagnostics,
+    timestamp,
+    repair: repairDiagnostics,
+  });
 
   appStorage.insert(
     StorageKey.Metadata,
@@ -168,6 +175,11 @@ export const initializeAppStorage = (): void => {
   appStorage.insert(
     StorageKey.History,
     history ?? createEmptyHistoryState(timestamp),
+  );
+
+  appStorage.insert(
+    StorageKey.Diagnostics,
+    diagnostics ?? createEmptyDiagnosticsState(timestamp),
   );
 
 };

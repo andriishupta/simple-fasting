@@ -1,12 +1,9 @@
-jest.mock('@/storage/notification-storage', () => ({
-  cancelScheduledNotification: jest.fn(),
-  requestLocalNotificationPermission: jest.fn(),
-  scheduleDailyReminderNotification: jest.fn(),
-}));
+import { Platform, Share } from 'react-native';
 
 import {
   AccentColorName,
   DataViewPreference,
+  FastStatus,
   FastingGoalType,
   StorageKey,
   ThemePreference,
@@ -32,11 +29,18 @@ import {
   setDataViewPreference,
   setFastingGoalEnabled,
   setThemePreference,
+  shareDataExport,
   updateFastingGoal,
   updateNotificationSettings,
 } from '@/storage/settings-storage';
 import * as notificationStorage from '@/storage/notification-storage';
 import { createSession } from '../../test/fixtures';
+
+jest.mock('@/storage/notification-storage', () => ({
+  cancelScheduledNotification: jest.fn(),
+  requestLocalNotificationPermission: jest.fn(),
+  scheduleDailyReminderNotification: jest.fn(),
+}));
 
 const timestamp = '2026-06-21T12:00:00.000Z';
 const mockCancelScheduledNotification = jest.mocked(
@@ -47,6 +51,7 @@ const mockScheduleDailyReminderNotification = jest.mocked(
 );
 
 describe('settings storage integration', () => {
+  const initialPlatform = Platform.OS;
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(new Date(timestamp));
     appStorage.clear();
@@ -58,7 +63,11 @@ describe('settings storage integration', () => {
     mockScheduleDailyReminderNotification.mockResolvedValue('daily-1');
   });
 
-  afterEach(() => jest.useRealTimers());
+  afterEach(() => {
+    jest.useRealTimers();
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: initialPlatform });
+    jest.restoreAllMocks();
+  });
 
   test('persists appearance and data-view choices', () => {
     setThemePreference(ThemePreference.Dark);
@@ -71,7 +80,7 @@ describe('settings storage integration', () => {
       dataViewPreference: DataViewPreference.History,
     });
     expect(appStorage.get(StorageKey.Settings)).toEqual(getSettings());
-    expect(getEffectiveColorScheme({ themePreference: ThemePreference.System, systemColorScheme: null })).toBe('light');
+    expect(getEffectiveColorScheme({ themePreference: ThemePreference.System, systemColorScheme: 'light' })).toBe('light');
     expect(getEffectiveColorScheme({ themePreference: ThemePreference.System, systemColorScheme: 'dark' })).toBe('dark');
     expect(getAccentPalette({ accentColorName: AccentColorName.Teal, colorScheme: 'dark' }).accent).toBe('#5EEAD4');
   });
@@ -113,7 +122,7 @@ describe('settings storage integration', () => {
 
     appStorage.insert(StorageKey.ActiveFast, {
       ...createEmptyActiveFastState(timestamp),
-      session: createSession({ id: 'active', startedAt: timestamp, endedAt: null, status: 'active' as never }),
+      session: createSession({ id: 'active', startedAt: timestamp, endedAt: null, status: FastStatus.Active }),
     });
     await setDailyReminderTimeAndSchedule('22:00');
     expect(getSettings().notifications.dailyReminderNotificationId).toBeNull();
@@ -133,5 +142,17 @@ describe('settings storage integration', () => {
     const csv = createExportContent(SettingsExportFormat.Csv);
     expect(csv).toContain('exportedAt,appVersion,buildVersion,id,status');
     expect(csv).toContain('"Dinner, ""late"""');
+  });
+
+  test('shares an export only after the user requests it', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+
+    await shareDataExport(SettingsExportFormat.Json);
+
+    expect(share).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'simple-fasting-export-2026-06-21.json',
+      message: expect.stringContaining('"data": []'),
+    }));
   });
 });

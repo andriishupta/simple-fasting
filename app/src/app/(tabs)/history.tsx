@@ -26,7 +26,6 @@ import {
   deleteFastSession,
   formatDuration,
   formatHours,
-  getSessionDurationHours,
   getSessionDurationSeconds,
   useHistoryState,
 } from '@/storage/fasting-storage';

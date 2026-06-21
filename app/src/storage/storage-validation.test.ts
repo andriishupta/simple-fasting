@@ -1,12 +1,14 @@
 import {
   AccentColorName,
   DataViewPreference,
+  DiagnosticEventKind,
   FastStatus,
   StorageSchemaVersion,
   ThemePreference,
 } from '@/storage/app-storage';
 import {
   repairActiveFast,
+  repairDiagnostics,
   repairHistory,
   repairMetadata,
   repairSettings,
@@ -20,6 +22,7 @@ describe('storage validation', () => {
     expect(repairActiveFast(undefined, timestamp)).toEqual({ value: undefined, repaired: false, reason: null });
     expect(repairHistory(undefined, timestamp)).toEqual({ value: undefined, repaired: false, reason: null });
     expect(repairMetadata(undefined, timestamp)).toEqual({ value: undefined, repaired: false, reason: null });
+    expect(repairDiagnostics(undefined, timestamp)).toEqual({ value: undefined, repaired: false, reason: null });
   });
 
   test('repairs settings enums, legacy charts name, notifications, and goals', () => {
@@ -119,5 +122,27 @@ describe('storage validation', () => {
       initializedAt: timestamp,
       updatedAt: timestamp,
     });
+  });
+
+  test('keeps only valid diagnostic events', () => {
+    const result = repairDiagnostics({
+      events: [
+        {
+          id: 'valid',
+          kind: DiagnosticEventKind.Render,
+          occurredAt: timestamp,
+          errorName: 'Error',
+          message: 'Render failed',
+          context: null,
+        },
+        { id: 'invalid', kind: 'analytics_event', occurredAt: timestamp },
+      ],
+      updatedAt: timestamp,
+    }, timestamp);
+
+    expect(result.value?.events).toEqual([
+      expect.objectContaining({ id: 'valid', kind: DiagnosticEventKind.Render }),
+    ]);
+    expect(repairDiagnostics('broken', timestamp).value?.events).toEqual([]);
   });
 });

@@ -1,8 +1,8 @@
 ---
 id: faq
 title: Frequently Asked Questions
-version: 1.1
-description: Answers about Simple Fasting accounts, privacy, tracking, email, local data, exports, health, availability, and future changes.
+version: 1.2
+description: Answers about Simple Fasting accounts, privacy, tracking, email, local diagnostics, exports, health, availability, and future changes.
 intro: Practical answers about the current Simple Fasting app. Features described as future or planned are not part of the current release.
 ---
 
@@ -45,6 +45,12 @@ We do not use that information to track you across unrelated websites or apps.
 If you email support@simplefasting.app or bugs@simplefasting.app, we and the relevant email providers receive your email address, message, attachments, and information you choose to include. We use it to respond, investigate issues, provide support, and maintain necessary security or legal records.
 
 Do not email medical records, passwords, government identifiers, payment information, or full fasting exports. Send only what is needed to explain the issue. You may ask us to delete a support conversation, subject to legal and security retention requirements.
+
+## Does the app collect crash or diagnostic information?
+
+It does not send analytics or crash reports automatically. After certain storage, reminder-restoration, or rendering errors, the app may keep up to 50 recent diagnostic events locally. These events contain limited error and app-build context and are designed not to contain fasting history, goals, notes, settings, advertising identifiers, or device identifiers.
+
+In Settings, Share diagnostics creates a JSON report and opens the operating-system share sheet. Nothing is sent unless you choose a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the diagnostic log.
 
 ## Can I export my data?
 

@@ -319,6 +319,8 @@ Privacy Policy, Terms of Use, and FAQ content comes from `/docs`. Do not edit ge
 
 The shared-content generator in the `prebuild` lifecycle hook is mandatory. Keep automatic synchronization for `dev`, `build`, and `preview`, use `content:check` for CI drift detection, and commit canonical Markdown with both generated app/website JSON files.
 
+Keep `pnpm test` as the production-build gate. Its post-build verifier must continue to require every public route, compare rendered legal/FAQ content with the generated shared source, verify homepage FAQ coverage, and reject broken internal page links. Prefer this static deterministic check over browser E2E unless real client-side behavior is introduced.
+
 Do not invent product features.
 
 Do not advertise features that do not exist.

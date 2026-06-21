@@ -5,10 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { FeedbackState } from '@/components/feedback-state';
+import { AppErrorBoundary } from '@/components/app-error-boundary';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { AppThemeProvider, useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
-import { appStorage } from '@/storage/app-storage';
+import { DiagnosticEventKind, appStorage } from '@/storage/app-storage';
+import { recordDiagnosticError } from '@/storage/diagnostic-storage';
 import {
   reconcileActiveFastEndNotification,
   refreshFastSnapshots,
@@ -33,6 +35,7 @@ export default function RootLayout() {
       refreshFastSnapshots();
       return { status: 'ready' };
     } catch (error) {
+      recordDiagnosticError({ kind: DiagnosticEventKind.StorageInitialization, error });
       return {
         status: 'error',
         message: error instanceof Error ? error.message : 'Storage could not be initialized.',
@@ -43,7 +46,9 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppThemeProvider>
-        <RootLayoutContent startupState={startupState} setStartupState={setStartupState} />
+        <AppErrorBoundary>
+          <RootLayoutContent startupState={startupState} setStartupState={setStartupState} />
+        </AppErrorBoundary>
       </AppThemeProvider>
     </GestureHandlerRootView>
   );
@@ -82,6 +87,7 @@ function RootLayoutContent({
       refreshFastSnapshots();
       setStartupState({ status: 'ready' });
     } catch (error) {
+      recordDiagnosticError({ kind: DiagnosticEventKind.StorageInitialization, error });
       setStartupState({
         status: 'error',
         message: error instanceof Error ? error.message : 'Storage could not be initialized.',
@@ -121,7 +127,8 @@ function RootLayoutContent({
       configureLocalNotificationBehavior(),
       reconcileDailyReminderNotification(),
       reconcileActiveFastEndNotification(),
-    ]).catch(() => {
+    ]).catch((error: unknown) => {
+      recordDiagnosticError({ kind: DiagnosticEventKind.ReminderReconciliation, error });
       Alert.alert(
         'Reminders unavailable',
         'Your fasting data is safe, but local reminders could not be restored. You can try again from Settings.',
