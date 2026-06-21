@@ -460,10 +460,10 @@ const subscribeToSettings = (onStoreChange: () => void): (() => void) =>
 export const useSettings = (): AppSettings =>
   useSyncExternalStore(subscribeToSettings, getSettings, getSettings);
 
-const createExportFilename = (format: SettingsExportFormat): string =>
+export const createExportFilename = (format: SettingsExportFormat): string =>
   `simple-fasting-export-${new Date().toISOString().slice(0, 10)}.${format}`;
 
-const escapeCsvValue = (value: string | number | null): string => {
+export const escapeCsvValue = (value: string | number | null): string => {
   const text = value === null ? '' : String(value);
 
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
@@ -479,7 +479,7 @@ const createExportMetadata = () => ({
   storage: appStorage.get(StorageKey.Metadata) ?? null,
 });
 
-const createHistoryCsv = (): string => {
+export const createHistoryCsv = (): string => {
   const metadata = createExportMetadata();
   const history = appStorage.get(StorageKey.History);
   const rows = history?.sessions ?? [];
@@ -517,7 +517,7 @@ const createHistoryCsv = (): string => {
   return [header.join(','), ...body].join('\n');
 };
 
-const createJsonExport = (): string =>
+export const createJsonExport = (): string =>
   JSON.stringify(
     {
       metadata: createExportMetadata(),
@@ -527,7 +527,7 @@ const createJsonExport = (): string =>
     2,
   );
 
-const createExportContent = (format: SettingsExportFormat): string =>
+export const createExportContent = (format: SettingsExportFormat): string =>
   format === SettingsExportFormat.Json ? createJsonExport() : createHistoryCsv();
 
 const shareTextFallback = async ({

@@ -1,0 +1,24 @@
+appId: app.simplefasting
+name: Open settings and offline documents
+---
+- launchApp:
+    clearState: true
+- tapOn: Settings
+- assertVisible: Appearance
+- assertVisible: Manage fasting goals
+- scrollUntilVisible:
+    element: FAQ
+    direction: DOWN
+- tapOn: Open offline FAQ
+- assertVisible: Frequently Asked Questions
+- back
+- scrollUntilVisible:
+    element: Privacy Policy
+    direction: DOWN
+- tapOn: Open offline Privacy Policy
+- assertVisible: Version 1.1
+- assertVisible: No accounts, tracking, advertising, or sale
+- back
+- tapOn: Open offline Terms of Use
+- assertVisible: Terms of Use
+- assertVisible: Health and emergency disclaimer

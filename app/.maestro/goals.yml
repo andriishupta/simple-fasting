@@ -1,0 +1,22 @@
+appId: app.simplefasting
+name: Create and select a custom goal
+---
+- launchApp:
+    clearState: true
+- tapOn: Settings
+- tapOn: Manage fasting goals
+- assertVisible: Goals
+- tapOn: Add goal
+- assertVisible: New goal
+- tapOn: Goal name
+- inputText: Weekend
+- tapOn: Goal duration in hours
+- eraseText
+- inputText: '24'
+- tapOn: Save goal
+- assertVisible: Weekend
+- back
+- tapOn: Fast
+- assertVisible: Weekend
+- tapOn: Weekend
+- assertVisible: 1d

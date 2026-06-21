@@ -1,0 +1,16 @@
+appId: app.simplefasting
+name: Complete a fasting lifecycle
+---
+- launchApp:
+    clearState: true
+- assertVisible: Simple Fasting
+- assertVisible: 16:8
+- tapOn: Start fast
+- assertVisible: End fast
+- assertVisible: Cancel fast
+- tapOn: End fast
+- assertVisible: Start fast
+- assertVisible: View fast
+- tapOn: View fast
+- assertVisible: Edit Fast
+- assertVisible: Save

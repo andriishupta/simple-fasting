@@ -1,0 +1,50 @@
+name: Native E2E
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - app/**
+      - docs/**
+      - scripts/sync-shared-content.mjs
+
+concurrency:
+  cancel_in_progress: true
+  group: ${{ workflow.filename }}-${{ github.ref }}
+
+jobs:
+  build_android:
+    name: Build Android E2E app
+    type: build
+    params:
+      platform: android
+      profile: e2e-test
+
+  build_ios:
+    name: Build iOS E2E app
+    type: build
+    params:
+      platform: ios
+      profile: e2e-test
+
+  test_android:
+    name: Test Android flows
+    needs: [build_android]
+    type: maestro
+    params:
+      build_id: ${{ needs.build_android.outputs.build_id }}
+      flow_path:
+        - .maestro/fasting-lifecycle.yml
+        - .maestro/settings-and-legal.yml
+        - .maestro/goals.yml
+
+  test_ios:
+    name: Test iOS flows
+    needs: [build_ios]
+    type: maestro
+    params:
+      build_id: ${{ needs.build_ios.outputs.build_id }}
+      flow_path:
+        - .maestro/fasting-lifecycle.yml
+        - .maestro/settings-and-legal.yml
+        - .maestro/goals.yml

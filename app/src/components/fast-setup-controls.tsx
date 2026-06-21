@@ -13,10 +13,20 @@ import Animated, { FadeInDown, FadeOutUp, LinearTransition } from 'react-native-
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import {
+  customGoalId,
+  formatGoalDuration,
+  maxCustomDurationHours,
+  unlimitedGoalId,
+} from '@/utils/fast-goals';
 
-export const customGoalId = 'custom-duration';
-export const unlimitedGoalId = 'unlimited-duration';
-export const maxCustomDurationHours = 7 * 24;
+export {
+  customGoalId,
+  formatGoalDuration,
+  getGoalSelectionId,
+  maxCustomDurationHours,
+  unlimitedGoalId,
+} from '@/utils/fast-goals';
 
 type GoalOption = {
   id: string;
@@ -27,24 +37,6 @@ type GoalOption = {
 const durationDays = Array.from({ length: 8 }, (_, day) => day);
 const durationHours = Array.from({ length: 24 }, (_, hour) => hour);
 const durationHoursWithoutZero = durationHours.slice(1);
-
-export const formatGoalDuration = (hours: number): string => {
-  if (hours === 0) return 'Unlimited';
-  if (hours < 24) return `${hours} hours`;
-
-  const days = Math.floor(hours / 24);
-  const remainingHours = hours % 24;
-
-  return remainingHours === 0 ? `${days}d` : `${days}d ${remainingHours}h`;
-};
-
-export const getGoalSelectionId = (
-  goals: readonly Pick<GoalOption, 'id' | 'targetDurationHours'>[],
-  durationHoursValue: number,
-): string =>
-  durationHoursValue === 0
-    ? unlimitedGoalId
-    : goals.find((goal) => goal.targetDurationHours === durationHoursValue)?.id ?? customGoalId;
 
 export function FastGoalSelector({
   goals,

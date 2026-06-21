@@ -21,7 +21,11 @@ export const configureLocalNotificationBehavior = async (): Promise<void> => {
   });
 };
 
-const parseReminderTime = (time: string): { hour: number; minute: number } | null => {
+export const parseReminderTime = (time: string): { hour: number; minute: number } | null => {
+  if (!/^\d{1,2}:\d{2}$/.test(time)) {
+    return null;
+  }
+
   const [hourText, minuteText] = time.split(':');
   const hour = Number(hourText);
   const minute = Number(minuteText);

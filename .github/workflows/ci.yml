@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app-quality:
+    name: App quality and coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: app
+      - run: pnpm content:check
+        working-directory: app
+      - run: pnpm exec tsc --noEmit
+        working-directory: app
+      - run: pnpm lint
+        working-directory: app
+      - run: pnpm test:coverage
+        working-directory: app
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: app-coverage
+          path: app/coverage
+          if-no-files-found: ignore
+
+  website:
+    name: Website build and shared docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: pnpm
+          cache-dependency-path: www/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: www
+      - run: pnpm test
+        working-directory: www
+
+  platform-bundle:
+    name: ${{ matrix.platform }} bundle
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios, android]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: app
+      - name: Export ${{ matrix.platform }} bundle
+        run: pnpm exec expo export --platform ${{ matrix.platform }} --output-dir /tmp/simple-fasting-${{ matrix.platform }}
+        working-directory: app

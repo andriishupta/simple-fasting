@@ -19,6 +19,9 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "ESNext",
+    "types": [
+      "jest"
+    ],
     "paths": {
       "@/*": [
         "./src/*"

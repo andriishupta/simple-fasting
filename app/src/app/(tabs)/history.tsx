@@ -18,8 +18,6 @@ import {
   FastingBarChart,
   FastingLineChart,
   HeatmapGrid,
-  type ChartDatum,
-  type HeatmapCell,
 } from '@/components/charts/fasting-charts';
 import { FeedbackState } from '@/components/feedback-state';
 import { ThemedText } from '@/components/themed-text';
@@ -34,185 +32,14 @@ import {
 } from '@/storage/fasting-storage';
 import {
   DataViewPreference,
-  FastStatus,
   type FastSession,
   type HistoryState,
 } from '@/storage/app-storage';
 import { useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
 import { setDataViewPreference, useSettings } from '@/storage/settings-storage';
-import {
-  getCompletionRate,
-  getLocalDayKey,
-  getLocalMonthKey,
-  getPreviousLocalDayKey,
-  getRecentLocalDayKeys,
-  getRecentLocalMonthKeys,
-} from '@/utils/fasting-statistics';
+import { getChartData, getCompletedSessions, getFastingStats } from '@/utils/fasting-analytics';
 
 type DataView = DataViewPreference;
-
-type FastingStats = {
-  currentStreakDays: number;
-  longestStreakDays: number;
-  longestFastHours: number;
-  averageDurationHours: number;
-  completionRate: number;
-  totalHours: number;
-  totalFasts: number;
-};
-
-type ChartData = {
-  weeklyHeatmap: readonly HeatmapCell[];
-  monthlyHeatmap: readonly HeatmapCell[];
-  yearlyHeatmap: readonly HeatmapCell[];
-  monthlyHours: readonly ChartDatum[];
-  recentDurations: readonly ChartDatum[];
-  durationDistribution: readonly ChartDatum[];
-  completionRate: number;
-};
-
-const getCompletedSessions = (history: HistoryState): readonly FastSession[] =>
-  history.sessions.filter((session) => session.status === FastStatus.Completed);
-
-const getCompletedDayKeys = (completedSessions: readonly FastSession[]): readonly string[] =>
-  Array.from(
-    new Set(completedSessions.map((session) => getLocalDayKey(new Date(session.startedAt)))),
-  )
-    .sort()
-    .reverse();
-
-const getCurrentStreakDays = (completedDayKeys: readonly string[]): number => {
-  const completedDaySet = new Set(completedDayKeys);
-  const todayKey = getLocalDayKey(new Date());
-  const yesterdayKey = getPreviousLocalDayKey(todayKey);
-  const streakStartKey = completedDaySet.has(todayKey) ? todayKey : yesterdayKey;
-  let streak = 0;
-  let cursor = streakStartKey;
-
-  while (completedDaySet.has(cursor)) {
-    streak += 1;
-    cursor = getPreviousLocalDayKey(cursor);
-  }
-
-  return streak;
-};
-
-const getLongestStreakDays = (completedDayKeys: readonly string[]): number => {
-  let longestStreak = 0;
-  let currentStreak = 0;
-  let previousDayKey: string | null = null;
-
-  [...completedDayKeys].reverse().forEach((dayKey) => {
-    currentStreak =
-      previousDayKey !== null && getPreviousLocalDayKey(dayKey) === previousDayKey
-        ? currentStreak + 1
-        : 1;
-    longestStreak = Math.max(longestStreak, currentStreak);
-    previousDayKey = dayKey;
-  });
-
-  return longestStreak;
-};
-
-const getFastingStats = (history: HistoryState): FastingStats => {
-  const completedSessions = getCompletedSessions(history);
-  const durations = completedSessions.map(getSessionDurationHours);
-  const totalHours = durations.reduce((total, duration) => total + duration, 0);
-  const completedDayKeys = getCompletedDayKeys(completedSessions);
-
-  return {
-    currentStreakDays: getCurrentStreakDays(completedDayKeys),
-    longestStreakDays: getLongestStreakDays(completedDayKeys),
-    longestFastHours: durations.length === 0 ? 0 : Math.max(...durations),
-    averageDurationHours:
-      completedSessions.length === 0 ? 0 : totalHours / completedSessions.length,
-    completionRate: getCompletionRate(completedSessions),
-    totalHours,
-    totalFasts: completedSessions.length,
-  };
-};
-
-const getHoursByDay = (sessions: readonly FastSession[]): Record<string, number> =>
-  sessions.reduce<Record<string, number>>((result, session) => {
-    const dayKey = getLocalDayKey(new Date(session.startedAt));
-
-    return {
-      ...result,
-      [dayKey]: (result[dayKey] ?? 0) + getSessionDurationHours(session),
-    };
-  }, {});
-
-const getHeatmap = ({
-  dayKeys,
-  hoursByDay,
-}: {
-  dayKeys: readonly string[];
-  hoursByDay: Record<string, number>;
-}): readonly HeatmapCell[] =>
-  dayKeys.map((dateKey) => ({
-    id: dateKey,
-    value: hoursByDay[dateKey] ?? 0,
-  }));
-
-const getMonthlyHours = (sessions: readonly FastSession[]): readonly ChartDatum[] => {
-  const hoursByMonth = sessions.reduce<Record<string, number>>((result, session) => {
-    const monthKey = getLocalMonthKey(new Date(session.startedAt));
-
-    return {
-      ...result,
-      [monthKey]: (result[monthKey] ?? 0) + getSessionDurationHours(session),
-    };
-  }, {});
-
-  return getRecentLocalMonthKeys(6).map((monthKey) => ({
-    label: monthKey.slice(5),
-    value: hoursByMonth[monthKey] ?? 0,
-  }));
-};
-
-const getDurationDistribution = (sessions: readonly FastSession[]): readonly ChartDatum[] => {
-  const buckets = [
-    { label: '<12h', min: 0, max: 12 },
-    { label: '12-16h', min: 12, max: 16 },
-    { label: '16-20h', min: 16, max: 20 },
-    { label: '20h+', min: 20, max: Number.POSITIVE_INFINITY },
-  ];
-
-  return buckets.map((bucket) => ({
-    label: bucket.label,
-    value: sessions.filter((session) => {
-      const hours = getSessionDurationHours(session);
-
-      return hours >= bucket.min && hours < bucket.max;
-    }).length,
-  }));
-};
-
-const getRecentDurations = (sessions: readonly FastSession[]): readonly ChartDatum[] =>
-  sessions
-    .slice(0, 7)
-    .reverse()
-    .map((session) => ({
-      label: new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(
-        new Date(session.startedAt),
-      ),
-      value: getSessionDurationHours(session),
-    }));
-
-const getChartData = (history: HistoryState): ChartData => {
-  const completedSessions = getCompletedSessions(history);
-  const hoursByDay = getHoursByDay(completedSessions);
-
-  return {
-    weeklyHeatmap: getHeatmap({ dayKeys: getRecentLocalDayKeys(7), hoursByDay }),
-    monthlyHeatmap: getHeatmap({ dayKeys: getRecentLocalDayKeys(30), hoursByDay }),
-    yearlyHeatmap: getHeatmap({ dayKeys: getRecentLocalDayKeys(365), hoursByDay }),
-    monthlyHours: getMonthlyHours(completedSessions),
-    recentDurations: getRecentDurations(completedSessions),
-    durationDistribution: getDurationDistribution(completedSessions),
-    completionRate: getCompletionRate(completedSessions),
-  };
-};
 
 const formatPercent = (value: number): string => `${Math.round(value * 100)}%`;
 

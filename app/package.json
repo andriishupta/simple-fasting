@@ -40,9 +40,13 @@
     "react-native-worklets": "0.8.3"
   },
   "devDependencies": {
+    "@testing-library/react-native": "^14.0.0",
+    "@types/jest": "29.5.14",
     "@types/react": "~19.2.2",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~56.0.4",
+    "jest": "~29.7.0",
+    "jest-expo": "~56.0.5",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -59,7 +63,38 @@
     "preweb": "node ../scripts/sync-shared-content.mjs",
     "web": "expo start --web",
     "lint": "node ../scripts/sync-shared-content.mjs --check && expo lint",
-    "test": "node ../scripts/sync-shared-content.mjs --check && node --test src/utils/fasting-statistics.test.mjs"
+    "test": "node ../scripts/sync-shared-content.mjs --check && jest --runInBand --no-watchman",
+    "test:coverage": "node ../scripts/sync-shared-content.mjs --check && jest --runInBand --no-watchman --coverage"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.ts"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(?:.pnpm/)?((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|expo-router|react-navigation|@react-navigation/.*|react-native-svg|react-native-reanimated|react-native-gesture-handler|lucide-react-native))"
+    ],
+    "collectCoverageFrom": [
+      "src/storage/**/*.{ts,tsx}",
+      "src/utils/**/*.{ts,tsx}",
+      "!src/**/*.d.ts"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 80,
+        "lines": 85,
+        "statements": 85
+      }
+    }
   },
   "private": true
 }

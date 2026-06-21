@@ -12,6 +12,9 @@
     "dev": "astro dev",
     "prebuild": "node ../scripts/sync-shared-content.mjs",
     "build": "astro build",
+    "postbuild": "node ../scripts/verify-www-build.mjs",
+    "verify": "node ../scripts/verify-www-build.mjs",
+    "test": "node ../scripts/sync-shared-content.mjs --check && npm run build",
     "prepreview": "node ../scripts/sync-shared-content.mjs",
     "preview": "astro preview",
     "astro": "astro"
