@@ -5,7 +5,6 @@ export enum StorageKey {
   Settings = 'settings',
   ActiveFast = 'activeFast',
   History = 'history',
-  GraphCache = 'graphCache',
 }
 
 export enum StorageSchemaVersion {
@@ -78,13 +77,6 @@ export type NotificationSettings = {
   dailyReminderNotificationId: string | null;
 };
 
-export type WidgetSettings = {
-  homeScreenWidgetsEnabled: boolean;
-  liveActivitiesEnabled: boolean;
-  dynamicIslandEnabled: boolean;
-  androidOngoingNotificationEnabled: boolean;
-};
-
 export type AppSettings = {
   schemaVersion: StorageSchemaVersion.V1;
   themePreference: ThemePreference;
@@ -93,7 +85,6 @@ export type AppSettings = {
   lastUsedGoalDurationHours: number;
   dataViewPreference: DataViewPreference;
   notifications: NotificationSettings;
-  widgets: WidgetSettings;
   updatedAt: Timestamp;
 };
 
@@ -122,35 +113,12 @@ export type HistoryState = {
   updatedAt: Timestamp;
 };
 
-export type GraphCacheState = {
-  schemaVersion: StorageSchemaVersion.V1;
-  generatedFromHistoryUpdatedAt: Timestamp | null;
-  weeklyHeatmap: readonly number[];
-  monthlyHeatmap: readonly number[];
-  yearlyHeatmap: readonly number[];
-  monthlyHours: readonly number[];
-  durationDistribution: readonly number[];
-  completionRate: number | null;
-  goalAchievementRate: number | null;
-  updatedAt: Timestamp;
-};
-
 export type AppStorageValueMap = {
   [StorageKey.Metadata]: StorageMetadata;
   [StorageKey.Settings]: AppSettings;
   [StorageKey.ActiveFast]: ActiveFastState;
   [StorageKey.History]: HistoryState;
-  [StorageKey.GraphCache]: GraphCacheState;
 };
-
-export type StoredEntry<Key extends StorageKey = StorageKey> = {
-  key: Key;
-  value: AppStorageValueMap[Key];
-};
-
-export type StorageQueryResult<Keys extends readonly StorageKey[]> = Partial<{
-  [Key in Keys[number]]: AppStorageValueMap[Key];
-}>;
 
 export type AppStorage = {
   insert: <Key extends StorageKey>(key: Key, value: AppStorageValueMap[Key]) => void;
@@ -160,11 +128,7 @@ export type AppStorage = {
     key: Key,
     defaultValue: AppStorageValueMap[Key],
   ) => AppStorageValueMap[Key];
-  delete: (key: StorageKey) => boolean;
   quarantine: (key: StorageKey, reason: string) => void;
-  contains: (key: StorageKey) => boolean;
-  query: <Keys extends readonly StorageKey[]>(keys: Keys) => StorageQueryResult<Keys>;
-  list: () => readonly StoredEntry[];
   subscribe: (onValueChanged: (key: StorageKey) => void) => () => void;
   clear: () => void;
 };
@@ -251,12 +215,6 @@ export const createDefaultAppSettings = (updatedAt: Timestamp): AppSettings => (
     dailyReminderTime: null,
     dailyReminderNotificationId: null,
   },
-  widgets: {
-    homeScreenWidgetsEnabled: true,
-    liveActivitiesEnabled: false,
-    dynamicIslandEnabled: false,
-    androidOngoingNotificationEnabled: false,
-  },
   updatedAt,
 });
 
@@ -274,19 +232,6 @@ export const createEmptyHistoryState = (updatedAt: Timestamp): HistoryState => (
   updatedAt,
 });
 
-export const createEmptyGraphCacheState = (updatedAt: Timestamp): GraphCacheState => ({
-  schemaVersion: StorageSchemaVersion.V1,
-  generatedFromHistoryUpdatedAt: null,
-  weeklyHeatmap: [],
-  monthlyHeatmap: [],
-  yearlyHeatmap: [],
-  monthlyHours: [],
-  durationDistribution: [],
-  completionRate: null,
-  goalAchievementRate: null,
-  updatedAt,
-});
-
 const appStorageConfiguration: Configuration = {
   id: 'simple-fasting',
   compareBeforeSet: true,
@@ -299,7 +244,6 @@ const storageKeys = [
   StorageKey.Settings,
   StorageKey.ActiveFast,
   StorageKey.History,
-  StorageKey.GraphCache,
 ] as const;
 
 const parseStoredValue = <Value>(rawValue: string | undefined): Value | undefined => {
@@ -324,8 +268,6 @@ export const createAppStorage = (): AppStorage => ({
   getOrDefault: (key, defaultValue) =>
     parseStoredValue<AppStorageValueMap[typeof key]>(storage.getString(key)) ?? defaultValue,
 
-  delete: (key) => storage.remove(key),
-
   quarantine: (key, reason) => {
     const rawValue = storage.getString(key);
 
@@ -347,22 +289,6 @@ export const createAppStorage = (): AppStorage => ({
     );
     storage.remove(key);
   },
-
-  contains: (key) => storage.contains(key),
-
-  query: (keys) =>
-    keys.reduce<StorageQueryResult<typeof keys>>((result, key) => {
-      const value = parseStoredValue<AppStorageValueMap[typeof key]>(storage.getString(key));
-
-      return value === undefined ? result : { ...result, [key]: value };
-    }, {}),
-
-  list: () =>
-    storageKeys.flatMap((key) => {
-      const value = parseStoredValue<AppStorageValueMap[typeof key]>(storage.getString(key));
-
-      return value === undefined ? [] : [{ key, value } as StoredEntry];
-    }),
 
   subscribe: (onValueChanged) => {
     const listener = storage.addOnValueChangedListener((key) => {

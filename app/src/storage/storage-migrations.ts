@@ -5,7 +5,6 @@ import {
   createDefaultAppSettings,
   createDefaultStorageMetadata,
   createEmptyActiveFastState,
-  createEmptyGraphCacheState,
   createEmptyHistoryState,
   StorageKey,
   StorageSchemaVersion,
@@ -18,7 +17,6 @@ import {
 import {
   quarantineIfRawParseFailed,
   repairActiveFast,
-  repairGraphCache,
   repairHistory,
   repairMetadata,
   repairSettings,
@@ -151,11 +149,6 @@ export const initializeAppStorage = (): void => {
     timestamp,
     repair: repairHistory,
   });
-  const graphCache = readRepairedValue({
-    key: StorageKey.GraphCache,
-    timestamp,
-    repair: repairGraphCache,
-  });
 
   appStorage.insert(
     StorageKey.Metadata,
@@ -177,8 +170,4 @@ export const initializeAppStorage = (): void => {
     history ?? createEmptyHistoryState(timestamp),
   );
 
-  appStorage.insert(
-    StorageKey.GraphCache,
-    graphCache ?? createEmptyGraphCacheState(timestamp),
-  );
 };

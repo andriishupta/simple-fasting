@@ -163,7 +163,7 @@ export default function SettingsScreen() {
   const clearLocalData = (): void => {
     Alert.alert(
       'Clear all data?',
-      'Clearing storage will remove all data on this device, including history, graphs, settings, and any active fast. Make sure to export a backup first. Continue with deletion?',
+      'Clearing storage will remove all data on this device, including history, settings, and any active fast. Make sure to export a backup first. Continue with deletion?',
       [
         { text: 'No', style: 'cancel' },
         {
@@ -175,16 +175,16 @@ export default function SettingsScreen() {
                 const settingsBeforeClear = appStorage.get(StorageKey.Settings);
                 const activeFastBeforeClear = getActiveFastState();
 
+                appStorage.clear();
+                initializeAppStorage();
+                refreshSettingsSnapshot();
+                refreshFastSnapshots();
                 await Promise.all([
                   cancelScheduledNotification(
                     settingsBeforeClear?.notifications.dailyReminderNotificationId ?? null,
                   ),
                   cancelScheduledNotification(activeFastBeforeClear.fastEndNotificationId),
-                ]);
-                appStorage.clear();
-                initializeAppStorage();
-                refreshSettingsSnapshot();
-                refreshFastSnapshots();
+                ]).catch(() => undefined);
                 router.replace('/');
               } catch {
                 Alert.alert('Clear failed', 'Local data could not be cleared.');

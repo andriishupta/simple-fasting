@@ -60,6 +60,7 @@
           ]
         }
       ],
+      "./plugins/with-widget-version",
       [
         "react-native-android-widget",
         {

@@ -122,12 +122,12 @@ function RootLayoutContent({
       reconcileDailyReminderNotification(),
       reconcileActiveFastEndNotification(),
     ]).catch(() => {
-      setStartupState({
-        status: 'error',
-        message: 'Local data loaded, but reminders could not be restored.',
-      });
+      Alert.alert(
+        'Reminders unavailable',
+        'Your fasting data is safe, but local reminders could not be restored. You can try again from Settings.',
+      );
     });
-  }, [setStartupState, startupState.status]);
+  }, [startupState.status]);
 
   return (
     <ThemeProvider value={navigationTheme}>

@@ -164,12 +164,14 @@ MMKV keys:
 | Key | Purpose |
 | --- | --- |
 | `metadata` | Schema, app version, Expo version, initialization timestamps |
-| `settings` | Theme, accent, goals, last selected duration, Data view, notifications, future widget flags |
+| `settings` | Theme, accent, goals, last selected duration, Data view, and notifications |
 | `activeFast` | Active session and reminder state |
 | `history` | Completed fasting sessions; source of truth |
-| `graphCache` | Versioned derived graph data |
 
 State management uses React state, small hooks, and MMKV subscriptions. No global state framework is used.
+Statistics and graphs are derived directly from History; no unused persisted cache or speculative widget settings are kept.
+
+Storage initialization failures show retry and explicit reset controls. Optional notification restoration failures do not block access to fasting data or the core timer.
 
 Before the first public release, storage changes may be breaking and development data may be reset when explicitly approved. After the first public release, persisted schema changes require migrations and backward compatibility.
 

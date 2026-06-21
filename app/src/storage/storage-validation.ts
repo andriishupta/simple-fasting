@@ -11,13 +11,11 @@ import {
   createDefaultGoals,
   createDefaultAppSettings,
   createEmptyActiveFastState,
-  createEmptyGraphCacheState,
   createEmptyHistoryState,
   type ActiveFastState,
   type AppSettings,
   type FastSession,
   type FastingGoal,
-  type GraphCacheState,
   type HistoryState,
   type StorageMetadata,
   type Timestamp,
@@ -53,12 +51,6 @@ const isEnumValue = <Value extends string>(
   enumValues: readonly Value[],
   value: unknown,
 ): value is Value => isString(value) && enumValues.includes(value as Value);
-
-const isNumberArray = (value: unknown): value is readonly number[] =>
-  Array.isArray(value) && value.every(isNumber);
-
-const isOptionalRate = (value: unknown): value is number | null =>
-  value === null || (isNumber(value) && value >= 0 && value <= 1);
 
 const themePreferences = Object.values(ThemePreference);
 const accentColorNames = Object.values(AccentColorName);
@@ -167,7 +159,6 @@ export const repairSettings = (
   }
 
   const notifications = isRecord(value.notifications) ? value.notifications : {};
-  const widgets = isRecord(value.widgets) ? value.widgets : {};
   const repaired: AppSettings = {
     schemaVersion: StorageSchemaVersion.V1,
     themePreference: isEnumValue(themePreferences, value.themePreference)
@@ -196,20 +187,6 @@ export const repairSettings = (
       dailyReminderNotificationId: sanitizeNotificationId(
         notifications.dailyReminderNotificationId,
       ),
-    },
-    widgets: {
-      homeScreenWidgetsEnabled: isBoolean(widgets.homeScreenWidgetsEnabled)
-        ? widgets.homeScreenWidgetsEnabled
-        : defaults.widgets.homeScreenWidgetsEnabled,
-      liveActivitiesEnabled: isBoolean(widgets.liveActivitiesEnabled)
-        ? widgets.liveActivitiesEnabled
-        : defaults.widgets.liveActivitiesEnabled,
-      dynamicIslandEnabled: isBoolean(widgets.dynamicIslandEnabled)
-        ? widgets.dynamicIslandEnabled
-        : defaults.widgets.dynamicIslandEnabled,
-      androidOngoingNotificationEnabled: isBoolean(widgets.androidOngoingNotificationEnabled)
-        ? widgets.androidOngoingNotificationEnabled
-        : defaults.widgets.androidOngoingNotificationEnabled,
     },
     updatedAt: sanitizeTimestamp(value.updatedAt, timestamp),
   };
@@ -316,46 +293,6 @@ export const repairHistory = (
     },
     repaired: true,
     reason: 'History was normalized.',
-  };
-};
-
-export const repairGraphCache = (
-  value: unknown,
-  timestamp: Timestamp,
-): RepairResult<GraphCacheState> => {
-  if (value === undefined) {
-    return { value: undefined, repaired: false, reason: null };
-  }
-
-  if (!isRecord(value)) {
-    return {
-      value: createEmptyGraphCacheState(timestamp),
-      repaired: true,
-      reason: 'Graph cache root was not an object.',
-    };
-  }
-
-  return {
-    value: {
-      schemaVersion: StorageSchemaVersion.V1,
-      generatedFromHistoryUpdatedAt: isNullableString(value.generatedFromHistoryUpdatedAt)
-        ? value.generatedFromHistoryUpdatedAt
-        : null,
-      weeklyHeatmap: isNumberArray(value.weeklyHeatmap) ? value.weeklyHeatmap : [],
-      monthlyHeatmap: isNumberArray(value.monthlyHeatmap) ? value.monthlyHeatmap : [],
-      yearlyHeatmap: isNumberArray(value.yearlyHeatmap) ? value.yearlyHeatmap : [],
-      monthlyHours: isNumberArray(value.monthlyHours) ? value.monthlyHours : [],
-      durationDistribution: isNumberArray(value.durationDistribution)
-        ? value.durationDistribution
-        : [],
-      completionRate: isOptionalRate(value.completionRate) ? value.completionRate : null,
-      goalAchievementRate: isOptionalRate(value.goalAchievementRate)
-        ? value.goalAchievementRate
-        : null,
-      updatedAt: sanitizeTimestamp(value.updatedAt, timestamp),
-    },
-    repaired: true,
-    reason: 'Graph cache was normalized.',
   };
 };
 

@@ -84,20 +84,24 @@ export const startFast = async ({
   };
   const settings = getSettings();
   const fastEndReminderEnabled = settings.notifications.fastEndReminderEnabled;
-  const fastEndNotificationId = await scheduleFastEndNotification({
-    session,
-    enabled: fastEndReminderEnabled,
-  });
   setLastUsedGoalDurationHours(goalDurationHours);
-  await cancelDailyReminderNotification();
-
-  return saveActiveFastState({
+  const activeFastState = saveActiveFastState({
     schemaVersion: activeFastSnapshot.schemaVersion,
     session,
-    fastEndNotificationId,
+    fastEndNotificationId: null,
     fastEndReminderEnabled,
     updatedAt: timestamp,
   });
+
+  const fastEndNotificationId = await scheduleFastEndNotification({
+    session,
+    enabled: fastEndReminderEnabled,
+  }).catch(() => null);
+  await cancelDailyReminderNotification().catch(() => undefined);
+
+  return fastEndNotificationId === null
+    ? activeFastState
+    : saveActiveFastState({ ...activeFastState, fastEndNotificationId, updatedAt: now() });
 };
 
 export const endFast = async (): Promise<FastSession | null> => {
@@ -106,8 +110,6 @@ export const endFast = async (): Promise<FastSession | null> => {
   if (activeFastState.session === null) {
     return null;
   }
-
-  await cancelScheduledNotification(activeFastState.fastEndNotificationId);
 
   const timestamp = now();
   const completedSession: FastSession = {
@@ -136,15 +138,16 @@ export const endFast = async (): Promise<FastSession | null> => {
     fastEndReminderEnabled: true,
     updatedAt: timestamp,
   });
-  await reconcileDailyReminderNotification();
+  await Promise.all([
+    cancelScheduledNotification(activeFastState.fastEndNotificationId),
+    reconcileDailyReminderNotification(),
+  ]).catch(() => undefined);
 
   return completedSession;
 };
 
 export const cancelFast = async (): Promise<ActiveFastState> => {
   const activeFastState = getActiveFastState();
-
-  await cancelScheduledNotification(activeFastState.fastEndNotificationId);
 
   const nextActiveFastState = saveActiveFastState({
     ...activeFastState,
@@ -154,7 +157,10 @@ export const cancelFast = async (): Promise<ActiveFastState> => {
     updatedAt: now(),
   });
 
-  await reconcileDailyReminderNotification();
+  await Promise.all([
+    cancelScheduledNotification(activeFastState.fastEndNotificationId),
+    reconcileDailyReminderNotification(),
+  ]).catch(() => undefined);
 
   return nextActiveFastState;
 };

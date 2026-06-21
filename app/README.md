@@ -75,6 +75,7 @@ Small home-screen widgets are implemented on both platforms.
 - Refresh: requested whenever active fasting state changes.
 
 iOS uses `expo-widgets`; Android uses `react-native-android-widget`. Medium/large widgets, lock-screen widgets, Live Activities, Dynamic Island, and Android ongoing notifications are not implemented.
+The local `with-widget-version` config plugin keeps the generated iOS extension version aligned with the containing app, working around the widget generator's fixed Xcode marketing version.
 
 ## Notifications
 
@@ -94,10 +95,11 @@ MMKV stores:
 - `metadata`;
 - `settings`;
 - `activeFast`;
-- `history`;
-- `graphCache`.
+- `history`.
 
-History is the source of truth for statistics and graphs. Users can export JSON or CSV through the native share sheet and can clear all local data with confirmation.
+History is the source of truth for statistics and graphs, which are derived in memory rather than persisted in a separate cache. Users can export JSON or CSV through the native share sheet and can clear all local data with confirmation.
+
+Core fasting writes complete before optional notification cleanup or rescheduling. If the platform notification service fails, local fasting state remains usable and startup does not enter a blocking recovery screen.
 
 Before the first public release, breaking local schema changes are acceptable. After release, persisted changes require explicit migrations and backward compatibility.
 
@@ -148,6 +150,7 @@ pnpm start
 ```
 
 The complete app uses native dependencies and widgets, so use a development build for full native verification. Expo Go is not sufficient for every feature.
+After changing `app.json` plugins or native dependencies, regenerate the native project before building so the widget extension and app-group entitlements are current.
 
 Common commands:
 

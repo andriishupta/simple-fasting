@@ -19,7 +19,6 @@ import {
   type FastingGoal,
   type NotificationSettings,
   type ThemePreference as ThemePreferenceType,
-  type WidgetSettings,
 } from '@/storage/app-storage';
 import {
   cancelScheduledNotification,
@@ -423,15 +422,6 @@ export const cancelDailyReminderNotification = async (): Promise<AppSettings> =>
     dailyReminderNotificationId: null,
   }));
 };
-
-export const updateWidgetSettings = (
-  update: (widgets: WidgetSettings) => WidgetSettings,
-): AppSettings =>
-  updateSettings((settings) => ({
-    ...settings,
-    widgets: update(settings.widgets),
-    updatedAt: now(),
-  }));
 
 export const getAccentPalette = ({
   accentColorName,
