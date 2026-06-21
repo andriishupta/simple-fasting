@@ -52,7 +52,7 @@ Static export confirms bundling but does not replace native runtime testing.
 - custom duration boundaries, including seven days;
 - optional note;
 - history creation, edit, and delete;
-- statistics and graph recalculation;
+- statistics and chart recalculation;
 - JSON and CSV export;
 - clear-data confirmation and recovery;
 - offline FAQ, Privacy Policy, and Terms;
@@ -107,6 +107,8 @@ Required before submission:
 - privacy policy URL;
 - terms URL where required;
 - support URL and support email;
+- final legal provider/controller name, postal address, contact phone, and governing jurisdiction inserted after entity and distribution decisions are complete;
+- qualified legal review of Privacy Policy and Terms for launch countries, including U.S. consumer, health-app, children, sanctions/export-control, and app-store requirements;
 - honest privacy/data-safety declarations reflecting no tracking, accounts, backend, or advertising;
 - release notes and version number.
 

@@ -8,7 +8,10 @@ import {
 
 import {
   appStorage,
+  createEmptyActiveFastState,
   StorageKey,
+  TimerViewPreference,
+  type ActiveFastState,
   type FastSession,
 } from '@/storage/app-storage';
 
@@ -36,24 +39,34 @@ const darkTheme: WidgetTheme = {
   secondary: '#A9AFBD',
 };
 
-const formatElapsed = (session: FastSession, currentTime = Date.now()): string => {
+const formatTimer = (
+  session: FastSession,
+  timerViewPreference: TimerViewPreference,
+  currentTime = Date.now(),
+): string => {
   const elapsedMinutes = Math.max(
     0,
-    Math.floor((currentTime - new Date(session.startedAt).getTime()) / 60_000),
+    Math.floor((currentTime - Date.parse(session.startedAt)) / 60_000),
   );
-  const hours = Math.floor(elapsedMinutes / 60);
-  const minutes = elapsedMinutes % 60;
+  const goalMinutes = session.goalDurationHours * 60;
+  const shownMinutes =
+    timerViewPreference === TimerViewPreference.Remaining && goalMinutes > 0
+      ? Math.max(0, goalMinutes - elapsedMinutes)
+      : elapsedMinutes;
+  const hours = Math.floor(shownMinutes / 60);
+  const minutes = shownMinutes % 60;
 
   return `${hours}h ${String(minutes).padStart(2, '0')}m`;
 };
 
 function AndroidFastingWidget({
-  session,
+  state,
   theme,
 }: {
-  session: FastSession | null;
+  state: ActiveFastState;
   theme: WidgetTheme;
 }) {
+  const { session, timerViewPreference } = state;
   const isActive = session !== null;
 
   return (
@@ -61,7 +74,7 @@ function AndroidFastingWidget({
       clickAction="OPEN_URI"
       clickActionData={{ uri: appUrl }}
       accessibilityLabel={
-        isActive ? `Fasting for ${formatElapsed(session)}` : 'Open Simple Fasting to start a fast'
+        isActive ? `Fasting timer ${formatTimer(session, timerViewPreference)}` : 'Open Simple Fasting to start a fast'
       }
       style={{
         width: 'match_parent',
@@ -80,7 +93,7 @@ function AndroidFastingWidget({
       {isActive ? (
         <FlexWidget style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
           <TextWidget
-            text={formatElapsed(session)}
+            text={formatTimer(session, timerViewPreference)}
             maxLines={1}
             style={{
               color: theme.primary,
@@ -112,9 +125,9 @@ function AndroidFastingWidget({
   );
 }
 
-const renderFastingWidget = (session: FastSession | null): WidgetRepresentation => ({
-  light: <AndroidFastingWidget session={session} theme={lightTheme} />,
-  dark: <AndroidFastingWidget session={session} theme={darkTheme} />,
+const renderFastingWidget = (state: ActiveFastState): WidgetRepresentation => ({
+  light: <AndroidFastingWidget state={state} theme={lightTheme} />,
+  dark: <AndroidFastingWidget state={state} theme={darkTheme} />,
 });
 
 registerWidgetTaskHandler(async ({ widgetInfo, widgetAction, renderWidget }) => {
@@ -122,15 +135,18 @@ registerWidgetTaskHandler(async ({ widgetInfo, widgetAction, renderWidget }) => 
     return;
   }
 
-  const activeFastState = appStorage.get(StorageKey.ActiveFast);
+  const activeFastState = appStorage.getOrDefault(
+    StorageKey.ActiveFast,
+    createEmptyActiveFastState(new Date().toISOString()),
+  );
 
-  renderWidget(renderFastingWidget(activeFastState?.session ?? null));
+  renderWidget(renderFastingWidget(activeFastState));
 });
 
-export const updateFastingWidget = (session: FastSession | null): void => {
+export const updateFastingWidget = (state: ActiveFastState): void => {
   void requestWidgetUpdate({
     widgetName,
-    renderWidget: () => renderFastingWidget(session),
+    renderWidget: () => renderFastingWidget(state),
   }).catch(() => {
     // Widget availability must never block local fasting state updates.
   });

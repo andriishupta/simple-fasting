@@ -9,10 +9,11 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { router } from 'expo-router';
+import { Hourglass } from 'lucide-react-native';
+import Animated, { FadeIn, FadeInUp, FadingTransition } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
 import { AppButton } from '@/components/app-button';
-import { AppSurface } from '@/components/app-surface';
 import { FeedbackState } from '@/components/feedback-state';
 import {
   customGoalId,
@@ -23,7 +24,7 @@ import {
   unlimitedGoalId,
 } from '@/components/fast-setup-controls';
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   cancelFast,
@@ -32,15 +33,15 @@ import {
   getElapsedSeconds,
   getGoalSeconds,
   setActiveFastEndReminderEnabled,
+  setActiveFastTimerView,
   startFast,
   useActiveFastState,
 } from '@/storage/fasting-storage';
+import { TimerViewPreference } from '@/storage/app-storage';
 import {
   setLastUsedGoalDurationHours,
   useSettings,
 } from '@/storage/settings-storage';
-
-const bottomActionInset = process.env.EXPO_OS === 'ios' ? 152 : 96;
 
 const getInitialGoalId = (
   goals: readonly { id: string; targetDurationHours: number }[],
@@ -78,7 +79,6 @@ export default function HomeScreen() {
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [operationError, setOperationError] = useState<string | null>(null);
   const [recentlyCompletedSessionId, setRecentlyCompletedSessionId] = useState<string | null>(null);
-  const [savedNoticeSeconds, setSavedNoticeSeconds] = useState(5);
   const activeSession = activeFastState.session;
   const shouldScroll =
     height < 700 ||
@@ -100,21 +100,6 @@ export default function HomeScreen() {
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
     return () => clearInterval(interval);
   }, [activeSession]);
-
-  useEffect(() => {
-    if (recentlyCompletedSessionId === null) return;
-
-    const startedAt = Date.now();
-    const interval = setInterval(() => {
-      setSavedNoticeSeconds(Math.max(1, 5 - Math.floor((Date.now() - startedAt) / 1000)));
-    }, 250);
-    const timeout = setTimeout(() => setRecentlyCompletedSessionId(null), 5000);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
-  }, [recentlyCompletedSessionId]);
 
   const selectedGoal =
     enabledGoals.find((goal) => goal.id === effectiveSelectedGoalId) ?? storedGoal;
@@ -162,7 +147,6 @@ export default function HomeScreen() {
       const completedSession = await endFast();
       setOperationError(null);
       if (completedSession !== null) {
-        setSavedNoticeSeconds(5);
         setRecentlyCompletedSessionId(completedSession.id);
       }
     } catch {
@@ -196,7 +180,7 @@ export default function HomeScreen() {
       contentContainerStyle={styles.scrollContent}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <ThemedText type="subtitle" accessibilityRole="header">
+          <ThemedText style={styles.screenTitle} accessibilityRole="header">
             Simple Fasting
           </ThemedText>
         </View>
@@ -208,41 +192,50 @@ export default function HomeScreen() {
             action={{ label: 'Dismiss', onPress: () => setOperationError(null) }}
           />
         ) : null}
-        {activeSession === null ? (
-          <ReadyToFast
-            goals={enabledGoals}
-            selectedGoalId={effectiveSelectedGoalId}
-            onSelectGoal={selectGoal}
-            customDurationHours={customDurationHours}
-            onCustomDurationChange={updateCustomDuration}
-            reason={reason}
-            onReasonChange={setReason}
-            noteVisible={noteVisible}
-            onNoteVisibilityChange={setNoteVisible}
-            customDurationExpanded={customDurationExpanded}
-            onCustomDurationExpandedChange={setCustomDurationExpanded}
-            footerAnchored
-            savedSessionId={recentlyCompletedSessionId}
-            savedNoticeSeconds={savedNoticeSeconds}
-            onStart={() => void startSelectedFast()}
-          />
-        ) : (
-          <ActiveFast
-            goalDurationHours={activeSession.goalDurationHours}
-            startedAt={activeSession.startedAt}
-            reason={activeSession.reason}
-            elapsedSeconds={getElapsedSeconds(activeSession, currentTime)}
-            goalSeconds={activeSession.goalDurationHours > 0 ? getGoalSeconds(activeSession) : null}
-            reminderEnabled={activeFastState.fastEndReminderEnabled}
-            onReminderChange={(enabled) => {
-              void setActiveFastEndReminderEnabled(enabled).catch(() =>
-                setOperationError('The fast reminder could not be updated.'),
-              );
-            }}
-            onEnd={() => void endActiveFast()}
-            onCancel={cancelActiveFast}
-          />
-        )}
+        <Animated.View layout={FadingTransition.duration(180)} style={styles.stateContent}>
+          {activeSession === null ? (
+            <ReadyToFast
+              goals={enabledGoals}
+              selectedGoalId={effectiveSelectedGoalId}
+              onSelectGoal={selectGoal}
+              customDurationHours={customDurationHours}
+              onCustomDurationChange={updateCustomDuration}
+              reason={reason}
+              onReasonChange={setReason}
+              noteVisible={noteVisible}
+              onNoteVisibilityChange={setNoteVisible}
+              customDurationExpanded={customDurationExpanded}
+              onCustomDurationExpandedChange={setCustomDurationExpanded}
+              savedSessionId={recentlyCompletedSessionId}
+              onStart={() => void startSelectedFast()}
+            />
+          ) : (
+            <ActiveFast
+              goalDurationHours={activeSession.goalDurationHours}
+              goalName={
+                settings.goals.find(
+                  (goal) => goal.targetDurationHours === activeSession.goalDurationHours,
+                )?.name ?? formatGoalDuration(activeSession.goalDurationHours)
+              }
+              startedAt={activeSession.startedAt}
+              reason={activeSession.reason}
+              elapsedSeconds={getElapsedSeconds(activeSession, currentTime)}
+              goalSeconds={
+                activeSession.goalDurationHours > 0 ? getGoalSeconds(activeSession) : null
+              }
+              reminderEnabled={activeFastState.fastEndReminderEnabled}
+              timerView={activeFastState.timerViewPreference}
+              onTimerViewChange={setActiveFastTimerView}
+              onReminderChange={(enabled) => {
+                void setActiveFastEndReminderEnabled(enabled).catch(() =>
+                  setOperationError('The fast reminder could not be updated.'),
+                );
+              }}
+              onEnd={() => void endActiveFast()}
+              onCancel={cancelActiveFast}
+            />
+          )}
+        </Animated.View>
       </View>
     </ScrollView>
   );
@@ -260,9 +253,7 @@ function ReadyToFast({
   onNoteVisibilityChange,
   customDurationExpanded,
   onCustomDurationExpandedChange,
-  footerAnchored,
   savedSessionId,
-  savedNoticeSeconds,
   onStart,
 }: {
   goals: readonly { id: string; name: string; targetDurationHours: number }[];
@@ -276,15 +267,11 @@ function ReadyToFast({
   onNoteVisibilityChange: (visible: boolean) => void;
   customDurationExpanded: boolean;
   onCustomDurationExpandedChange: (expanded: boolean) => void;
-  footerAnchored: boolean;
   savedSessionId: string | null;
-  savedNoticeSeconds: number;
   onStart: () => void;
 }) {
-  const { height } = useWindowDimensions();
-
   return (
-    <View style={styles.ready}>
+    <Animated.View entering={FadeIn.duration(180)} style={styles.ready}>
       <FastGoalSelector
         goals={goals}
         selectedGoalId={selectedGoalId}
@@ -304,78 +291,94 @@ function ReadyToFast({
         onChangeText={onReasonChange}
       />
 
-      <View
-        style={[
-          styles.readyFooter,
-          height >= 700 &&
-            !noteVisible &&
-            !customDurationExpanded &&
-            footerAnchored &&
-            styles.readyFooterAnchored,
-        ]}>
-        <ActionButton label="Start fast" onPress={onStart} />
+      <View style={styles.readyFooter}>
+        <AppButton label="Start fast" onPress={onStart} style={styles.primaryAction} />
       </View>
       {savedSessionId !== null ? (
-        <AppSurface style={[styles.savedNotice, styles.savedNoticeAnchored]}>
-          <View style={styles.savedNoticeText}>
-            <ThemedText type="smallBold">Fast saved</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              Added to History.
-            </ThemedText>
-          </View>
-          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.savedNoticeTimer}>
-            {savedNoticeSeconds}s
-          </ThemedText>
+        <Animated.View entering={FadeInUp.duration(200)} style={styles.savedAction}>
           <AppButton
             label="View fast"
-            variant="secondary"
+            variant="ghost"
+            style={styles.savedButton}
             onPress={() => router.push(`/history/${savedSessionId}`)}
           />
-        </AppSurface>
+        </Animated.View>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
 
 function ActiveFast({
   goalDurationHours,
+  goalName,
   startedAt,
   reason,
   elapsedSeconds,
   goalSeconds,
   reminderEnabled,
+  timerView,
+  onTimerViewChange,
   onReminderChange,
   onEnd,
   onCancel,
 }: {
   goalDurationHours: number;
+  goalName: string;
   startedAt: string;
   reason: string | null;
   elapsedSeconds: number;
   goalSeconds: number | null;
   reminderEnabled: boolean;
+  timerView: TimerViewPreference;
+  onTimerViewChange: (timerView: TimerViewPreference) => void;
   onReminderChange: (enabled: boolean) => void;
   onEnd: () => void;
   onCancel: () => void;
 }) {
   const theme = useTheme();
   const { width } = useWindowDimensions();
-  const [timerView, setTimerView] = useState<'elapsed' | 'remaining'>('elapsed');
   const ringSize = Math.min(268, width - Spacing.four * 2);
   const progress = goalSeconds === null ? 1 : Math.min(1, elapsedSeconds / goalSeconds);
   const remainingSeconds = goalSeconds === null ? null : Math.max(0, goalSeconds - elapsedSeconds);
   const shownSeconds =
-    timerView === 'remaining' && remainingSeconds !== null ? remainingSeconds : elapsedSeconds;
+    timerView === TimerViewPreference.Remaining && remainingSeconds !== null
+      ? remainingSeconds
+      : elapsedSeconds;
   const startedDate = new Date(startedAt);
   const endDate = goalSeconds === null ? null : new Date(startedDate.getTime() + goalSeconds * 1000);
 
   return (
-    <View style={styles.active}>
-      <View style={[styles.statusPill, { backgroundColor: theme.accentBackground }]}>
-        <View style={[styles.statusDot, { backgroundColor: theme.accent }]} />
-        <ThemedText type="smallBold" style={{ color: theme.accent }}>
-          Fasting
-        </ThemedText>
+    <Animated.View entering={FadeIn.duration(180)} style={styles.active}>
+      <View style={styles.activeHeading}>
+        <View style={[styles.statusPill, { backgroundColor: theme.accentBackground }]}>
+          <View style={[styles.statusDot, { backgroundColor: theme.accent }]} />
+          <ThemedText type="smallBold" style={{ color: theme.accent }}>
+            {goalDurationHours > 0
+              ? `${goalName} · ${formatGoalDuration(goalDurationHours)}`
+              : 'Open-ended fast'}
+          </ThemedText>
+        </View>
+        {goalSeconds !== null ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Show ${timerView === TimerViewPreference.Elapsed ? 'remaining' : 'elapsed'} time`}
+            onPress={() =>
+              onTimerViewChange(
+                timerView === TimerViewPreference.Elapsed
+                  ? TimerViewPreference.Remaining
+                  : TimerViewPreference.Elapsed,
+              )
+            }
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.timerViewButton,
+              { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
+              pressed && styles.pressed,
+            ]}>
+            <Hourglass size={17} color={theme.accent} />
+            <View style={[styles.timerViewDot, { backgroundColor: theme.accent }]} />
+          </Pressable>
+        ) : null}
       </View>
       <ProgressRing
         size={ringSize}
@@ -387,12 +390,16 @@ function ActiveFast({
           accessibilityLabel="Toggle elapsed and remaining time"
           onPress={() => {
             if (goalSeconds !== null) {
-              setTimerView((current) => (current === 'elapsed' ? 'remaining' : 'elapsed'));
+              onTimerViewChange(
+                timerView === TimerViewPreference.Elapsed
+                  ? TimerViewPreference.Remaining
+                  : TimerViewPreference.Elapsed,
+              );
             }
           }}
           style={({ pressed }) => [styles.timerContent, pressed && styles.pressed]}>
           <ThemedText themeColor="textSecondary">
-            {timerView === 'elapsed' ? 'Elapsed' : 'Remaining'}
+            {timerView === TimerViewPreference.Elapsed ? 'Elapsed' : 'Remaining'}
           </ThemedText>
           <ThemedText type="title" selectable style={styles.timer}>
             {formatDuration(shownSeconds)}
@@ -453,10 +460,10 @@ function ActiveFast({
           </ThemedText>
         </Pressable>
         <View style={styles.activeAction}>
-          <ActionButton label="End fast" onPress={onEnd} />
+          <AppButton label="End fast" onPress={onEnd} style={styles.primaryAction} />
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -517,35 +524,6 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ActionButton({
-  label,
-  variant = 'primary',
-  onPress,
-}: {
-  label: string;
-  variant?: 'primary' | 'danger';
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-  const backgroundColor = variant === 'danger' ? theme.danger : theme.accent;
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.actionButton, { backgroundColor }, pressed && styles.pressed]}>
-      <ThemedText
-        type="default"
-        style={{
-          color: variant === 'danger' ? theme.dangerForeground : theme.accentForeground,
-          fontWeight: '700',
-        }}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: {
@@ -561,32 +539,17 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingHorizontal: Spacing.four,
   },
-  header: { alignItems: 'flex-start' },
-  savedNotice: {
-    minHeight: 72,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingTop: Spacing.four,
-  },
-  savedNoticeAnchored: { position: 'absolute', right: 0, bottom: 76, left: 0 },
-  savedNoticeText: { flex: 1, gap: Spacing.one },
-  savedNoticeTimer: { position: 'absolute', top: Spacing.two, right: Spacing.two },
+  header: { alignItems: 'center' },
+  screenTitle: { fontSize: 30, lineHeight: 36, fontWeight: '700', textAlign: 'center' },
+  stateContent: { flex: 1 },
+  savedAction: { alignItems: 'center' },
+  savedButton: { minHeight: 36 },
   ready: { flex: 1, gap: Spacing.three },
   centeredText: { textAlign: 'center' },
-  readyFooter: { minHeight: 56, justifyContent: 'flex-end' },
-  readyFooterAnchored: {
-    position: 'absolute',
-    right: 0,
-    bottom: bottomActionInset,
-    left: 0,
-  },
-  actionButton: {
+  readyFooter: { minHeight: 56 },
+  primaryAction: {
+    width: '100%',
     minHeight: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.control,
-    borderCurve: 'continuous',
   },
   active: { alignItems: 'center', gap: Spacing.four, paddingTop: Spacing.three },
   statusPill: {
@@ -598,6 +561,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
   },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
+  activeHeading: {
+    width: '100%',
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+  },
+  timerViewButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: 18,
+  },
+  timerViewDot: { position: 'absolute', top: 5, right: 5, width: 5, height: 5, borderRadius: 3 },
   timerContent: {
     position: 'absolute',
     inset: 0,

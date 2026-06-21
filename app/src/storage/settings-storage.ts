@@ -583,7 +583,7 @@ export const getAppVersionLabel = (): string =>
 
 export const openWebsite = async (): Promise<void> => openWebsitePath('');
 
-export const openFaq = async (): Promise<void> => openWebsitePath('/#faq');
+export const openFaq = async (): Promise<void> => openWebsitePath('/faq');
 
 export const openPrivacyPolicy = async (): Promise<void> => openWebsitePath('/privacy');
 

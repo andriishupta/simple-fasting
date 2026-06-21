@@ -2,7 +2,7 @@
 
 Expo React Native application for a private, offline-first fasting tracker. The app runs on iOS and Android, stores all user data locally in MMKV, and does not require an account or backend.
 
-The code in this directory is the source of truth for current application behavior. Product intent, remaining work, release steps, and future ideas are documented in `../docs`.
+The code in this directory is the source of truth for current application behavior. Product intent, remaining work, release steps, and future ideas are documented in `../docs/plan`.
 
 ## Product Flow
 
@@ -12,7 +12,7 @@ The code in this directory is the source of truth for current application behavi
 4. Start the fast.
 5. Follow progress in the app or small home-screen widget.
 6. End the fast and optionally edit its details.
-7. Review statistics, graphs, and history in Data.
+7. Review statistics, charts, and history in Data.
 
 Everything in this flow works locally. Internet is only needed for optional external website/help links.
 
@@ -25,7 +25,7 @@ The app uses native Expo Router tabs in this order:
 Data has a native segmented control:
 
 - **Stats** — a neutral two-column metric grid for streaks, longest/average fast, completion, goal achievement, total hours, and total fasts.
-- **Graphs** — weekly/monthly/yearly heatmaps, monthly hours, duration distribution, completion, and goal achievement.
+- **Charts** — recent-duration and monthly-hours charts, goal completion, duration distribution, and weekly/monthly/yearly heatmaps.
 - **History** — completed sessions only; its segment label includes the completed count (capped at `99+`). Rows use labeled duration/start/end information, goal pills, tap-to-edit, and a native-feeling left swipe that reveals Delete on iOS and Android.
 
 Tapping a history entry pushes **Edit Fast**, a native stack screen for dates, duration/goal, and note editing.
@@ -97,7 +97,7 @@ MMKV stores:
 - `activeFast`;
 - `history`.
 
-History is the source of truth for statistics and graphs, which are derived in memory rather than persisted in a separate cache. Users can export JSON or CSV through the native share sheet and can clear all local data with confirmation.
+History is the source of truth for statistics and charts, which are derived in memory rather than persisted in a separate cache. Users can export JSON or CSV through the native share sheet and can clear all local data with confirmation.
 
 Core fasting writes complete before optional notification cleanup or rescheduling. If the platform notification service fails, local fasting state remains usable and startup does not enter a blocking recovery screen.
 
@@ -127,7 +127,7 @@ src/
 │   ├── faq.tsx
 │   ├── privacy.tsx
 │   └── terms.tsx
-├── components/          # Shared surfaces, buttons, text, feedback, graphs
+├── components/          # Shared surfaces, buttons, text, feedback, charts
 ├── constants/           # Theme and layout tokens
 ├── hooks/               # Theme hooks
 ├── storage/             # MMKV models, validation, notifications, exports
@@ -165,6 +165,20 @@ pnpm exec expo export --platform android --output-dir /tmp/simple-fasting-androi
 
 Static exports verify bundling but do not replace simulator/device testing for notifications, MMKV, gestures, and widgets.
 
+## Shared legal and FAQ content
+
+Privacy Policy, Terms of Use, and FAQ are authored in `../docs`, not in app route files. `pnpm content:sync` regenerates `src/content/generated/shared-documents.json` for both the app and website. Never edit generated JSON directly.
+
+Content synchronization is required before native generation and builds:
+
+- `pnpm prebuild` runs content sync, then `expo prebuild`;
+- EAS runs content sync through `eas-build-pre-install`;
+- `start`, `ios`, `android`, and `web` synchronize automatically;
+- `lint` and `test` fail if generated content is stale;
+- `pnpm content:check` performs the drift check directly.
+
+Commit canonical Markdown and both generated JSON files together.
+
 ## Current Remaining Work
 
 - native Android visual/regression pass;
@@ -173,4 +187,4 @@ Static exports verify bundling but do not replace simulator/device testing for n
 - broader automated tests;
 - decide whether bulk history actions or medium widgets belong in v1.
 
-See `../docs/02-execution-plan.md` and `../docs/03-release-deployment-guide.md` for the authoritative remaining-work lists.
+See `../docs/plan/02-execution-plan.md` and `../docs/plan/03-release-deployment-guide.md` for the authoritative remaining-work lists.

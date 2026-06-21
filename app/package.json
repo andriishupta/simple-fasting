@@ -13,6 +13,7 @@
     "expo-font": "~56.0.7",
     "expo-glass-effect": "~56.0.4",
     "expo-image": "~56.0.11",
+    "expo-linear-gradient": "~56.0.4",
     "expo-linking": "~56.0.14",
     "expo-notifications": "~56.0.18",
     "expo-router": "~56.2.11",
@@ -28,6 +29,7 @@
     "react-native": "0.85.3",
     "react-native-android-widget": "^0.20.3",
     "react-native-gesture-handler": "~2.31.1",
+    "react-native-gifted-charts": "1.4.63",
     "react-native-mmkv": "^4.3.1",
     "react-native-nitro-modules": "0.35.9",
     "react-native-reanimated": "4.3.1",
@@ -44,12 +46,20 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "content:sync": "node ../scripts/sync-shared-content.mjs",
+    "content:check": "node ../scripts/sync-shared-content.mjs --check",
+    "prebuild": "node ../scripts/sync-shared-content.mjs && expo prebuild",
+    "eas-build-pre-install": "node ../scripts/sync-shared-content.mjs",
+    "prestart": "node ../scripts/sync-shared-content.mjs",
     "start": "expo start",
+    "preandroid": "node ../scripts/sync-shared-content.mjs",
     "android": "expo run:android",
+    "preios": "node ../scripts/sync-shared-content.mjs",
     "ios": "expo run:ios",
+    "preweb": "node ../scripts/sync-shared-content.mjs",
     "web": "expo start --web",
-    "lint": "expo lint",
-    "test": "node --test src/utils/fasting-statistics.test.mjs"
+    "lint": "node ../scripts/sync-shared-content.mjs --check && expo lint",
+    "test": "node ../scripts/sync-shared-content.mjs --check && node --test src/utils/fasting-statistics.test.mjs"
   },
   "private": true
 }

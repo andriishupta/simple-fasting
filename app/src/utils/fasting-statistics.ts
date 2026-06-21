@@ -78,15 +78,3 @@ export const getCompletionRate = (sessions: readonly StatisticalFastSession[]): 
     ) / plannedSessions.length
   );
 };
-
-export const getGoalAchievementRate = (sessions: readonly StatisticalFastSession[]): number => {
-  const plannedSessions = getPlannedSessions(sessions);
-
-  if (plannedSessions.length === 0) return 0;
-
-  return (
-    plannedSessions.filter(
-      (session) => getCompletedDurationHours(session) >= session.goalDurationHours,
-    ).length / plannedSessions.length
-  );
-};

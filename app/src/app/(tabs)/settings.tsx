@@ -275,7 +275,7 @@ export default function SettingsScreen() {
           <SettingsActionRow
             icon={Trash2}
             title="Clear data"
-            description="Delete local history, graphs, settings, and active fast."
+            description="Delete local history, settings, and active fast."
             destructive
             onPress={clearLocalData}
           />

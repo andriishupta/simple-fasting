@@ -30,8 +30,13 @@ export enum AccentColorName {
 
 export enum DataViewPreference {
   Stats = 'stats',
-  Graphs = 'graphs',
+  Charts = 'charts',
   History = 'history',
+}
+
+export enum TimerViewPreference {
+  Elapsed = 'elapsed',
+  Remaining = 'remaining',
 }
 
 export enum FastStatus {
@@ -104,6 +109,7 @@ export type ActiveFastState = {
   session: FastSession | null;
   fastEndNotificationId: string | null;
   fastEndReminderEnabled: boolean;
+  timerViewPreference: TimerViewPreference;
   updatedAt: Timestamp;
 };
 
@@ -223,6 +229,7 @@ export const createEmptyActiveFastState = (updatedAt: Timestamp): ActiveFastStat
   session: null,
   fastEndNotificationId: null,
   fastEndReminderEnabled: true,
+  timerViewPreference: TimerViewPreference.Elapsed,
   updatedAt,
 });
 

@@ -3,55 +3,57 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { AppSurface } from '@/components/app-surface';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-
-export type LocalDocumentSection = {
-  title: string;
-  paragraphs: readonly string[];
-  bullets?: readonly string[];
-};
+import type { SharedDocument, SharedDocumentBlock } from '@/content/shared-documents';
 
 export function LocalDocumentScreen({
-  intro,
-  meta,
-  sections,
+  document,
 }: {
-  intro: string;
-  meta?: string;
-  sections: readonly LocalDocumentSection[];
+  document: SharedDocument;
 }) {
+  const meta = document.effectiveDate
+    ? `Effective ${document.effectiveDate} · Version ${document.version}`
+    : `Version ${document.version}`;
+
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.screen}>
       <View style={styles.content}>
-        {meta !== undefined ? (
-          <ThemedText type="smallBold" themeColor="textSecondary">
-            {meta}
-          </ThemedText>
-        ) : null}
-        <ThemedText themeColor="textSecondary">{intro}</ThemedText>
-        {sections.map((section) => (
-          <AppSurface key={section.title} style={styles.section}>
+        <ThemedText type="smallBold" themeColor="textSecondary">
+          {meta}
+        </ThemedText>
+        <ThemedText themeColor="textSecondary">{document.intro}</ThemedText>
+        {document.sections.map((section) => (
+          <AppSurface key={section.id} style={styles.section}>
             <ThemedText type="smallBold">{section.title}</ThemedText>
-            {section.paragraphs.map((paragraph) => (
-              <ThemedText key={paragraph} themeColor="textSecondary" selectable>
-                {paragraph}
-              </ThemedText>
-            ))}
-            {section.bullets?.map((bullet) => (
-              <View key={bullet} style={styles.bulletRow}>
-                <ThemedText themeColor="textSecondary">•</ThemedText>
-                <ThemedText themeColor="textSecondary" selectable style={styles.bulletText}>
-                  {bullet}
-                </ThemedText>
-              </View>
+            {section.blocks.map((block, index) => (
+              <DocumentBlock key={`${section.id}-${index}`} block={block} />
             ))}
           </AppSurface>
         ))}
       </View>
     </ScrollView>
   );
+}
+
+function DocumentBlock({ block }: { block: SharedDocumentBlock }) {
+  if (block.type === 'paragraph') {
+    return (
+      <ThemedText themeColor="textSecondary" selectable>
+        {block.text}
+      </ThemedText>
+    );
+  }
+
+  return block.items.map((item) => (
+    <View key={item} style={styles.bulletRow}>
+      <ThemedText themeColor="textSecondary">•</ThemedText>
+      <ThemedText themeColor="textSecondary" selectable style={styles.bulletText}>
+        {item}
+      </ThemedText>
+    </View>
+  ));
 }
 
 const styles = StyleSheet.create({

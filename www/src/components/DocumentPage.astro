@@ -1,0 +1,60 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+type Block = { type: 'paragraph'; text: string } | { type: 'list'; items: string[] };
+type Document = {
+  title: string;
+  version: string;
+  effectiveDate?: string;
+  description: string;
+  intro: string;
+  sections: { id: string; title: string; blocks: Block[] }[];
+};
+
+const { document } = Astro.props as { document: Document };
+const effectiveDate = document.effectiveDate
+  ? new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'long',
+      timeZone: 'UTC',
+    }).format(new Date(`${document.effectiveDate}T00:00:00Z`))
+  : undefined;
+---
+
+<Layout title={`${document.title} — Simple Fasting`} description={document.description} legal>
+  <header class="legal-hero">
+    <div class="shell">
+      <p class="legal-meta">
+        {effectiveDate ? `Effective ${effectiveDate} · ` : ''}Version {document.version}
+      </p>
+      <h1>{document.title}</h1>
+      <p>{document.intro}</p>
+    </div>
+  </header>
+
+  <div class="legal-content shell">
+    <nav class="legal-toc" aria-label={`${document.title} sections`}>
+      {document.sections.map((section) => <a href={`#${section.id}`}>{section.title}</a>)}
+    </nav>
+
+    <article class="prose">
+      {
+        document.sections.map((section) => (
+          <section id={section.id}>
+            <h2>{section.title}</h2>
+            {section.blocks.map((block) =>
+              block.type === 'paragraph' ? (
+                <p>{block.text}</p>
+              ) : (
+                <ul>
+                  {block.items.map((item) => (
+                    <li>{item}</li>
+                  ))}
+                </ul>
+              ),
+            )}
+          </section>
+        ))
+      }
+    </article>
+  </div>
+</Layout>

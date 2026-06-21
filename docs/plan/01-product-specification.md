@@ -44,20 +44,20 @@ The screen provides:
 
 The first fresh-install selection is `16:8`. Selecting a goal immediately persists its duration as `lastUsedGoalDurationHours`; the next visit restores that choice. There is no separate default-goal state.
 
-The selected goal is shown directly as its name and duration without a redundant “Your fasting goal” label. Tapping **This time** selects it and expands the native Days/Hours wheel editor inline. Tapping its displayed duration or chevron toggles the same editor. Selecting another goal closes it. This-time duration is limited to seven days; selecting seven days forces hours to zero. The editor includes a “Not medical advice” notice and points users to reusable goals in Settings.
+The selected goal is shown directly as its name and duration without a redundant “Your fasting goal” label. Enabled goals, **This time**, and **Open-ended fast** share one neutral selection surface; the current choice uses a checkmark instead of an accent-filled button. Tapping **This time** selects it, while tapping its displayed duration or chevron toggles the native Days/Hours wheel editor inline. Selecting another goal closes it. This-time duration is limited to seven days; selecting seven days forces hours to zero.
 
 ### Active state
 
 An active fast shows:
 
 - elapsed time and progress;
-- elapsed/remaining toggle for planned fasts;
+- persisted elapsed/remaining toggle for planned fasts, shared with widgets;
 - start and planned end times;
 - optional note;
 - local end reminder control that schedules a notification when the planned goal is reached;
 - a compact action row with destructive Cancel fast on the left and accent-colored End fast on the right.
 
-Ending a fast saves it to History immediately and returns to the ready state with a **Fast saved** card below Start fast. A top-right countdown removes it after five seconds; **View fast** opens the entry. Edit Fast otherwise opens from History. Cancel is a ghost-style destructive text action and does not add a completed history entry.
+Ending a fast saves it to History immediately and returns to the ready state with a simple **View fast** action below Start fast. Edit Fast otherwise opens from History. Cancel is a ghost-style destructive text action and does not add a completed history entry.
 
 ## Data Screen
 
@@ -72,32 +72,29 @@ Stats are presented as separate neutral two-column metric tiles without accent-o
 - longest fast;
 - average duration;
 - completion rate;
-- goal achievement;
 - total fasting hours;
 - total completed fasts.
 
-### Graphs
+### Charts
 
-- weekly heatmap;
-- monthly heatmap;
-- yearly heatmap;
+- recent completed-fast duration trend;
 - monthly fasting hours;
+- average planned-fast completion;
 - duration distribution;
-- completion rate;
-- goal achievement.
+- weekly, monthly, and yearly heatmaps.
 
 ### History
 
 - completed fasting sessions;
 - entry details including duration, dates, goal, and note; the redundant completed status is omitted;
 - the History segment includes a completed-session count capped at `99+`;
-- labeled duration, start, and end values plus a goal pill;
+- labeled duration with its nearby goal pill, start/end values, and a horizontal planned-fast progress bar;
 - tap-to-edit and a native-feeling left swipe that reveals destructive Delete on iOS and Android;
 - native stack Edit Fast screen for changing dates, goal duration, and note.
 
-Edit Fast reuses the Fast screen’s goal selector, inline This-time editor, Open-ended action, and Note control. Only enabled goals are offered. Start and required End values use theme-aware native date/time controls. The screen has Save and Delete actions; there is no redundant Cancel or Clear End action.
+Edit Fast reuses the Fast screen’s goal selector, inline This-time editor, Open-ended action, and Note control. Only enabled goals are offered. Duration and Schedule are presented as grouped sections. Start and required End values use theme-aware native date/time controls without duplicate formatted timestamps. The screen has Save and ghost-style Delete actions; there is no redundant Cancel or Clear End action.
 
-History is the source of truth for statistics and graph calculations. Bulk delete and swipe-to-delete are not implemented.
+History is the source of truth for statistics and chart calculations. Multi-select and bulk delete are not implemented.
 
 ## Settings Screen
 
@@ -169,7 +166,7 @@ MMKV keys:
 | `history` | Completed fasting sessions; source of truth |
 
 State management uses React state, small hooks, and MMKV subscriptions. No global state framework is used.
-Statistics and graphs are derived directly from History; no unused persisted cache or speculative widget settings are kept.
+Statistics and charts are derived directly from History; no unused persisted cache or speculative widget settings are kept.
 
 Storage initialization failures show retry and explicit reset controls. Optional notification restoration failures do not block access to fasting data or the core timer.
 

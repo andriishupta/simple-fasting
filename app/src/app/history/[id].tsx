@@ -73,12 +73,6 @@ const createEditState = (session: FastSession): EditState => ({
   reason: session.reason ?? '',
 });
 
-const formatLocaleDateTime = (timestamp: string): string =>
-  new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'medium',
-  }).format(new Date(timestamp));
-
 export default function HistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   useHistoryState();
@@ -238,11 +232,14 @@ function DetailContent({ session }: { session: FastSession }) {
         onCustomDurationExpandedChange={setCustomDurationExpanded}
       />
 
-      <View style={styles.summary}>
-        <ThemedText type="title" style={styles.duration}>
+      <AppSurface style={styles.summary}>
+        <ThemedText type="small" themeColor="textSecondary">
+          Duration
+        </ThemedText>
+        <ThemedText type="title" selectable style={styles.duration}>
           {formatDuration(editedDurationSeconds)}
         </ThemedText>
-      </View>
+      </AppSurface>
 
       {editError !== null && (
         <FeedbackState
@@ -253,18 +250,24 @@ function DetailContent({ session }: { session: FastSession }) {
         />
       )}
 
-      <View style={styles.timeFields}>
+      <View style={styles.sectionGroup}>
+        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
+          Schedule
+        </ThemedText>
+        <AppSurface style={styles.timeFields}>
         <NativeDateTimeField
-          label="Start time"
+          label="Start"
           value={editState.startedAt}
           onChange={(startedAt) => setEditState((state) => ({ ...state, startedAt }))}
         />
+        <View style={styles.sectionDivider} />
         <NativeDateTimeField
-          label="End time"
+          label="End"
           value={editState.endedAt}
           fallbackDate={editState.startedAt ?? undefined}
           onChange={(endedAt) => setEditState((state) => ({ ...state, endedAt }))}
         />
+        </AppSurface>
       </View>
 
       <FastNoteEditor
@@ -278,7 +281,7 @@ function DetailContent({ session }: { session: FastSession }) {
       />
 
       <View style={styles.actions}>
-        <AppButton label="Delete" onPress={deleteSession} variant="danger" fullWidth />
+        <AppButton label="Delete" onPress={deleteSession} variant="dangerGhost" fullWidth />
         <AppButton label="Save" onPress={saveEdits} fullWidth />
       </View>
     </View>
@@ -311,7 +314,7 @@ function NativeDateTimeField({
   };
 
   return (
-    <AppSurface style={styles.timeField}>
+    <View style={styles.timeField}>
       <ThemedText type="smallBold">{label}</ThemedText>
       <View style={styles.dateTimeControls}>
         <DateTimePicker
@@ -335,12 +338,7 @@ function NativeDateTimeField({
           onChange={updateTime}
         />
       </View>
-      {value !== null && (
-        <ThemedText type="small" themeColor="textSecondary" selectable>
-          {formatLocaleDateTime(value.toISOString())}
-        </ThemedText>
-      )}
-    </AppSurface>
+    </View>
   );
 }
 
@@ -357,12 +355,16 @@ const styles = StyleSheet.create({
   },
   summary: {
     alignItems: 'center',
+    gap: Spacing.one,
   },
   duration: {
     textAlign: 'center',
   },
+  sectionGroup: { gap: Spacing.one },
+  sectionLabel: { paddingHorizontal: Spacing.two, textTransform: 'uppercase' },
   timeFields: { gap: Spacing.two },
   timeField: { gap: Spacing.two },
+  sectionDivider: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(128,128,128,0.24)' },
   dateTimeControls: {
     flexDirection: 'row',
     alignItems: 'center',

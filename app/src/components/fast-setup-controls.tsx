@@ -1,7 +1,14 @@
 import { useMemo } from 'react';
 import { Picker } from '@expo/ui/community/picker';
-import { Check, ChevronRight, Infinity as InfinityIcon, SlidersHorizontal, SquarePen } from 'lucide-react-native';
+import {
+  Check,
+  ChevronRight,
+  Infinity as InfinityIcon,
+  SlidersHorizontal,
+  SquarePen,
+} from 'lucide-react-native';
 import { Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
+import Animated, { FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
@@ -84,22 +91,30 @@ export function FastGoalSelector({
         </ThemedText>
       </View>
 
-      <View style={styles.presetRow}>
-        {goals.map((goal) => (
-          <GoalButton
-            key={goal.id}
-            label={goal.name}
-            selected={goal.id === selectedGoalId}
-            onPress={() => onSelectGoal(goal.id)}
-          />
-        ))}
-      </View>
-
       <View
         style={[
           styles.options,
           { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
         ]}>
+        {goals.map((goal) => (
+          <Pressable
+            key={goal.id}
+            accessibilityRole="button"
+            accessibilityState={{ selected: goal.id === selectedGoalId }}
+            onPress={() => onSelectGoal(goal.id)}
+            style={({ pressed }) => [styles.optionRow, pressed && styles.pressed]}>
+            <View style={styles.optionLabel}>
+              <ThemedText>{goal.name}</ThemedText>
+            </View>
+            <ThemedText type="small" themeColor="textSecondary">
+              {formatGoalDuration(goal.targetDurationHours)}
+            </ThemedText>
+            {goal.id === selectedGoalId ? (
+              <Check size={16} color={theme.accent} strokeWidth={2.5} />
+            ) : null}
+          </Pressable>
+        ))}
+
         <View style={styles.optionRow}>
           <Pressable
             accessibilityRole="button"
@@ -107,7 +122,6 @@ export function FastGoalSelector({
             accessibilityState={{ selected: selectedGoalId === customGoalId }}
             onPress={() => {
               onSelectGoal(customGoalId);
-              onCustomDurationExpandedChange(true);
             }}
             style={({ pressed }) => [styles.optionPrimary, pressed && styles.pressed]}>
             <OptionIcon icon="custom" />
@@ -138,7 +152,12 @@ export function FastGoalSelector({
         </View>
 
         {customDurationExpanded ? (
-          <DurationPicker value={customDurationHours} onChange={onCustomDurationChange} />
+          <Animated.View
+            entering={FadeInDown.duration(180)}
+            exiting={FadeOutUp.duration(140)}
+            layout={LinearTransition.duration(180)}>
+            <DurationPicker value={customDurationHours} onChange={onCustomDurationChange} />
+          </Animated.View>
         ) : null}
 
         <Pressable
@@ -196,23 +215,25 @@ export function FastNoteEditor({
         </View>
       </View>
       {enabled ? (
-        <TextInput
-          accessibilityLabel="Fast note"
-          value={value}
-          onChangeText={onChangeText}
-          placeholder="Add a note"
-          placeholderTextColor={theme.textSecondary}
-          returnKeyType="done"
-          multiline
-          style={[
-            styles.input,
-            {
-              color: theme.text,
-              backgroundColor: theme.background,
-              borderColor: theme.backgroundSelected,
-            },
-          ]}
-        />
+        <Animated.View entering={FadeInDown.duration(180)} exiting={FadeOutUp.duration(140)}>
+          <TextInput
+            accessibilityLabel="Fast note"
+            value={value}
+            onChangeText={onChangeText}
+            placeholder="Add a note"
+            placeholderTextColor={theme.textSecondary}
+            returnKeyType="done"
+            multiline
+            style={[
+              styles.input,
+              {
+                color: theme.text,
+                backgroundColor: theme.background,
+                borderColor: theme.backgroundSelected,
+              },
+            ]}
+          />
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -263,9 +284,6 @@ function DurationPicker({ value, onChange }: { value: number; onChange: (value: 
           }
         />
       </View>
-      <ThemedText type="smallBold" themeColor="textSecondary" style={styles.centeredText}>
-        Not medical advice.
-      </ThemedText>
       <ThemedText type="small" themeColor="textSecondary" style={styles.centeredText}>
         Maximum duration is 7 days.
       </ThemedText>
@@ -308,54 +326,12 @@ function PickerColumn({
   );
 }
 
-function GoalButton({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.goal,
-        {
-          backgroundColor: selected ? theme.accent : theme.background,
-          borderColor: selected ? theme.accent : theme.backgroundSelected,
-        },
-        pressed && styles.pressed,
-      ]}>
-      <ThemedText style={selected ? { color: theme.accentForeground } : undefined}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   goalSelector: { gap: Spacing.three },
   hero: { alignItems: 'center', gap: Spacing.one, paddingHorizontal: Spacing.four },
   goalHero: { textAlign: 'center', fontSize: 40, lineHeight: 46, fontWeight: '700' },
   customGoalHero: { fontSize: 34, lineHeight: 40 },
   centeredText: { textAlign: 'center', fontVariant: ['tabular-nums'] },
-  presetRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.two },
-  goal: {
-    minWidth: 56,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderRadius: Radius.pill,
-    borderCurve: 'continuous',
-    paddingHorizontal: Spacing.two,
-  },
   options: {
     overflow: 'hidden',
     borderWidth: 1,
@@ -363,14 +339,14 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
   },
   optionRow: {
-    minHeight: 60,
+    minHeight: 50,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
     paddingHorizontal: Spacing.three,
   },
   optionPrimary: {
-    minHeight: 60,
+    minHeight: 50,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',

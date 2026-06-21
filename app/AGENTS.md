@@ -149,7 +149,7 @@ Shared UI primitives can stay in:
 components/
 ```
 
-Reusable graph primitives, buttons, text wrappers, and layout helpers belong in `components/` only when they are useful across routes.
+Reusable chart primitives, buttons, text wrappers, and layout helpers belong in `components/` only when they are useful across routes.
 
 Generic app storage primitives can stay in:
 
@@ -506,10 +506,22 @@ Assume repository is public.
 Future roadmap exists in:
 
 ```text
-/docs/04-future-roadmap.md
+/docs/plan/04-future-roadmap.md
 ```
 
 Do not implement future roadmap items unless requested.
+
+---
+
+# Shared Legal and FAQ Content
+
+Canonical Privacy Policy, Terms of Use, and FAQ Markdown lives under `/docs`, outside this package. App routes consume `src/content/generated/shared-documents.json`.
+
+- Never edit generated JSON directly.
+- Run `pnpm content:sync` after canonical Markdown changes.
+- Keep synchronization in the app `prebuild` command and EAS `eas-build-pre-install` hook; these are mandatory build invariants.
+- Keep `content:check` in lint/test or CI so stale generated content fails validation.
+- Commit source Markdown and generated app/website JSON together.
 
 ---
 

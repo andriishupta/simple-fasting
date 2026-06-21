@@ -311,9 +311,13 @@ Assume website source is public.
 Future marketing and product content should align with:
 
 ```text
-/docs/01-product-specification.docx
-/docs/04-future-roadmap.docx
+/docs/plan/01-product-specification.md
+/docs/plan/04-future-roadmap.md
 ```
+
+Privacy Policy, Terms of Use, and FAQ content comes from `/docs`. Do not edit generated content under `src/content/generated`; edit the Markdown source and run `pnpm content:sync`.
+
+The shared-content generator in the `prebuild` lifecycle hook is mandatory. Keep automatic synchronization for `dev`, `build`, and `preview`, use `content:check` for CI drift detection, and commit canonical Markdown with both generated app/website JSON files.
 
 Do not invent product features.
 

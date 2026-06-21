@@ -6,6 +6,7 @@ import {
   GoalKind,
   StorageKey,
   StorageSchemaVersion,
+  TimerViewPreference,
   ThemePreference,
   appStorage,
   createDefaultGoals,
@@ -55,6 +56,7 @@ const isEnumValue = <Value extends string>(
 const themePreferences = Object.values(ThemePreference);
 const accentColorNames = Object.values(AccentColorName);
 const dataViewPreferences = Object.values(DataViewPreference);
+const timerViewPreferences = Object.values(TimerViewPreference);
 const fastStatuses = Object.values(FastStatus);
 const fastingGoalTypes = Object.values(FastingGoalType);
 
@@ -171,9 +173,12 @@ export const repairSettings = (
     lastUsedGoalDurationHours: isNonNegativeNumber(value.lastUsedGoalDurationHours)
       ? value.lastUsedGoalDurationHours
       : defaults.lastUsedGoalDurationHours,
-    dataViewPreference: isEnumValue(dataViewPreferences, value.dataViewPreference)
-      ? value.dataViewPreference
-      : defaults.dataViewPreference,
+    dataViewPreference:
+      value.dataViewPreference === 'graphs'
+        ? DataViewPreference.Charts
+        : isEnumValue(dataViewPreferences, value.dataViewPreference)
+          ? value.dataViewPreference
+          : defaults.dataViewPreference,
     notifications: {
       fastEndReminderEnabled: isBoolean(notifications.fastEndReminderEnabled)
         ? notifications.fastEndReminderEnabled
@@ -254,6 +259,9 @@ export const repairActiveFast = (
       fastEndReminderEnabled: isBoolean(value.fastEndReminderEnabled)
         ? value.fastEndReminderEnabled
         : true,
+      timerViewPreference: isEnumValue(timerViewPreferences, value.timerViewPreference)
+        ? value.timerViewPreference
+        : TimerViewPreference.Elapsed,
       updatedAt: sanitizeTimestamp(value.updatedAt, timestamp),
     },
     repaired: true,

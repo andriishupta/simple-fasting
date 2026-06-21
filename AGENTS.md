@@ -22,7 +22,7 @@ Goals:
 /
 ├── app/           # Expo React Native application
 ├── www/           # Astro website
-├── docs/          # Product and project documentation
+├── docs/          # Shared content and project documentation
 ├── AGENTS.md
 └── README.md
 ```
@@ -33,13 +33,13 @@ Goals:
 
 Before implementing features, review relevant documentation.
 
-Location:
+Planning location:
 
 ```text
-docs/
+docs/plan/
 ```
 
-Current documents:
+Current planning documents:
 
 ```text
 01-product-specification.md
@@ -52,12 +52,21 @@ Use this reference table to choose the right document before starting work:
 
 | Task type                                                                                                                         | Primary document                                       | Use when                                                                                 |
 | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| General product behavior, feature requirements, architecture, UX, privacy, data model, widgets, notifications, app store metadata | `01-product-specification.md` | You need the broad source of truth or are implementing v1 app behavior.                  |
-| Implementation sequencing, task breakdown, epic scope, development order                                                          | `02-execution-plan.md`        | You need to decide what to build next or keep work aligned with the execution plan.      |
-| Release, deployment, platform setup, store preparation, EAS, TestFlight, Google Play, testing strategy                            | `03-release-deployment-guide.md` | You are changing deployment, release, platform configuration, or store-facing materials. |
-| Future roadmap, versioning, migrations beyond v1, sync, accounts, health integrations, premium features                           | `04-future-roadmap.md`        | You are evaluating whether a requested feature belongs now or is a future-version item.  |
+| General product behavior, feature requirements, architecture, UX, privacy, data model, widgets, notifications, app store metadata | `plan/01-product-specification.md` | You need the broad source of truth or are implementing v1 app behavior.                  |
+| Implementation sequencing, task breakdown, epic scope, development order                                                          | `plan/02-execution-plan.md`        | You need to decide what to build next or keep work aligned with the execution plan.      |
+| Release, deployment, platform setup, store preparation, EAS, TestFlight, Google Play, testing strategy                            | `plan/03-release-deployment-guide.md` | You are changing deployment, release, platform configuration, or store-facing materials. |
+| Future roadmap, versioning, migrations beyond v1, sync, accounts, health integrations, premium features                           | `plan/04-future-roadmap.md`        | You are evaluating whether a requested feature belongs now or is a future-version item.  |
 
-When unsure, start with `01-product-specification.md`, then consult the more specific document if the work is about execution order, deployment, or future evolution.
+When unsure, start with `plan/01-product-specification.md`, then consult the more specific document if the work is about execution order, deployment, or future evolution.
+
+Shared user-facing content lives in `docs/legal/*.md` and `docs/faq.md`. These Markdown files are the source of truth for both `app` and `www`. Run `node scripts/sync-shared-content.mjs` after editing them; never edit generated `shared-documents.json` files directly. Legal documents require explicit `version` and `effectiveDate` metadata.
+
+Shared-content synchronization is a mandatory build invariant:
+
+- `www` must keep the shared-content generator in its `prebuild` lifecycle script;
+- `app` must synchronize in its Expo `prebuild` command and EAS `eas-build-pre-install` hook;
+- CI should run `node scripts/sync-shared-content.mjs --check` to detect stale generated files;
+- changes to the Markdown schema, generator, targets, or lifecycle hooks must be reflected in the root, app, and website README and AGENTS files.
 
 The current implementation in `/app` is the source of truth for behavior that already exists. Documentation is the source of truth for product intent, remaining work, release requirements, and future scope.
 
@@ -358,7 +367,7 @@ Every dependency increases maintenance cost.
 Future roadmap items are documented in:
 
 ```text
-04-future-roadmap.md
+docs/plan/04-future-roadmap.md
 ```
 
 Do not implement roadmap items unless requested.

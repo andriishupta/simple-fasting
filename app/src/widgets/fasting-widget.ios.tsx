@@ -9,13 +9,14 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 
-import type { FastSession } from '@/storage/app-storage';
+import { TimerViewPreference, type ActiveFastState } from '@/storage/app-storage';
 
 type FastingWidgetProps = {
   goalDurationHours: number;
   goalEndsAt: number;
   startedAt: number;
   status: 'active' | 'inactive';
+  timerView: TimerViewPreference;
 };
 
 const appUrl = 'simple-fasting://';
@@ -76,8 +77,8 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
       </Text>
       <Spacer />
       <Text
-        timerInterval={{ lower: startedAt, upper: distantFuture }}
-        countsDown={false}
+        timerInterval={{ lower: startedAt, upper: hasGoal ? goalEndsAt : distantFuture }}
+        countsDown={hasGoal && props.timerView === TimerViewPreference.Remaining}
         modifiers={[
           font({ size: 29, weight: 'bold', design: 'rounded' }),
           foregroundStyle(primaryColor),
@@ -99,7 +100,8 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
 
 const fastingWidget = createWidget<FastingWidgetProps>('FastingWidget', FastingWidgetView);
 
-export const updateFastingWidget = (session: FastSession | null): void => {
+export const updateFastingWidget = (state: ActiveFastState): void => {
+  const { session, timerViewPreference } = state;
   const startedAt = session === null ? 0 : new Date(session.startedAt).getTime();
   const props: FastingWidgetProps =
     session === null
@@ -108,12 +110,14 @@ export const updateFastingWidget = (session: FastSession | null): void => {
           goalEndsAt: 0,
           startedAt: 0,
           status: 'inactive',
+          timerView: TimerViewPreference.Elapsed,
         }
       : {
           goalDurationHours: session.goalDurationHours,
           goalEndsAt: startedAt + session.goalDurationHours * 3_600_000,
           startedAt,
           status: 'active',
+          timerView: timerViewPreference,
         };
 
   try {

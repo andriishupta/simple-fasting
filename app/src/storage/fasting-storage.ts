@@ -6,6 +6,7 @@ import {
   createEmptyHistoryState,
   FastStatus,
   StorageKey,
+  TimerViewPreference,
   type ActiveFastState,
   type FastSession,
   type HistoryState,
@@ -39,7 +40,7 @@ const createSessionId = (): string =>
 const saveActiveFastState = (activeFastState: ActiveFastState): ActiveFastState => {
   activeFastSnapshot = activeFastState;
   appStorage.insert(StorageKey.ActiveFast, activeFastState);
-  updateFastingWidget(activeFastState.session);
+  updateFastingWidget(activeFastState);
 
   return activeFastState;
 };
@@ -54,7 +55,7 @@ const saveHistoryState = (historyState: HistoryState): HistoryState => {
 export const refreshFastSnapshots = (): void => {
   activeFastSnapshot = readActiveFastState();
   historySnapshot = readHistoryState();
-  updateFastingWidget(activeFastSnapshot.session);
+  updateFastingWidget(activeFastSnapshot);
 };
 
 export const getActiveFastState = (): ActiveFastState => activeFastSnapshot;
@@ -90,6 +91,7 @@ export const startFast = async ({
     session,
     fastEndNotificationId: null,
     fastEndReminderEnabled,
+    timerViewPreference: TimerViewPreference.Elapsed,
     updatedAt: timestamp,
   });
 
@@ -265,6 +267,15 @@ export const setActiveFastEndReminderEnabled = async (
   });
 };
 
+export const setActiveFastTimerView = (
+  timerViewPreference: TimerViewPreference,
+): ActiveFastState =>
+  saveActiveFastState({
+    ...getActiveFastState(),
+    timerViewPreference,
+    updatedAt: now(),
+  });
+
 const subscribeToActiveFast = (onStoreChange: () => void): (() => void) =>
   appStorage.subscribe((key) => {
     if (key === StorageKey.ActiveFast) {
@@ -309,9 +320,10 @@ export const formatHours = (hours: number): string =>
   hours < 10 ? hours.toFixed(1) : Math.round(hours).toString();
 
 export const formatDuration = (totalSeconds: number): string => {
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
+  const wholeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(wholeSeconds / 3600);
+  const minutes = Math.floor((wholeSeconds % 3600) / 60);
+  const seconds = wholeSeconds % 60;
 
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(
     seconds,

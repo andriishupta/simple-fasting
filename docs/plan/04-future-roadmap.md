@@ -69,7 +69,7 @@ Potential scope:
 - CloudKit sync for history, settings, and goals;
 - iPhone, iPad, Apple Watch, and macOS continuity.
 
-Derived statistics and graphs should be rebuilt locally rather than synced.
+Derived statistics and charts should be rebuilt locally rather than synced.
 
 This remains optional and must not remove local-only mode.
 

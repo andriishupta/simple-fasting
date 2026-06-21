@@ -3,7 +3,6 @@ import test from 'node:test';
 
 import {
   getCompletionRate,
-  getGoalAchievementRate,
   getLocalDayKey,
   getPreviousLocalDayKey,
   getRecentLocalDayKeys,
@@ -44,14 +43,4 @@ test('completion is averaged per planned fast and capped at 100 percent', () => 
   ];
 
   assert.equal(getCompletionRate(sessions), 0.75);
-});
-
-test('goal achievement counts planned fasts that reached their duration', () => {
-  const sessions = [
-    createSession({ id: 'missed', hours: 8, goalDurationHours: 16 }),
-    createSession({ id: 'reached', hours: 16, goalDurationHours: 16 }),
-    createSession({ id: 'over', hours: 18, goalDurationHours: 16 }),
-  ];
-
-  assert.equal(getGoalAchievementRate(sessions), 2 / 3);
 });

@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import documents from '../content/generated/shared-documents.json';
 
 const description =
   'A private, offline fasting timer for iOS and Android with history, statistics, widgets, local reminders, and data export.';
@@ -155,22 +156,24 @@ const structuredData = {
 
   <section class="section shell faq" id="faq">
     <h2>Frequently asked questions</h2>
-    <details>
-      <summary>Does Simple Fasting need an account?</summary>
-      <p>No. The app does not require registration, a login, or personal information.</p>
-    </details>
-    <details>
-      <summary>Does it work offline?</summary>
-      <p>Yes. Timing, history, statistics, reminders, and settings work without a network connection.</p>
-    </details>
-    <details>
-      <summary>Where is my data stored?</summary>
-      <p>Your active fast, settings, and history are stored locally on your device.</p>
-    </details>
-    <details>
-      <summary>Can I export my data?</summary>
-      <p>Yes. You can create JSON or CSV exports from Settings and share or save them yourself.</p>
-    </details>
+    {
+      documents.faq.sections.map((section) => (
+        <details>
+          <summary>{section.title}</summary>
+          {section.blocks.map((block) =>
+            block.type === 'paragraph' ? (
+              <p>{block.text}</p>
+            ) : (
+              <ul>
+                {block.items.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+            ),
+          )}
+        </details>
+      ))
+    }
   </section>
 
   <section class="final-cta" id="download">

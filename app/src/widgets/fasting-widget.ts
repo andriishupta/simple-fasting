@@ -1,3 +1,3 @@
-import type { FastSession } from '@/storage/app-storage';
+import type { ActiveFastState } from '@/storage/app-storage';
 
-export const updateFastingWidget = (_session: FastSession | null): void => {};
+export const updateFastingWidget = (_state: ActiveFastState): void => {};

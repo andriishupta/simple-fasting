@@ -10,16 +10,17 @@ import { router } from 'expo-router';
 import { SegmentedControl as ExpoSegmentedControl } from '@expo/ui/community/segmented-control';
 import { ChevronRight, Trash2 } from 'lucide-react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Animated, { FadeIn, FadeInUp, FadingTransition } from 'react-native-reanimated';
 
 import { AppSurface } from '@/components/app-surface';
 import {
+  CompletionDonut,
+  FastingBarChart,
+  FastingLineChart,
   HeatmapGrid,
-  HorizontalBars,
-  ProgressMetric,
-  VerticalBars,
-  type BarDatum,
+  type ChartDatum,
   type HeatmapCell,
-} from '@/components/graphs/simple-graphs';
+} from '@/components/charts/fasting-charts';
 import { FeedbackState } from '@/components/feedback-state';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -41,7 +42,6 @@ import { useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
 import { setDataViewPreference, useSettings } from '@/storage/settings-storage';
 import {
   getCompletionRate,
-  getGoalAchievementRate,
   getLocalDayKey,
   getLocalMonthKey,
   getPreviousLocalDayKey,
@@ -57,19 +57,18 @@ type FastingStats = {
   longestFastHours: number;
   averageDurationHours: number;
   completionRate: number;
-  goalAchievementRate: number;
   totalHours: number;
   totalFasts: number;
 };
 
-type GraphData = {
+type ChartData = {
   weeklyHeatmap: readonly HeatmapCell[];
   monthlyHeatmap: readonly HeatmapCell[];
   yearlyHeatmap: readonly HeatmapCell[];
-  monthlyHours: readonly BarDatum[];
-  durationDistribution: readonly BarDatum[];
+  monthlyHours: readonly ChartDatum[];
+  recentDurations: readonly ChartDatum[];
+  durationDistribution: readonly ChartDatum[];
   completionRate: number;
-  goalAchievementRate: number;
 };
 
 const getCompletedSessions = (history: HistoryState): readonly FastSession[] =>
@@ -128,7 +127,6 @@ const getFastingStats = (history: HistoryState): FastingStats => {
     averageDurationHours:
       completedSessions.length === 0 ? 0 : totalHours / completedSessions.length,
     completionRate: getCompletionRate(completedSessions),
-    goalAchievementRate: getGoalAchievementRate(completedSessions),
     totalHours,
     totalFasts: completedSessions.length,
   };
@@ -156,7 +154,7 @@ const getHeatmap = ({
     value: hoursByDay[dateKey] ?? 0,
   }));
 
-const getMonthlyHours = (sessions: readonly FastSession[]): readonly BarDatum[] => {
+const getMonthlyHours = (sessions: readonly FastSession[]): readonly ChartDatum[] => {
   const hoursByMonth = sessions.reduce<Record<string, number>>((result, session) => {
     const monthKey = getLocalMonthKey(new Date(session.startedAt));
 
@@ -172,7 +170,7 @@ const getMonthlyHours = (sessions: readonly FastSession[]): readonly BarDatum[] 
   }));
 };
 
-const getDurationDistribution = (sessions: readonly FastSession[]): readonly BarDatum[] => {
+const getDurationDistribution = (sessions: readonly FastSession[]): readonly ChartDatum[] => {
   const buckets = [
     { label: '<12h', min: 0, max: 12 },
     { label: '12-16h', min: 12, max: 16 },
@@ -190,7 +188,18 @@ const getDurationDistribution = (sessions: readonly FastSession[]): readonly Bar
   }));
 };
 
-const getGraphData = (history: HistoryState): GraphData => {
+const getRecentDurations = (sessions: readonly FastSession[]): readonly ChartDatum[] =>
+  sessions
+    .slice(0, 7)
+    .reverse()
+    .map((session) => ({
+      label: new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(
+        new Date(session.startedAt),
+      ),
+      value: getSessionDurationHours(session),
+    }));
+
+const getChartData = (history: HistoryState): ChartData => {
   const completedSessions = getCompletedSessions(history);
   const hoursByDay = getHoursByDay(completedSessions);
 
@@ -199,17 +208,15 @@ const getGraphData = (history: HistoryState): GraphData => {
     monthlyHeatmap: getHeatmap({ dayKeys: getRecentLocalDayKeys(30), hoursByDay }),
     yearlyHeatmap: getHeatmap({ dayKeys: getRecentLocalDayKeys(365), hoursByDay }),
     monthlyHours: getMonthlyHours(completedSessions),
+    recentDurations: getRecentDurations(completedSessions),
     durationDistribution: getDurationDistribution(completedSessions),
     completionRate: getCompletionRate(completedSessions),
-    goalAchievementRate: getGoalAchievementRate(completedSessions),
   };
 };
 
 const formatPercent = (value: number): string => `${Math.round(value * 100)}%`;
 
-const formatGraphHours = (hours: number): string => `${formatHours(hours)}h`;
-
-const formatGraphCount = (value: number): string => `${value}`;
+const formatChartHours = (hours: number): string => `${formatHours(hours)}h`;
 
 const formatGoalLabel = (goalDurationHours: number): string =>
   goalDurationHours <= 0 ? 'Open-ended' : `${goalDurationHours}h goal`;
@@ -262,13 +269,13 @@ function DataPanel() {
             <HistoryList sessions={historyState.sessions} />
           )}
           {selectedView === DataViewPreference.Stats && <StatsPanel history={historyState} />}
-          {selectedView === DataViewPreference.Graphs && <GraphsPanel history={historyState} />}
+          {selectedView === DataViewPreference.Charts && <ChartsPanel history={historyState} />}
         </>
       ) : (
         <FeedbackState
           kind="empty"
           title="No fasting data yet"
-          description="Start a fast to build stats, graphs, and history."
+          description="Start a fast to build stats, charts, and history."
           action={{ label: 'Start a Fast', onPress: () => router.push('/') }}
         />
       )}
@@ -289,7 +296,7 @@ function DataViewPicker({
   const colorScheme = useAppThemeColorScheme();
   const dataViews: readonly { label: string; value: DataView }[] = [
     { label: 'Stats', value: DataViewPreference.Stats },
-    { label: 'Graphs', value: DataViewPreference.Graphs },
+    { label: 'Charts', value: DataViewPreference.Charts },
     {
       label: `History (${historyCount > 99 ? '99+' : historyCount})`,
       value: DataViewPreference.History,
@@ -328,14 +335,14 @@ function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
 
   return (
     <View style={styles.list}>
-      {sessions.map((session) => (
-        <HistoryItem key={session.id} session={session} />
+      {sessions.map((session, index) => (
+        <HistoryItem key={session.id} session={session} index={index} />
       ))}
     </View>
   );
 }
 
-function HistoryItem({ session }: { session: FastSession }) {
+function HistoryItem({ session, index }: { session: FastSession; index: number }) {
   const theme = useTheme();
   const editSession = (): void => router.push(`/history/${session.id}`);
   const deleteSession = (): void => {
@@ -350,7 +357,9 @@ function HistoryItem({ session }: { session: FastSession }) {
   };
 
   return (
-    <View style={styles.swipeContainer}>
+    <Animated.View
+      entering={FadeInUp.delay(Math.min(index, 5) * 35).duration(180)}
+      style={styles.swipeContainer}>
       <ReanimatedSwipeable
         friction={1.5}
         rightThreshold={44}
@@ -387,7 +396,7 @@ function HistoryItem({ session }: { session: FastSession }) {
           <ChevronRight size={18} color={theme.textSecondary} />
         </Pressable>
       </ReanimatedSwipeable>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -401,20 +410,39 @@ function HistorySummary({
   endedLabel: string;
 }) {
   const theme = useTheme();
+  const progress =
+    session.goalDurationHours > 0
+      ? durationSeconds / (session.goalDurationHours * 3600)
+      : null;
 
   return (
     <View style={styles.historySummary}>
       <View style={styles.historyTopLine}>
-        <View>
+        <View style={styles.durationGroup}>
           <ThemedText type="small" themeColor="textSecondary">Duration</ThemedText>
-          <ThemedText type="smallBold">{formatDuration(durationSeconds)}</ThemedText>
-        </View>
-        <View style={[styles.goalPill, { backgroundColor: theme.accentBackground }]}>
-          <ThemedText type="smallBold" themeColor="accent">
-            {formatGoalLabel(session.goalDurationHours)}
-          </ThemedText>
+          <View style={styles.durationLine}>
+            <ThemedText type="smallBold">{formatDuration(durationSeconds)}</ThemedText>
+            <View style={[styles.goalPill, { backgroundColor: theme.accentBackground }]}>
+              <ThemedText type="smallBold" themeColor="accent">
+                {formatGoalLabel(session.goalDurationHours)}
+              </ThemedText>
+            </View>
+          </View>
         </View>
       </View>
+      {progress !== null ? (
+        <View
+          accessible
+          accessibilityLabel={`${Math.round(progress * 100)}% of goal`}
+          style={[styles.historyProgressTrack, { backgroundColor: theme.backgroundSelected }]}>
+          <View
+            style={[
+              styles.historyProgressFill,
+              { backgroundColor: theme.accent, width: `${Math.min(100, progress * 100)}%` },
+            ]}
+          />
+        </View>
+      ) : null}
       <View style={styles.historyTimes}>
         <HistoryTime label="Started" value={formatLocaleDateTime(session.startedAt)} />
         <HistoryTime label="Ended" value={endedLabel} />
@@ -449,7 +477,6 @@ function StatsPanel({ history }: { history: HistoryState }) {
       <StatTile label="Average duration" value={`${formatHours(stats.averageDurationHours)} h`} />
       <StatTile label="Total fasts" value={`${stats.totalFasts}`} />
       <StatTile label="Completion rate" value={formatPercent(stats.completionRate)} />
-      <StatTile label="Goal achievement" value={formatPercent(stats.goalAchievementRate)} />
     </View>
   );
 }
@@ -468,54 +495,59 @@ function StatTile({ label, value }: {
   );
 }
 
-function GraphsPanel({ history }: { history: HistoryState }) {
-  const graphData = getGraphData(history);
+function ChartsPanel({ history }: { history: HistoryState }) {
+  const chartData = getChartData(history);
 
   return (
-    <View style={styles.content}>
-      <GraphSection title="Weekly heatmap">
-        <HeatmapGrid cells={graphData.weeklyHeatmap} columns={7} />
-      </GraphSection>
+    <Animated.View entering={FadeIn.duration(180)} layout={FadingTransition} style={styles.content}>
+      <ChartSection title="Recent fast duration" description="Your last seven completed fasts">
+        <FastingLineChart data={chartData.recentDurations} formatValue={formatChartHours} />
+      </ChartSection>
 
-      <GraphSection title="Monthly heatmap">
-        <HeatmapGrid cells={graphData.monthlyHeatmap} columns={10} />
-      </GraphSection>
+      <ChartSection title="Monthly fasting hours" description="Total hours over the last six months">
+        <FastingBarChart data={chartData.monthlyHours} formatValue={formatChartHours} />
+      </ChartSection>
 
-      <GraphSection title="Yearly heatmap">
-        <HeatmapGrid cells={graphData.yearlyHeatmap} columns={26} compact />
-      </GraphSection>
+      <ChartSection title="Goal completion" description="Average progress across planned fasts">
+        <CompletionDonut value={chartData.completionRate} />
+      </ChartSection>
 
-      <GraphSection title="Monthly hours">
-        <VerticalBars data={graphData.monthlyHours} formatValue={formatGraphHours} />
-      </GraphSection>
+      <ChartSection title="This week">
+        <HeatmapGrid cells={chartData.weeklyHeatmap} columns={7} />
+      </ChartSection>
 
-      <GraphSection title="Duration distribution">
-        <HorizontalBars data={graphData.durationDistribution} formatValue={formatGraphCount} />
-      </GraphSection>
+      <ChartSection title="Last 30 days">
+        <HeatmapGrid cells={chartData.monthlyHeatmap} columns={10} />
+      </ChartSection>
 
-      <GraphSection title="Completion">
-        <ProgressMetric
-          label="Completion rate"
-          value={graphData.completionRate}
-          formatValue={formatPercent}
-        />
-      </GraphSection>
+      <ChartSection title="Last year">
+        <HeatmapGrid cells={chartData.yearlyHeatmap} columns={26} compact />
+      </ChartSection>
 
-      <GraphSection title="Goal achievement">
-        <ProgressMetric
-          label="Goals reached"
-          value={graphData.goalAchievementRate}
-          formatValue={formatPercent}
-        />
-      </GraphSection>
-    </View>
+      <ChartSection title="Duration mix" description="Completed fasts grouped by length">
+        <FastingBarChart data={chartData.durationDistribution} formatValue={(value) => `${value}`} />
+      </ChartSection>
+    </Animated.View>
   );
 }
 
-function GraphSection({ title, children }: { title: string; children: React.ReactNode }) {
+function ChartSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
   return (
     <AppSurface style={styles.section}>
-      <ThemedText type="smallBold">{title}</ThemedText>
+      <View style={styles.sectionHeading}>
+        <ThemedText type="smallBold">{title}</ThemedText>
+        {description !== undefined ? (
+          <ThemedText type="small" themeColor="textSecondary">{description}</ThemedText>
+        ) : null}
+      </View>
       {children}
     </AppSurface>
   );
@@ -564,7 +596,11 @@ const styles = StyleSheet.create({
   },
   historySummary: { gap: Spacing.two },
   historyTopLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  durationGroup: { gap: Spacing.half },
+  durationLine: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, flexWrap: 'wrap' },
   goalPill: { borderRadius: Radius.pill, paddingHorizontal: Spacing.two, paddingVertical: Spacing.one },
+  historyProgressTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  historyProgressFill: { height: '100%', borderRadius: 3 },
   historyTimes: { flexDirection: 'row', gap: Spacing.three },
   historyTime: { flex: 1, gap: Spacing.half },
   statGrid: {
@@ -590,7 +626,9 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: Spacing.three,
+    overflow: 'hidden',
   },
+  sectionHeading: { gap: Spacing.half },
   pressed: {
     opacity: 0.72,
   },

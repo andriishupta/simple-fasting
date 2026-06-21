@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-type AppButtonVariant = 'primary' | 'secondary' | 'danger';
+type AppButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'dangerGhost';
 
 type AppButtonProps = PressableProps & {
   label: string;
@@ -32,10 +32,20 @@ export function AppButton({
       borderColor: theme.accentBorder,
       color: theme.text,
     },
+    ghost: {
+      backgroundColor: 'transparent',
+      borderColor: 'transparent',
+      color: theme.accent,
+    },
     danger: {
       backgroundColor: theme.danger,
       borderColor: theme.danger,
       color: theme.dangerForeground,
+    },
+    dangerGhost: {
+      backgroundColor: 'transparent',
+      borderColor: 'transparent',
+      color: theme.danger,
     },
   }[variant];
 

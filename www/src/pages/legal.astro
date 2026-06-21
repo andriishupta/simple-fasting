@@ -1,92 +1,42 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import documents from '../content/generated/shared-documents.json';
 
-const effectiveDate = 'June 19, 2026';
-const description =
-  'Simple Fasting legal information, privacy principles, health disclaimer, app terms, and support contact.';
+const legalDocuments = [
+  { href: '/privacy', document: documents.privacy },
+  { href: '/terms', document: documents.terms },
+];
+const description = 'Current privacy and terms documents for the Simple Fasting app and website.';
 ---
 
 <Layout title="Legal — Simple Fasting" description={description} legal>
   <header class="legal-hero">
     <div class="shell">
-      <p class="legal-meta">Last updated {effectiveDate}</p>
+      <p class="legal-meta">Current documents</p>
       <h1>Legal information</h1>
-      <p>
-        Plain-language information about privacy, responsible use, health limitations, and how to
-        contact Simple Fasting.
-      </p>
+      <p>Privacy, responsible-use, health, and data-responsibility terms for Simple Fasting.</p>
     </div>
   </header>
 
   <div class="legal-content shell">
-    <nav class="legal-toc" aria-label="Legal information sections">
-      <a href="#principles">Product principles</a>
-      <a href="#health">Health notice</a>
-      <a href="#documents">Legal documents</a>
-      <a href="#ownership">Ownership</a>
-      <a href="#stores">Platform terms</a>
-      <a href="#contact">Contact</a>
+    <nav class="legal-toc" aria-label="Legal documents">
+      {legalDocuments.map(({ href, document }) => <a href={href}>{document.title}</a>)}
     </nav>
 
     <article class="prose">
-      <section id="principles">
-        <h2>Product principles</h2>
-        <p>
-          Simple Fasting is built as a local-first, offline-first fasting tracker. The current app
-          does not require an account, custom backend, advertising SDK, or analytics SDK. You can
-          export or clear the data stored by the app.
-        </p>
-      </section>
-
-      <section id="health">
-        <h2>Health notice</h2>
-        <p>
-          Simple Fasting tracks time and displays locally derived progress. It is not medical or
-          nutrition advice and does not determine whether fasting is appropriate for you. Consult a
-          qualified healthcare professional when needed, and stop fasting if you feel unwell.
-        </p>
-      </section>
-
-      <section id="documents">
-        <h2>Legal documents</h2>
-        <p>These documents explain the current app and website practices in detail.</p>
+      <section>
+        <h2>Documents</h2>
+        <p>Each document shows its current version and effective date on its full page.</p>
         <div class="legal-cards">
-          <a class="legal-card" href="/privacy">
-            <h3>Privacy Policy</h3>
-            <p>Local storage, permissions, exports, website delivery, and your controls.</p>
-          </a>
-          <a class="legal-card" href="/terms">
-            <h3>Terms of Use</h3>
-            <p>Responsible use, health limitations, data responsibility, and service terms.</p>
-          </a>
+          {
+            legalDocuments.map(({ href, document }) => (
+              <a class="legal-card" href={href}>
+                <h3>{document.title}</h3>
+                <p>{document.description}</p>
+              </a>
+            ))
+          }
         </div>
-      </section>
-
-      <section id="ownership">
-        <h2>Names, content, and software</h2>
-        <p>
-          “Simple Fasting,” the app presentation, website copy, and associated visual assets are
-          protected by applicable intellectual-property laws. Third-party software and platform
-          components remain subject to their respective licenses and notices.
-        </p>
-      </section>
-
-      <section id="stores">
-        <h2>Platform and store terms</h2>
-        <p>
-          Downloads and purchases, if offered, may also be governed by Apple App Store or Google
-          Play terms. Device features such as notifications, widgets, Live Activities, and ongoing
-          notifications depend on platform support and permissions.
-        </p>
-      </section>
-
-      <section id="contact">
-        <h2>Contact and notices</h2>
-        <p>
-          Send legal, privacy, or support questions to
-          <a href="mailto:support@simplefasting.app">support@simplefasting.app</a>. Include only the
-          information needed for us to understand and respond to your request.
-        </p>
       </section>
     </article>
   </div>

@@ -40,7 +40,7 @@ Separate repository and selector layers are intentionally not planned while dire
 
 ## 4. Data and History
 
-- [x] Data tab with Stats, Graphs, and History segments
+- [x] Data tab with Stats, Charts, and History segments
 - [x] Current/longest streak, longest/average fast, completion, goal achievement, totals
 - [x] Two-column statistics metric grid
 - [x] Weekly, monthly, and yearly heatmaps
