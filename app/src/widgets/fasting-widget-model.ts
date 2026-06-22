@@ -14,6 +14,7 @@ export type FastingWidgetModel =
       status: 'active';
       accessibilityLabel: string;
       displayTime: string;
+      headline: string;
       goalDurationHours: number;
       goalEndsAt: number;
       hasGoal: boolean;
@@ -33,6 +34,7 @@ const formatTimerMinutes = (minutes: number): string => {
 export const createFastingWidgetModel = (
   state: ActiveFastState,
   currentTime = Date.now(),
+  goalName?: string,
 ): FastingWidgetModel => {
   const { session, timerViewPreference } = state;
 
@@ -57,14 +59,20 @@ export const createFastingWidgetModel = (
 
   return {
     status: 'active',
-    accessibilityLabel: `Fasting timer ${displayTime}`,
+    accessibilityLabel: `${goalName ?? 'Fasting'} ${displayTime}`,
     displayTime,
+    headline: hasGoal
+      ? `${goalName ?? `${session.goalDurationHours}h goal`} · ${session.goalDurationHours}h`
+      : 'Open-ended fast',
     goalDurationHours: session.goalDurationHours,
     goalEndsAt: startedAt + goalMinutes * 60_000,
     hasGoal,
     progress: hasGoal ? Math.min(1, elapsedMinutes / goalMinutes) : 0,
     startedAt,
-    subtitle: hasGoal ? `${session.goalDurationHours}h goal` : 'Open-ended fast',
+    subtitle:
+      timerViewPreference === TimerViewPreference.Remaining && hasGoal
+        ? 'Remaining'
+        : 'Elapsed',
     timerView: timerViewPreference,
   };
 };

@@ -51,13 +51,13 @@ The selected goal is shown directly as its name and duration without a redundant
 An active fast shows:
 
 - elapsed time and progress;
-- persisted elapsed/remaining toggle for planned fasts, shared with widgets;
+- persisted elapsed/remaining toggle for planned fasts, retained in MMKV between fasts and shared with widgets;
 - start and planned end times;
 - optional note;
 - local end reminder control that schedules a notification when the planned goal is reached;
 - a compact action row with destructive Cancel fast on the left and accent-colored End fast on the right.
 
-Ending a fast saves it to History immediately and returns to the ready state with a simple **View fast** action below Start fast. Edit Fast otherwise opens from History. Cancel is a ghost-style destructive text action and does not add a completed history entry.
+Ending a fast saves it to History immediately and returns to the ready state with a five-second **Fast saved** notice below Start fast. The notice links to the saved entry and displays its remaining time. Edit Fast otherwise opens from History. Cancel is a ghost-style destructive text action and does not add a completed history entry.
 
 ## Data Screen
 
@@ -87,7 +87,7 @@ Stats are presented as separate neutral two-column metric tiles without accent-o
 
 - completed fasting sessions;
 - entry details including duration, dates, goal, and note; the redundant completed status is omitted;
-- the History segment includes a completed-session count capped at `99+`;
+- the History segment uses a stable label without a dynamic count;
 - labeled duration with its nearby goal pill, start/end values, and a horizontal planned-fast progress bar;
 - tap-to-edit and a native-feeling left swipe that reveals destructive Delete on iOS and Android;
 - selection mode with confirmation for bulk deletion;
@@ -113,6 +113,8 @@ Goals is a native stack screen with a transparent large-title header.
 
 - standard goals can be enabled or disabled but not deleted;
 - custom goals can be enabled/disabled, created, edited, and deleted;
+- goals can be reordered with a visible drag handle and the order persists in MMKV;
+- custom goals expose edit navigation and swipe-to-delete; standard goals never expose deletion;
 - add goal is a floating plus action;
 - at least one goal must remain enabled;
 - the selected Fast-screen goal is persisted directly;
@@ -129,8 +131,9 @@ No push-notification backend is used.
 
 ### Data
 
-- JSON export of app data and metadata;
-- CSV export of fasting history;
+- JSON import/export of app data and metadata;
+- CSV import/export of fasting history;
+- import preserves existing history, skips duplicate IDs and sessions whose time ranges overlap existing or already accepted imported sessions, and reports saved/skipped counts;
 - native share sheet;
 - Clear data with destructive confirmation.
 
@@ -147,7 +150,7 @@ No push-notification backend is used.
 
 Small home-screen widgets are implemented for iOS and Android.
 
-When inactive, the widget invites the user to open the app and start a fast. When active, it shows elapsed time and the goal/open-ended state. Tapping opens the app through `simple-fasting://`.
+When inactive, the widget invites the user to open the app and start a fast. When active, it shows the app identity, goal name and hours, the persisted elapsed/remaining label, one timer, and planned-goal progress without redundant timer or goal labels. Tapping opens the app through `simple-fasting://`.
 
 - iOS uses `expo-widgets` and SwiftUI-backed Expo UI.
 - Android uses `react-native-android-widget`.

@@ -5,6 +5,12 @@ import { type FastSession } from '@/storage/app-storage';
 
 const notificationChannelId = 'fasting-reminders';
 
+export enum LocalNotificationPermissionState {
+  Granted = 'granted',
+  Denied = 'denied',
+  Undetermined = 'undetermined',
+}
+
 export const configureLocalNotificationBehavior = async (): Promise<void> => {
   if (Platform.OS === 'web') {
     return;
@@ -61,6 +67,19 @@ export const requestLocalNotificationPermission = async (): Promise<boolean> => 
   const requestedPermissions = await Notifications.requestPermissionsAsync();
 
   return requestedPermissions.granted;
+};
+
+export const getLocalNotificationPermissionState = async (): Promise<LocalNotificationPermissionState> => {
+  if (Platform.OS === 'web') {
+    return LocalNotificationPermissionState.Denied;
+  }
+
+  const permissions = await Notifications.getPermissionsAsync();
+
+  if (permissions.granted) return LocalNotificationPermissionState.Granted;
+  return permissions.status === Notifications.PermissionStatus.UNDETERMINED
+    ? LocalNotificationPermissionState.Undetermined
+    : LocalNotificationPermissionState.Denied;
 };
 
 export const hasLocalNotificationPermission = async (): Promise<boolean> => {

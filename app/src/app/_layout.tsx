@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { FeedbackState } from '@/components/feedback-state';
 import { AppErrorBoundary } from '@/components/app-error-boundary';
+import { FastSavedNoticeProvider } from '@/components/fast-saved-notice-context';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { AppThemeProvider, useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
@@ -17,6 +18,7 @@ import {
 } from '@/storage/fasting-storage';
 import {
   reconcileDailyReminderNotification,
+  initializeNotificationPermission,
   refreshSettingsSnapshot,
 } from '@/storage/settings-storage';
 import { configureLocalNotificationBehavior } from '@/storage/notification-storage';
@@ -123,11 +125,14 @@ function RootLayoutContent({
   useEffect(() => {
     if (startupState.status !== 'ready') return;
 
-    void Promise.all([
-      configureLocalNotificationBehavior(),
-      reconcileDailyReminderNotification(),
-      reconcileActiveFastEndNotification(),
-    ]).catch((error: unknown) => {
+    void (async () => {
+      await configureLocalNotificationBehavior();
+      await initializeNotificationPermission();
+      await Promise.all([
+        reconcileDailyReminderNotification(),
+        reconcileActiveFastEndNotification(),
+      ]);
+    })().catch((error: unknown) => {
       recordDiagnosticError({ kind: DiagnosticEventKind.ReminderReconciliation, error });
       Alert.alert(
         'Reminders unavailable',
@@ -139,49 +144,51 @@ function RootLayoutContent({
   return (
     <ThemeProvider value={navigationTheme}>
       {startupState.status === 'ready' ? (
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="history/[id]"
-            options={{
-              title: 'Edit Fast',
-              headerShown: true,
-              headerBackButtonDisplayMode: 'minimal',
-            }}
-          />
-          <Stack.Screen
-            name="goals"
-            options={{
-              title: 'Goals',
-              headerShown: true,
-              headerLargeTitle: true,
-              headerTransparent: true,
-              headerShadowVisible: false,
-              headerBlurEffect: 'none',
-              headerBackButtonDisplayMode: 'minimal',
-            }}
-          />
-          <Stack.Screen
-            name="faq"
-            options={{ title: 'FAQ', headerShown: true, headerBackButtonDisplayMode: 'minimal' }}
-          />
-          <Stack.Screen
-            name="privacy"
-            options={{
-              title: 'Privacy Policy',
-              headerShown: true,
-              headerBackButtonDisplayMode: 'minimal',
-            }}
-          />
-          <Stack.Screen
-            name="terms"
-            options={{
-              title: 'Terms of Use',
-              headerShown: true,
-              headerBackButtonDisplayMode: 'minimal',
-            }}
-          />
-        </Stack>
+        <FastSavedNoticeProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen
+              name="history/[id]"
+              options={{
+                title: 'Edit Fast',
+                headerShown: true,
+                headerBackButtonDisplayMode: 'minimal',
+              }}
+            />
+            <Stack.Screen
+              name="goals"
+              options={{
+                title: 'Goals',
+                headerShown: true,
+                headerLargeTitle: true,
+                headerTransparent: true,
+                headerShadowVisible: false,
+                headerBlurEffect: 'none',
+                headerBackButtonDisplayMode: 'minimal',
+              }}
+            />
+            <Stack.Screen
+              name="faq"
+              options={{ title: 'FAQ', headerShown: true, headerBackButtonDisplayMode: 'minimal' }}
+            />
+            <Stack.Screen
+              name="privacy"
+              options={{
+                title: 'Privacy Policy',
+                headerShown: true,
+                headerBackButtonDisplayMode: 'minimal',
+              }}
+            />
+            <Stack.Screen
+              name="terms"
+              options={{
+                title: 'Terms of Use',
+                headerShown: true,
+                headerBackButtonDisplayMode: 'minimal',
+              }}
+            />
+          </Stack>
+        </FastSavedNoticeProvider>
       ) : (
         <StartupScreen
           startupState={startupState}

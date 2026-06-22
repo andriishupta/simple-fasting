@@ -91,7 +91,7 @@ export const startFast = async ({
     session,
     fastEndNotificationId: null,
     fastEndReminderEnabled,
-    timerViewPreference: TimerViewPreference.Elapsed,
+    timerViewPreference: activeFastSnapshot.timerViewPreference,
     updatedAt: timestamp,
   });
 
@@ -182,11 +182,32 @@ export const deleteFastSessions = (sessionIds: readonly string[]): HistoryState 
   });
 };
 
-export const mergeImportedFastSessions = (sessions: readonly FastSession[]): number => {
+export type ImportMergeResult = { saved: number; skipped: number };
+
+const sessionsOverlap = (first: FastSession, second: FastSession): boolean => {
+  if (first.id === second.id) return true;
+  if (first.endedAt === null || second.endedAt === null) return false;
+
+  return first.startedAt < second.endedAt && second.startedAt < first.endedAt;
+};
+
+export const mergeImportedFastSessions = (
+  sessions: readonly FastSession[],
+): ImportMergeResult => {
   const historyState = getHistoryState();
-  const existingIds = new Set(historyState.sessions.map((session) => session.id));
-  const additions = sessions.filter((session) => !existingIds.has(session.id));
-  if (additions.length === 0) return 0;
+  const additions: FastSession[] = [];
+  let skipped = 0;
+
+  sessions.forEach((session) => {
+    const acceptedSessions = [...historyState.sessions, ...additions];
+    if (acceptedSessions.some((existing) => sessionsOverlap(existing, session))) {
+      skipped += 1;
+    } else {
+      additions.push(session);
+    }
+  });
+
+  if (additions.length === 0) return { saved: 0, skipped };
 
   saveHistoryState({
     ...historyState,
@@ -195,7 +216,7 @@ export const mergeImportedFastSessions = (sessions: readonly FastSession[]): num
     ),
     updatedAt: now(),
   });
-  return additions.length;
+  return { saved: additions.length, skipped };
 };
 
 export const updateFastSession = ({

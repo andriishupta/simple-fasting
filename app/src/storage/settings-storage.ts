@@ -22,6 +22,8 @@ import {
 } from '@/storage/app-storage';
 import {
   cancelScheduledNotification,
+  getLocalNotificationPermissionState,
+  LocalNotificationPermissionState,
   requestLocalNotificationPermission,
   scheduleDailyReminderNotification,
 } from '@/storage/notification-storage';
@@ -314,6 +316,21 @@ export const deleteFastingGoal = (goalId: string): boolean => {
   return true;
 };
 
+export const moveFastingGoal = (goalId: string, destinationIndex: number): AppSettings =>
+  updateSettings((settings) => {
+    const sourceIndex = settings.goals.findIndex((goal) => goal.id === goalId);
+    if (sourceIndex < 0) return settings;
+
+    const boundedDestination = Math.max(0, Math.min(destinationIndex, settings.goals.length - 1));
+    if (sourceIndex === boundedDestination) return settings;
+
+    const goals = [...settings.goals];
+    const [goal] = goals.splice(sourceIndex, 1);
+    goals.splice(boundedDestination, 0, goal);
+
+    return { ...settings, goals, updatedAt: now() };
+  });
+
 export const setFastingGoalEnabled = (goalId: string, isEnabled: boolean): boolean => {
   const settings = getSettings();
   const selectedGoal = settings.goals.find((goal) => goal.id === goalId);
@@ -367,6 +384,29 @@ export const updateNotificationSettings = (
     notifications: update(settings.notifications),
     updatedAt: now(),
   }));
+
+export const initializeNotificationPermission = async (): Promise<LocalNotificationPermissionState> => {
+  const initialState = await getLocalNotificationPermissionState();
+
+  if (initialState === LocalNotificationPermissionState.Granted) {
+    return initialState;
+  }
+
+  const granted =
+    initialState === LocalNotificationPermissionState.Undetermined
+      ? await requestLocalNotificationPermission()
+      : false;
+
+  updateNotificationSettings((notifications) => ({
+    ...notifications,
+    fastEndReminderEnabled: granted,
+    dailyReminderEnabled: false,
+  }));
+
+  return granted
+    ? LocalNotificationPermissionState.Granted
+    : LocalNotificationPermissionState.Denied;
+};
 
 export const reconcileDailyReminderNotification = async (): Promise<AppSettings> => {
   const settings = getSettings();
@@ -568,7 +608,11 @@ export const shareDataExport = async (format: SettingsExportFormat): Promise<voi
   await shareTextFallback({ content, filename });
 };
 
-export { requestLocalNotificationPermission };
+export {
+  getLocalNotificationPermissionState,
+  LocalNotificationPermissionState,
+  requestLocalNotificationPermission,
+};
 
 const websiteUrl = 'https://simplefasting.app';
 const supportEmail = 'support@simplefasting.app';

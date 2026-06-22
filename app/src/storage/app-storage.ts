@@ -239,7 +239,7 @@ export const createDefaultAppSettings = (updatedAt: Timestamp): AppSettings => (
   lastUsedGoalDurationHours: 16,
   dataViewPreference: DataViewPreference.Stats,
   notifications: {
-    fastEndReminderEnabled: true,
+    fastEndReminderEnabled: false,
     dailyReminderEnabled: false,
     dailyReminderTime: null,
     dailyReminderNotificationId: null,
@@ -251,7 +251,7 @@ export const createEmptyActiveFastState = (updatedAt: Timestamp): ActiveFastStat
   schemaVersion: StorageSchemaVersion.V1,
   session: null,
   fastEndNotificationId: null,
-  fastEndReminderEnabled: true,
+  fastEndReminderEnabled: false,
   timerViewPreference: TimerViewPreference.Elapsed,
   updatedAt,
 });

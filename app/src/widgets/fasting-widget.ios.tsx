@@ -9,23 +9,30 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 
-import { TimerViewPreference, type ActiveFastState } from '@/storage/app-storage';
+import {
+  appStorage,
+  StorageKey,
+  TimerViewPreference,
+  type ActiveFastState,
+} from '@/storage/app-storage';
 import { createFastingWidgetModel } from '@/widgets/fasting-widget-model';
 
 type FastingWidgetProps = {
   goalDurationHours: number;
   goalEndsAt: number;
+  goalLabel: string;
   startedAt: number;
   status: 'active' | 'inactive';
   timerView: TimerViewPreference;
 };
 
-const appUrl = 'simple-fasting://';
-const distantFuture = new Date('2100-01-01T00:00:00.000Z');
-
 function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnvironment) {
   'widget';
 
+  // Widget views are serialized and evaluated outside the app's JS module scope.
+  // Keep every runtime value inside this function so WidgetKit can resolve it.
+  const appUrl = 'simple-fasting://';
+  const distantFuture = new Date('2100-01-01T00:00:00.000Z');
   const isDark = environment.colorScheme === 'dark';
   const backgroundColor = isDark ? '#15171C' : '#F7F8FC';
   const primaryColor = isDark ? '#F5F7FF' : '#17191F';
@@ -73,15 +80,21 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
         containerBackground(backgroundColor, 'widget'),
         widgetURL(appUrl),
       ]}>
-      <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(accentColor)]}>
-        FASTING
+      <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(accentColor)]}>
+        FASTING · SIMPLE FASTING
+      </Text>
+      <Text modifiers={[font({ size: 14, weight: 'semibold' }), foregroundStyle(primaryColor)]}>
+        {props.goalLabel}
       </Text>
       <Spacer />
+      <Text modifiers={[font({ size: 11, weight: 'medium' }), foregroundStyle(secondaryColor)]}>
+        {props.timerView === 'remaining' && hasGoal ? 'REMAINING' : 'ELAPSED'}
+      </Text>
       <Text
         timerInterval={{ lower: startedAt, upper: hasGoal ? goalEndsAt : distantFuture }}
-        countsDown={hasGoal && props.timerView === TimerViewPreference.Remaining}
+        countsDown={hasGoal && props.timerView === 'remaining'}
         modifiers={[
-          font({ size: 29, weight: 'bold', design: 'rounded' }),
+          font({ size: 27, weight: 'bold', design: 'rounded' }),
           foregroundStyle(primaryColor),
         ]}
       />
@@ -92,9 +105,6 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
           modifiers={[progressViewStyle('linear'), foregroundStyle(accentColor)]}
         />
       ) : null}
-      <Text modifiers={[font({ size: 12, weight: 'medium' }), foregroundStyle(secondaryColor)]}>
-        {hasGoal ? `${props.goalDurationHours}h goal` : 'Open-ended fast'}
-      </Text>
     </VStack>
   );
 }
@@ -102,12 +112,16 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
 const fastingWidget = createWidget<FastingWidgetProps>('FastingWidget', FastingWidgetView);
 
 export const updateFastingWidget = (state: ActiveFastState): void => {
-  const model = createFastingWidgetModel(state);
+  const goalName = appStorage
+    .get(StorageKey.Settings)
+    ?.goals.find((goal) => goal.targetDurationHours === state.session?.goalDurationHours)?.name;
+  const model = createFastingWidgetModel(state, Date.now(), goalName);
   const props: FastingWidgetProps =
     model.status === 'inactive'
       ? {
           goalDurationHours: 0,
           goalEndsAt: 0,
+          goalLabel: '',
           startedAt: 0,
           status: 'inactive',
           timerView: TimerViewPreference.Elapsed,
@@ -115,6 +129,7 @@ export const updateFastingWidget = (state: ActiveFastState): void => {
       : {
           goalDurationHours: model.goalDurationHours,
           goalEndsAt: model.goalEndsAt,
+          goalLabel: model.headline,
           startedAt: model.startedAt,
           status: 'active',
           timerView: model.timerView,

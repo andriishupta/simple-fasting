@@ -6,6 +6,8 @@ import {
   cancelScheduledNotification,
   configureLocalNotificationBehavior,
   hasLocalNotificationPermission,
+  getLocalNotificationPermissionState,
+  LocalNotificationPermissionState,
   parseReminderTime,
   requestLocalNotificationPermission,
   scheduleDailyReminderNotification,
@@ -15,6 +17,7 @@ import { createSession } from '../../test/fixtures';
 
 jest.mock('expo-notifications', () => ({
   AndroidImportance: { DEFAULT: 3 },
+  PermissionStatus: { UNDETERMINED: 'undetermined' },
   SchedulableTriggerInputTypes: { DATE: 'date', DAILY: 'daily' },
   setNotificationHandler: jest.fn(),
   setNotificationChannelAsync: jest.fn(),
@@ -89,6 +92,26 @@ describe('notification storage', () => {
     setPlatform('web');
     await cancelScheduledNotification('notification-2');
     expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledTimes(1);
+  });
+
+  test('distinguishes granted, denied, and undetermined permission states', async () => {
+    expect(await getLocalNotificationPermissionState()).toBe(
+      LocalNotificationPermissionState.Granted,
+    );
+    jest.mocked(Notifications.getPermissionsAsync).mockResolvedValueOnce({
+      granted: false,
+      status: 'undetermined',
+    } as never);
+    expect(await getLocalNotificationPermissionState()).toBe(
+      LocalNotificationPermissionState.Undetermined,
+    );
+    jest.mocked(Notifications.getPermissionsAsync).mockResolvedValueOnce({
+      granted: false,
+      status: 'denied',
+    } as never);
+    expect(await getLocalNotificationPermissionState()).toBe(
+      LocalNotificationPermissionState.Denied,
+    );
   });
 
   test('schedules a future fast-end notification', async () => {

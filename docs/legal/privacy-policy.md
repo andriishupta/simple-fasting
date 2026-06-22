@@ -1,8 +1,8 @@
 ---
 id: privacy-policy
 title: Privacy Policy
-version: 1.2
-effectiveDate: 2026-06-21
+version: 1.3
+effectiveDate: 2026-06-22
 description: How Simple Fasting handles local app data, local diagnostics, website requests, support emails, exports, privacy rights, and future product changes.
 intro: Simple Fasting is built so fasting information can remain on your device. This policy describes the current app and website, what information may be handled, and the choices available to you.
 ---
@@ -54,7 +54,7 @@ Support messages are kept only as long as reasonably needed for the request, sec
 
 ## 6. Permissions, notifications, widgets, exports, and diagnostics
 
-Notification permission is requested only when you enable reminders. Notifications are scheduled locally through the operating system. Supported widgets receive the limited local fasting state needed to display them.
+Notification permission is requested when the app first starts so you can choose whether to use reminders. If you allow it, the fast-end reminder is enabled by default while the optional daily reminder remains off until you enable it. If you deny permission, reminder controls remain unavailable unless you later allow notifications in system settings. Notifications are scheduled locally through the operating system. Supported widgets receive the limited local fasting state needed to display them.
 
 You can change notification permissions in device settings and reminder or widget preferences in the app. Denying optional permissions may disable the related feature but does not prevent basic local fasting tracking.
 

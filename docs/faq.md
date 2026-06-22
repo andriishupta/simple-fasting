@@ -70,6 +70,8 @@ Create and safely store an export before clearing data or uninstalling if you ne
 
 Notifications, widgets, clocks, and background work depend on operating-system permissions, scheduling, battery controls, and device behavior. They can be delayed, suppressed, inaccurate, or unavailable.
 
+The app asks for notification permission on first launch. If allowed, fast-end reminders start enabled and daily reminders remain off until you opt in. If denied, reminder settings stay unavailable until notifications are allowed in the device's system settings.
+
 Check app and device settings, but do not rely on Simple Fasting for an emergency, medication, medical, or other safety-critical alarm.
 
 ## Is Simple Fasting medical advice?

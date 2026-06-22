@@ -22,6 +22,9 @@ import {
   getAccentPalette,
   getEffectiveColorScheme,
   getSettings,
+  initializeNotificationPermission,
+  moveFastingGoal,
+  LocalNotificationPermissionState,
   refreshSettingsSnapshot,
   saveSettings,
   setAccentColorName,
@@ -38,6 +41,12 @@ import { createSession } from '../../test/fixtures';
 
 jest.mock('@/storage/notification-storage', () => ({
   cancelScheduledNotification: jest.fn(),
+  getLocalNotificationPermissionState: jest.fn(),
+  LocalNotificationPermissionState: {
+    Granted: 'granted',
+    Denied: 'denied',
+    Undetermined: 'undetermined',
+  },
   requestLocalNotificationPermission: jest.fn(),
   scheduleDailyReminderNotification: jest.fn(),
 }));
@@ -48,6 +57,12 @@ const mockCancelScheduledNotification = jest.mocked(
 );
 const mockScheduleDailyReminderNotification = jest.mocked(
   notificationStorage.scheduleDailyReminderNotification,
+);
+const mockGetLocalNotificationPermissionState = jest.mocked(
+  notificationStorage.getLocalNotificationPermissionState,
+);
+const mockRequestLocalNotificationPermission = jest.mocked(
+  notificationStorage.requestLocalNotificationPermission,
 );
 
 describe('settings storage integration', () => {
@@ -61,6 +76,11 @@ describe('settings storage integration', () => {
     refreshSettingsSnapshot();
     mockCancelScheduledNotification.mockResolvedValue(undefined);
     mockScheduleDailyReminderNotification.mockResolvedValue('daily-1');
+    mockGetLocalNotificationPermissionState.mockResolvedValue(
+      LocalNotificationPermissionState.Granted,
+    );
+    mockRequestLocalNotificationPermission.mockClear();
+    mockRequestLocalNotificationPermission.mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -107,6 +127,14 @@ describe('settings storage integration', () => {
     expect(setFastingGoalEnabled(onlyEnabled!.id, false)).toBe(false);
   });
 
+  test('persists goal ordering in settings', () => {
+    const firstGoalId = getSettings().goals[0].id;
+    moveFastingGoal(firstGoalId, 3);
+
+    expect(getSettings().goals[3].id).toBe(firstGoalId);
+    expect(appStorage.get(StorageKey.Settings)?.goals[3].id).toBe(firstGoalId);
+  });
+
   test('reconciles daily reminders and suppresses them during an active fast', async () => {
     updateNotificationSettings((notifications) => ({
       ...notifications,
@@ -126,6 +154,39 @@ describe('settings storage integration', () => {
     });
     await setDailyReminderTimeAndSchedule('22:00');
     expect(getSettings().notifications.dailyReminderNotificationId).toBeNull();
+  });
+
+  test('enables only fast-end reminders after first-launch permission is granted', async () => {
+    mockGetLocalNotificationPermissionState.mockResolvedValue(
+      LocalNotificationPermissionState.Undetermined,
+    );
+
+    await initializeNotificationPermission();
+
+    expect(mockRequestLocalNotificationPermission).toHaveBeenCalledTimes(1);
+    expect(getSettings().notifications).toMatchObject({
+      fastEndReminderEnabled: true,
+      dailyReminderEnabled: false,
+    });
+  });
+
+  test('disables reminders without prompting again after permission is denied', async () => {
+    updateNotificationSettings((notifications) => ({
+      ...notifications,
+      fastEndReminderEnabled: true,
+      dailyReminderEnabled: true,
+    }));
+    mockGetLocalNotificationPermissionState.mockResolvedValue(
+      LocalNotificationPermissionState.Denied,
+    );
+
+    await initializeNotificationPermission();
+
+    expect(mockRequestLocalNotificationPermission).not.toHaveBeenCalled();
+    expect(getSettings().notifications).toMatchObject({
+      fastEndReminderEnabled: false,
+      dailyReminderEnabled: false,
+    });
   });
 
   test('creates deterministic JSON and escaped CSV exports', () => {

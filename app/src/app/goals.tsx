@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
-import { Plus } from 'lucide-react-native';
+import { ChevronRight, GripVertical, Plus, Trash2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { AppButton } from '@/components/app-button';
 import { AppSurface } from '@/components/app-surface';
@@ -13,6 +21,7 @@ import { FastingGoalType, type FastingGoal } from '@/storage/app-storage';
 import {
   createFastingGoal,
   deleteFastingGoal,
+  moveFastingGoal,
   setFastingGoalEnabled,
   updateFastingGoal,
   useSettings,
@@ -160,53 +169,22 @@ export default function GoalsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.screen}>
         <View style={styles.content}>
+        <ThemedText type="small" themeColor="textSecondary">
+          Drag to reorder. Swipe left to delete custom goals.
+        </ThemedText>
         <View style={styles.goalList}>
-          {settings.goals.map((goal) => (
-            <AppSurface key={goal.id} style={styles.goalCard}>
-              <View style={styles.goalHeader}>
-                <View style={styles.goalText}>
-                  <View style={styles.goalNameRow}>
-                    <ThemedText type="smallBold" selectable>
-                      {goal.name}
-                    </ThemedText>
-                    <View style={[styles.typeBadge, { backgroundColor: theme.backgroundSelected }]}>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {goal.type === FastingGoalType.Standard ? 'Standard' : 'Custom'}
-                      </ThemedText>
-                    </View>
-                  </View>
-                  <ThemedText type="small" themeColor="textSecondary" selectable>
-                    {formatGoalDuration(goal.targetDurationHours)}
-                  </ThemedText>
-                </View>
-                <Switch
-                  accessibilityLabel={`${goal.name} available on Fast screen`}
-                  value={goal.isEnabled}
-                  onValueChange={(isEnabled) => {
-                    if (!setFastingGoalEnabled(goal.id, isEnabled)) {
-                      Alert.alert('Goal required', 'At least one fasting goal must stay enabled.');
-                    }
-                  }}
-                  trackColor={{ true: theme.accent }}
-                />
-              </View>
-
-              {goal.type === FastingGoalType.Custom ? (
-                <View style={styles.actions}>
-                  <>
-                    <AppButton
-                      label="Edit"
-                      variant="secondary"
-                      onPress={() => {
-                        setDraft(createGoalDraft(goal));
-                        setValidationError(null);
-                      }}
-                    />
-                    <AppButton label="Delete" variant="danger" onPress={() => confirmDelete(goal)} />
-                  </>
-                </View>
-              ) : null}
-            </AppSurface>
+          {settings.goals.map((goal, index) => (
+            <GoalRow
+              key={goal.id}
+              goal={goal}
+              index={index}
+              onDelete={() => confirmDelete(goal)}
+              onEdit={() => {
+                setDraft(createGoalDraft(goal));
+                setValidationError(null);
+              }}
+              onMove={(destinationIndex) => moveFastingGoal(goal.id, destinationIndex)}
+            />
           ))}
         </View>
 
@@ -278,7 +256,7 @@ export default function GoalsScreen() {
             <View style={styles.actions}>
               <AppButton
                 label="Cancel"
-                variant="secondary"
+                variant="ghost"
                 fullWidth
                 onPress={() => {
                   setDraft(null);
@@ -311,6 +289,109 @@ export default function GoalsScreen() {
   );
 }
 
+function GoalRow({
+  goal,
+  index,
+  onDelete,
+  onEdit,
+  onMove,
+}: {
+  goal: FastingGoal;
+  index: number;
+  onDelete: () => void;
+  onEdit: () => void;
+  onMove: (destinationIndex: number) => void;
+}) {
+  const theme = useTheme();
+  const translateY = useSharedValue(0);
+  const dragGesture = Gesture.Pan()
+    .activateAfterLongPress(120)
+    .onUpdate(({ translationY }) => {
+      translateY.value = translationY;
+    })
+    .onEnd(({ translationY }) => {
+      const rowOffset = Math.round(translationY / 84);
+      if (rowOffset !== 0) runOnJS(onMove)(index + rowOffset);
+      translateY.value = withSpring(0, { damping: 18, stiffness: 220 });
+    });
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    zIndex: translateY.value === 0 ? 0 : 2,
+  }));
+  const isCustom = goal.type === FastingGoalType.Custom;
+  const content = (
+    <AppSurface style={styles.goalCard}>
+      <View style={styles.goalHeader}>
+        <GestureDetector gesture={dragGesture}>
+          <Animated.View
+            accessibilityRole="adjustable"
+            accessibilityLabel={`Reorder ${goal.name}`}
+            style={styles.dragHandle}>
+            <GripVertical size={20} color={theme.textSecondary} />
+          </Animated.View>
+        </GestureDetector>
+        <Pressable
+          accessibilityRole={isCustom ? 'button' : undefined}
+          accessibilityLabel={isCustom ? `Edit ${goal.name}` : undefined}
+          disabled={!isCustom}
+          onPress={onEdit}
+          style={({ pressed }) => [styles.goalText, pressed && styles.pressed]}>
+          <View style={styles.goalNameRow}>
+            <ThemedText type="smallBold" selectable>
+              {goal.name}
+            </ThemedText>
+            <View style={[styles.typeBadge, { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText type="small" themeColor="textSecondary">
+                {isCustom ? 'Custom' : 'Standard'}
+              </ThemedText>
+            </View>
+          </View>
+          <ThemedText type="small" themeColor="textSecondary" selectable>
+            {formatGoalDuration(goal.targetDurationHours)}
+          </ThemedText>
+        </Pressable>
+        <Switch
+          accessibilityLabel={`${goal.name} available on Fast screen`}
+          value={goal.isEnabled}
+          onValueChange={(isEnabled) => {
+            if (!setFastingGoalEnabled(goal.id, isEnabled)) {
+              Alert.alert('Goal required', 'At least one fasting goal must stay enabled.');
+            }
+          }}
+          trackColor={{ true: theme.accent }}
+        />
+        {isCustom ? <ChevronRight size={18} color={theme.textSecondary} /> : null}
+      </View>
+    </AppSurface>
+  );
+
+  return (
+    <Animated.View style={animatedStyle}>
+      {isCustom ? (
+        <ReanimatedSwipeable
+          friction={2}
+          overshootRight={false}
+          renderRightActions={() => (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Delete ${goal.name}`}
+              onPress={onDelete}
+              style={[styles.deleteAction, { backgroundColor: theme.danger }]}>
+              <Trash2 size={20} color={theme.dangerForeground} />
+              <ThemedText type="smallBold" style={{ color: theme.dangerForeground }}>
+                Delete
+              </ThemedText>
+            </Pressable>
+          )}>
+          {content}
+        </ReanimatedSwipeable>
+      ) : (
+        content
+      )}
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
   screen: {
@@ -328,7 +409,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   goalCard: {
-    gap: Spacing.two,
     padding: 12,
   },
   goalHeader: {
@@ -340,6 +420,12 @@ const styles = StyleSheet.create({
   goalText: {
     flex: 1,
     gap: Spacing.one,
+  },
+  dragHandle: {
+    width: 28,
+    minHeight: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   goalNameRow: {
     flexDirection: 'row',
@@ -356,6 +442,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
+  },
+  deleteAction: {
+    width: 88,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.one,
   },
   editor: {
     gap: Spacing.three,

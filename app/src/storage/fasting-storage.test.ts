@@ -14,6 +14,7 @@ import {
   getActiveFastState,
   getFastSession,
   getHistoryState,
+  mergeImportedFastSessions,
   reconcileActiveFastEndNotification,
   refreshFastSnapshots,
   setActiveFastEndReminderEnabled,
@@ -59,6 +60,13 @@ describe('fasting lifecycle integration', () => {
   afterEach(() => jest.useRealTimers());
 
   test('starts, persists, ends, and records a fast while coordinating side effects', async () => {
+    saveSettings({
+      ...getSettings(),
+      notifications: {
+        ...getSettings().notifications,
+        fastEndReminderEnabled: true,
+      },
+    });
     const active = await startFast({ goalDurationHours: 16, reason: 'Routine' });
 
     expect(active.session).toMatchObject({
@@ -103,6 +111,23 @@ describe('fasting lifecycle integration', () => {
     await cancelFast();
     expect(getActiveFastState().session).toBeNull();
     expect(getHistoryState().sessions).toEqual([]);
+
+    await startFast({ goalDurationHours: 16, reason: null });
+    expect(getActiveFastState().timerViewPreference).toBe(TimerViewPreference.Remaining);
+  });
+
+  test('skips duplicate and overlapping imported sessions and reports both counts', async () => {
+    await startFast({ goalDurationHours: 16, reason: null });
+    jest.setSystemTime(new Date('2026-06-21T20:00:00.000Z'));
+    const existing = (await endFast())!;
+    const result = mergeImportedFastSessions([
+      existing,
+      { ...existing, id: 'overlap', startedAt: '2026-06-21T18:00:00.000Z', endedAt: '2026-06-21T22:00:00.000Z' },
+      { ...existing, id: 'new', startedAt: '2026-06-22T08:00:00.000Z', endedAt: '2026-06-22T16:00:00.000Z' },
+    ]);
+
+    expect(result).toEqual({ saved: 1, skipped: 2 });
+    expect(getHistoryState().sessions.map(({ id }) => id)).toContain('new');
   });
 
   test('edits, sorts, and deletes saved sessions', async () => {

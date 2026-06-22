@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  AppState,
   Alert,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -37,6 +39,8 @@ import {
 } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { ScreenHeading } from '@/components/screen-heading';
+import { TabScreenShell } from '@/components/tab-screen-shell';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
   setAccentColorName,
@@ -47,6 +51,8 @@ import {
   accentColorLabels,
   accentColorValues,
   getAppVersionLabel,
+  getLocalNotificationPermissionState,
+  LocalNotificationPermissionState,
   openBugReportEmail,
   openFaq,
   openPrivacyPolicy,
@@ -111,10 +117,30 @@ const reminderMinutes = Array.from({ length: 60 }, (_, minute) => minute);
 
 export default function SettingsScreen() {
   const settings = useSettings();
+  const [notificationPermissionState, setNotificationPermissionState] =
+    useState<LocalNotificationPermissionState>(LocalNotificationPermissionState.Undetermined);
   const [installedAt] = useState(
     () => appStorage.get(StorageKey.Metadata)?.initializedAt ?? new Date().toISOString(),
   );
   const buildDescription = `${getAppVersionLabel()} · Installed ${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(installedAt))}`;
+  const notificationsAvailable =
+    notificationPermissionState === LocalNotificationPermissionState.Granted;
+
+  useEffect(() => {
+    const refreshPermission = (): void => {
+      void getLocalNotificationPermissionState().then(setNotificationPermissionState);
+    };
+    refreshPermission();
+    const initialPromptTimer = setTimeout(refreshPermission, 1000);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refreshPermission();
+    });
+
+    return () => {
+      clearTimeout(initialPromptTimer);
+      subscription.remove();
+    };
+  }, []);
   const runNotificationUpdate = async (update: () => Promise<void>): Promise<void> => {
     try {
       await update();
@@ -200,12 +226,10 @@ export default function SettingsScreen() {
         content: await new File(asset.uri).text(),
         filename: asset.name,
       });
-      const imported = mergeImportedFastSessions(sessions);
+      const { saved, skipped } = mergeImportedFastSessions(sessions);
       Alert.alert(
         'Import complete',
-        imported === 0
-          ? 'No new sessions were found. Existing sessions were left unchanged.'
-          : `${imported} fasting session${imported === 1 ? '' : 's'} added. Existing data was left unchanged.`,
+        `${saved} fasting session${saved === 1 ? '' : 's'} saved. ${skipped} overlapping or duplicate entr${skipped === 1 ? 'y was' : 'ies were'} skipped.`,
       );
     } catch (error) {
       Alert.alert(
@@ -258,14 +282,8 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.screen}>
-      <View style={styles.screenContent}>
-        <ThemedText type="subtitle" accessibilityRole="header">
-          Settings
-        </ThemedText>
+    <TabScreenShell maxWidth={Math.min(MaxContentWidth, 640)}>
+        <ScreenHeading>Settings</ScreenHeading>
         <SettingsSection title="Appearance">
           <ThemePicker
             selectedValue={settings.themePreference}
@@ -286,13 +304,17 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
 
-        <SettingsSection title="Notifications">
+        <SettingsSection
+          title="Notifications"
+          description={notificationsAvailable ? undefined : 'Allow notifications to use reminders.'}
+          disabled={!notificationsAvailable}>
           <SettingsSwitch
             icon={Timer}
             title="Fast end reminder"
             description="Local notification when the goal is reached."
             value={settings.notifications.fastEndReminderEnabled}
             onValueChange={setFastEndReminderEnabled}
+            disabled={!notificationsAvailable}
           />
           <SettingsSwitch
             icon={Bell}
@@ -300,6 +322,7 @@ export default function SettingsScreen() {
             description="A local reminder to start your regular fast."
             value={settings.notifications.dailyReminderEnabled}
             onValueChange={setDailyReminderEnabled}
+            disabled={!notificationsAvailable}
           />
           {settings.notifications.dailyReminderEnabled && (
             <TimePicker
@@ -311,6 +334,13 @@ export default function SettingsScreen() {
               }}
             />
           )}
+          {!notificationsAvailable ? (
+            <SettingsActionRow
+              icon={Bell}
+              title="Open notification settings"
+              onPress={() => void Linking.openSettings()}
+            />
+          ) : null}
         </SettingsSection>
 
         <SettingsSection title="Data">
@@ -388,19 +418,35 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
 
-      </View>
-    </ScrollView>
+    </TabScreenShell>
   );
 }
 
-function SettingsSection({ title, children }: { title: string; children: React.ReactNode }) {
+function SettingsSection({
+  title,
+  description,
+  disabled = false,
+  children,
+}: {
+  title: string;
+  description?: string;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
   const theme = useTheme();
 
   return (
-    <View style={styles.section}>
-      <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-        {title}
-      </ThemedText>
+    <View style={[styles.section, disabled && styles.disabledSection]}>
+      <View style={styles.sectionHeading}>
+        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+          {title}
+        </ThemedText>
+        {description !== undefined ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {description}
+          </ThemedText>
+        ) : null}
+      </View>
       <View
         style={[
           styles.sectionPanel,
@@ -619,12 +665,14 @@ function SettingsSwitch({
   description,
   value,
   onValueChange,
+  disabled = false,
 }: {
   icon: LucideIcon;
   title: string;
   description: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
+  disabled?: boolean;
 }) {
   const theme = useTheme();
 
@@ -638,6 +686,7 @@ function SettingsSwitch({
           <Switch
             value={value}
             onValueChange={onValueChange}
+            disabled={disabled}
             trackColor={{ true: theme.accent }}
             thumbColor={Platform.OS === 'android' && value ? theme.accentForeground : undefined}
           />
@@ -766,21 +815,11 @@ function SettingsRow({
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingTop: Spacing.four,
-    paddingBottom: Spacing.four,
-  },
-  screenContent: {
-    width: '100%',
-    maxWidth: Math.min(MaxContentWidth, 640),
-    gap: Spacing.four,
-    paddingHorizontal: Spacing.four,
-  },
   section: {
     gap: Spacing.two,
   },
+  sectionHeading: { gap: Spacing.half },
+  disabledSection: { opacity: 0.52 },
   sectionTitle: {
     textTransform: 'uppercase',
   },

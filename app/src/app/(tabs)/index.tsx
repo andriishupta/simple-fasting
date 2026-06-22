@@ -2,19 +2,21 @@ import { useEffect, useState } from 'react';
 import {
   Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   Switch,
   View,
   useWindowDimensions,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Hourglass } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, CheckCircle2, ChevronRight } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInUp, FadingTransition } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
 import { AppButton } from '@/components/app-button';
 import { FeedbackState } from '@/components/feedback-state';
+import { useFastSavedNotice } from '@/components/fast-saved-notice-context';
+import { ScreenHeading } from '@/components/screen-heading';
+import { TabScreenShell } from '@/components/tab-screen-shell';
 import {
   customGoalId,
   FastGoalSelector,
@@ -56,6 +58,11 @@ export default function HomeScreen() {
   const { height } = useWindowDimensions();
   const settings = useSettings();
   const activeFastState = useActiveFastState();
+  const {
+    notice: savedFastNotice,
+    remainingSeconds: savedNoticeSeconds,
+    dismiss: dismissSavedFastNotice,
+  } = useFastSavedNotice();
   const enabledGoals = settings.goals.filter((goal) => goal.isEnabled);
   const storedGoal =
     enabledGoals.find(
@@ -78,14 +85,12 @@ export default function HomeScreen() {
   const [customDurationExpanded, setCustomDurationExpanded] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [operationError, setOperationError] = useState<string | null>(null);
-  const [recentlyCompletedSessionId, setRecentlyCompletedSessionId] = useState<string | null>(null);
   const activeSession = activeFastState.session;
   const shouldScroll =
     height < (activeSession === null ? 700 : 760) ||
     operationError !== null ||
     noteVisible ||
-    customDurationExpanded ||
-    recentlyCompletedSessionId !== null;
+    customDurationExpanded;
   const effectiveSelectedGoalId =
     selectedGoalId === customGoalId ||
     selectedGoalId === unlimitedGoalId ||
@@ -135,7 +140,7 @@ export default function HomeScreen() {
       setNoteVisible(false);
       setCurrentTime(Date.now());
       setOperationError(null);
-      setRecentlyCompletedSessionId(null);
+      dismissSavedFastNotice();
     } catch {
       setOperationError('The fast could not be started. Your local data was not changed.');
     }
@@ -145,9 +150,7 @@ export default function HomeScreen() {
     try {
       const completedSession = await endFast();
       setOperationError(null);
-      if (completedSession !== null) {
-        setRecentlyCompletedSessionId(completedSession.id);
-      }
+      if (completedSession !== null) setCurrentTime(Date.now());
     } catch {
       setOperationError('The fast could not be ended. Your active fast is still saved locally.');
     }
@@ -169,20 +172,11 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.scroll}
+    <TabScreenShell
       scrollEnabled={shouldScroll}
-      bounces={shouldScroll}
-      contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <ThemedText style={styles.screenTitle} accessibilityRole="header">
-            Simple Fasting
-          </ThemedText>
-        </View>
+      maxWidth={Math.min(MaxContentWidth, 560)}>
+        <ScreenHeading align="center">Simple Fasting</ScreenHeading>
         {operationError !== null ? (
           <FeedbackState
             kind="error"
@@ -205,7 +199,8 @@ export default function HomeScreen() {
               onNoteVisibilityChange={setNoteVisible}
               customDurationExpanded={customDurationExpanded}
               onCustomDurationExpandedChange={setCustomDurationExpanded}
-              savedSessionId={recentlyCompletedSessionId}
+              savedSessionId={savedFastNotice?.sessionId ?? null}
+              savedNoticeSeconds={savedNoticeSeconds}
               onStart={() => void startSelectedFast()}
             />
           ) : (
@@ -230,13 +225,14 @@ export default function HomeScreen() {
                   setOperationError('The fast reminder could not be updated.'),
                 );
               }}
-              onEnd={() => void endActiveFast()}
+              onEnd={() => {
+                void endActiveFast();
+              }}
               onCancel={cancelActiveFast}
             />
           )}
         </Animated.View>
-      </View>
-    </ScrollView>
+    </TabScreenShell>
   );
 }
 
@@ -253,6 +249,7 @@ function ReadyToFast({
   customDurationExpanded,
   onCustomDurationExpandedChange,
   savedSessionId,
+  savedNoticeSeconds,
   onStart,
 }: {
   goals: readonly { id: string; name: string; targetDurationHours: number }[];
@@ -267,8 +264,11 @@ function ReadyToFast({
   customDurationExpanded: boolean;
   onCustomDurationExpandedChange: (expanded: boolean) => void;
   savedSessionId: string | null;
+  savedNoticeSeconds: number;
   onStart: () => void;
 }) {
+  const theme = useTheme();
+
   return (
     <Animated.View entering={FadeIn.duration(180)} style={styles.ready}>
       <FastGoalSelector
@@ -294,13 +294,28 @@ function ReadyToFast({
         <AppButton label="Start fast" onPress={onStart} style={styles.primaryAction} />
       </View>
       {savedSessionId !== null ? (
-        <Animated.View entering={FadeInUp.duration(200)} style={styles.savedAction}>
-          <AppButton
-            label="View fast"
-            variant="ghost"
-            style={styles.savedButton}
+        <Animated.View entering={FadeInUp.duration(200)}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Fast saved. View fast. Closing in ${savedNoticeSeconds} seconds.`}
             onPress={() => router.push(`/history/${savedSessionId}`)}
-          />
+            style={({ pressed }) => [
+              styles.savedNotice,
+              {
+                backgroundColor: theme.accentBackground,
+                borderColor: theme.accentBorder,
+              },
+              pressed && styles.pressed,
+            ]}>
+            <CheckCircle2 size={21} color={theme.accent} />
+            <View style={styles.savedNoticeText}>
+              <ThemedText type="smallBold">Fast saved</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                View fast · closes in {savedNoticeSeconds}s
+              </ThemedText>
+            </View>
+            <ChevronRight size={18} color={theme.accent} />
+          </Pressable>
         </Animated.View>
       ) : null}
     </Animated.View>
@@ -387,7 +402,11 @@ function ActiveFast({
                   { backgroundColor: theme.accentBackground },
                   pressed && styles.pressed,
                 ]}>
-                <Hourglass size={16} color={theme.accent} strokeWidth={2.25} />
+                {timerView === TimerViewPreference.Elapsed ? (
+                  <ArrowUp size={17} color={theme.accent} strokeWidth={2.4} />
+                ) : (
+                  <ArrowDown size={17} color={theme.accent} strokeWidth={2.4} />
+                )}
               </Pressable>
             ) : null}
           </View>
@@ -515,25 +534,19 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1 },
-  scrollContent: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.two,
-  },
-  content: {
-    width: '100%',
-    maxWidth: Math.min(MaxContentWidth, 560),
-    flex: 1,
-    gap: Spacing.three,
-    paddingHorizontal: Spacing.four,
-  },
-  header: { alignItems: 'center' },
-  screenTitle: { fontSize: 30, lineHeight: 36, fontWeight: '700', textAlign: 'center' },
   stateContent: { flex: 1 },
-  savedAction: { alignItems: 'center' },
-  savedButton: { minHeight: 36 },
+  savedNotice: {
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    borderWidth: 1,
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  savedNoticeText: { flex: 1, gap: Spacing.half },
   ready: { flex: 1, gap: Spacing.three },
   centeredText: { textAlign: 'center' },
   readyFooter: { minHeight: 56 },

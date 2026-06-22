@@ -28,7 +28,8 @@ describe('fasting widget model', () => {
     expect(model).toEqual(expect.objectContaining({
       status: 'active',
       displayTime: '2h 30m',
-      subtitle: '2h goal',
+      headline: '2h goal · 2h',
+      subtitle: 'Elapsed',
       progress: 1,
       goalEndsAt: Date.parse('2026-06-21T12:00:00.000Z'),
     }));
@@ -46,8 +47,8 @@ describe('fasting widget model', () => {
       }),
     };
 
-    expect(createFastingWidgetModel(state, now)).toEqual(
-      expect.objectContaining({ displayTime: '1h 30m', progress: 0.625 }),
+    expect(createFastingWidgetModel(state, now, '18:6')).toEqual(
+      expect.objectContaining({ displayTime: '1h 30m', headline: '18:6 · 4h', subtitle: 'Remaining', progress: 0.625 }),
     );
     expect(createFastingWidgetModel(state, Date.parse('2026-06-22T10:00:00.000Z'))).toEqual(
       expect.objectContaining({ displayTime: '0h 00m', progress: 1 }),
@@ -71,7 +72,8 @@ describe('fasting widget model', () => {
       displayTime: '0h 00m',
       hasGoal: false,
       progress: 0,
-      subtitle: 'Open-ended fast',
+      headline: 'Open-ended fast',
+      subtitle: 'Elapsed',
     }));
   });
 });

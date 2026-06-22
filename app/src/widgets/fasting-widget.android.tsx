@@ -12,7 +12,10 @@ import {
   StorageKey,
   type ActiveFastState,
 } from '@/storage/app-storage';
-import { createFastingWidgetModel } from '@/widgets/fasting-widget-model';
+import {
+  createFastingWidgetModel,
+  type FastingWidgetModel,
+} from '@/widgets/fasting-widget-model';
 
 const widgetName = 'FastingWidget';
 const appUrl = 'simple-fasting://';
@@ -39,13 +42,12 @@ const darkTheme: WidgetTheme = {
 };
 
 function AndroidFastingWidget({
-  state,
+  model,
   theme,
 }: {
-  state: ActiveFastState;
+  model: FastingWidgetModel;
   theme: WidgetTheme;
 }) {
-  const model = createFastingWidgetModel(state);
   const isActive = model.status === 'active';
 
   return (
@@ -64,11 +66,21 @@ function AndroidFastingWidget({
         alignItems: 'flex-start',
       }}>
       <TextWidget
-        text={isActive ? 'FASTING' : 'SIMPLE FASTING'}
+        text={isActive ? 'FASTING · SIMPLE FASTING' : 'SIMPLE FASTING'}
         style={{ color: theme.accent, fontSize: 12, fontWeight: '700', letterSpacing: 0.08 }}
       />
       {isActive ? (
-        <FlexWidget style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+        <FlexWidget style={{ flexDirection: 'column', alignItems: 'flex-start', width: 'match_parent' }}>
+          <TextWidget
+            text={model.headline}
+            maxLines={1}
+            style={{ color: theme.primary, fontSize: 14, fontWeight: '600' }}
+          />
+          <TextWidget
+            text={model.subtitle.toUpperCase()}
+            maxLines={1}
+            style={{ color: theme.secondary, fontSize: 10, fontWeight: '500' }}
+          />
           <TextWidget
             text={model.displayTime}
             maxLines={1}
@@ -79,11 +91,25 @@ function AndroidFastingWidget({
               adjustsFontSizeToFit: true,
             }}
           />
-          <TextWidget
-            text={model.subtitle}
-            maxLines={1}
-            style={{ color: theme.secondary, fontSize: 12, fontWeight: '500' }}
-          />
+          {model.hasGoal ? (
+            <FlexWidget
+              style={{
+                width: 'match_parent',
+                height: 5,
+                borderRadius: 3,
+                backgroundColor: theme.secondary,
+              }}>
+              <FlexWidget
+                style={{
+                  flex: Math.max(0.001, model.progress),
+                  height: 5,
+                  borderRadius: 3,
+                  backgroundColor: theme.accent,
+                }}
+              />
+              <FlexWidget style={{ flex: Math.max(0.001, 1 - model.progress), height: 5 }} />
+            </FlexWidget>
+          ) : null}
         </FlexWidget>
       ) : (
         <FlexWidget style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
@@ -102,10 +128,17 @@ function AndroidFastingWidget({
   );
 }
 
-const renderFastingWidget = (state: ActiveFastState): WidgetRepresentation => ({
-  light: <AndroidFastingWidget state={state} theme={lightTheme} />,
-  dark: <AndroidFastingWidget state={state} theme={darkTheme} />,
-});
+const renderFastingWidget = (state: ActiveFastState): WidgetRepresentation => {
+  const goalName = appStorage
+    .get(StorageKey.Settings)
+    ?.goals.find((goal) => goal.targetDurationHours === state.session?.goalDurationHours)?.name;
+  const model = createFastingWidgetModel(state, Date.now(), goalName);
+
+  return {
+    light: <AndroidFastingWidget model={model} theme={lightTheme} />,
+    dark: <AndroidFastingWidget model={model} theme={darkTheme} />,
+  };
+};
 
 registerWidgetTaskHandler(async ({ widgetInfo, widgetAction, renderWidget }) => {
   if (widgetInfo.widgetName !== widgetName || widgetAction === 'WIDGET_DELETED') {

@@ -2,9 +2,9 @@ import { useState } from 'react';
 import {
   Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SegmentedControl as ExpoSegmentedControl } from '@expo/ui/community/segmented-control';
@@ -20,6 +20,8 @@ import {
   HeatmapGrid,
 } from '@/components/charts/fasting-charts';
 import { FeedbackState } from '@/components/feedback-state';
+import { ScreenHeading } from '@/components/screen-heading';
+import { TabScreenShell } from '@/components/tab-screen-shell';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
@@ -37,7 +39,7 @@ import {
 } from '@/storage/app-storage';
 import { useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
 import { setDataViewPreference, useSettings } from '@/storage/settings-storage';
-import { getChartData, getCompletedSessions, getFastingStats } from '@/utils/fasting-analytics';
+import { getChartData, getFastingStats } from '@/utils/fasting-analytics';
 
 type DataView = DataViewPreference;
 
@@ -55,40 +57,41 @@ const formatLocaleDateTime = (timestamp: string): string =>
   }).format(new Date(timestamp));
 
 export default function DataScreen() {
-  return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.screen}>
-      <View style={styles.screenContent}>
-        <ThemedText type="subtitle" accessibilityRole="header">
-          Data
-        </ThemedText>
-        <DataPanel />
-      </View>
-    </ScrollView>
-  );
-}
-
-function DataPanel() {
-  const historyState = useHistoryState();
+  const { height } = useWindowDimensions();
   const settings = useSettings();
   const [selectedView, setSelectedView] = useState<DataView>(settings.dataViewPreference);
-  const hasData = historyState.sessions.length > 0;
+  const shouldScroll = selectedView !== DataViewPreference.Stats || height < 700;
   const selectDataView = (view: DataView): void => {
     setSelectedView(view);
 
-    if (view !== settings.dataViewPreference) {
-      setDataViewPreference(view);
-    }
+    if (view !== settings.dataViewPreference) setDataViewPreference(view);
   };
+
+  return (
+    <TabScreenShell
+      scrollEnabled={shouldScroll}
+      maxWidth={Math.min(MaxContentWidth, 640)}>
+      <ScreenHeading>Data</ScreenHeading>
+      <DataPanel selectedView={selectedView} onSelectView={selectDataView} />
+    </TabScreenShell>
+  );
+}
+
+function DataPanel({
+  selectedView,
+  onSelectView,
+}: {
+  selectedView: DataView;
+  onSelectView: (view: DataView) => void;
+}) {
+  const historyState = useHistoryState();
+  const hasData = historyState.sessions.length > 0;
 
   return (
     <View style={styles.panel}>
       <DataViewPicker
         selectedView={selectedView}
-        historyCount={getCompletedSessions(historyState).length}
-        onSelect={selectDataView}
+        onSelect={onSelectView}
       />
       {hasData ? (
         <>
@@ -99,12 +102,13 @@ function DataPanel() {
           {selectedView === DataViewPreference.Charts && <ChartsPanel history={historyState} />}
         </>
       ) : (
-        <FeedbackState
-          kind="empty"
-          title="No fasting data yet"
-          description="Start a fast to build stats, charts, and history."
-          action={{ label: 'Start a Fast', onPress: () => router.push('/') }}
-        />
+        <View style={styles.emptyState}>
+          <FeedbackState
+            kind="empty"
+            title="Finish at least one fast"
+            description="Your fasting data will appear here."
+          />
+        </View>
       )}
     </View>
   );
@@ -112,11 +116,9 @@ function DataPanel() {
 
 function DataViewPicker({
   selectedView,
-  historyCount,
   onSelect,
 }: {
   selectedView: DataView;
-  historyCount: number;
   onSelect: (view: DataView) => void;
 }) {
   const theme = useTheme();
@@ -124,10 +126,7 @@ function DataViewPicker({
   const dataViews: readonly { label: string; value: DataView }[] = [
     { label: 'Stats', value: DataViewPreference.Stats },
     { label: 'Charts', value: DataViewPreference.Charts },
-    {
-      label: `History (${historyCount > 99 ? '99+' : historyCount})`,
-      value: DataViewPreference.History,
-    },
+    { label: 'History', value: DataViewPreference.History },
   ];
   const selectedIndex = Math.max(
     0,
@@ -168,9 +167,13 @@ function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
   return (
     <View style={styles.list}>
       <View style={styles.listActions}>
-        <ThemedText type="small" themeColor="textSecondary">
-          {selecting ? `${selectedIds.size} selected` : `${sessions.length} fasts`}
-        </ThemedText>
+        {selecting ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {selectedIds.size} selected
+          </ThemedText>
+        ) : (
+          <View />
+        )}
         <View style={styles.listActionButtons}>
           {selecting ? (
             <Pressable
@@ -487,20 +490,11 @@ function ChartSection({
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingBottom: Spacing.four,
-  },
-  screenContent: {
-    width: '100%',
-    maxWidth: Math.min(MaxContentWidth, 640),
-    gap: Spacing.four,
-    paddingHorizontal: Spacing.four,
-  },
   panel: {
+    flex: 1,
     gap: Spacing.three,
   },
+  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   viewPicker: {
     minHeight: 36,
   },
@@ -556,14 +550,14 @@ const styles = StyleSheet.create({
   },
   statTile: {
     width: '48%',
-    minHeight: 104,
+    minHeight: 82,
     flexGrow: 1,
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
   statValue: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 20,
+    lineHeight: 25,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },

@@ -57,7 +57,7 @@ The active state shows a compact progress timer, start/end times, local reminder
 
 ### Supporting Stack Screens
 
-- **Goals** — standard and custom goals can be enabled/disabled; custom goals can also be edited or deleted. A floating plus opens the add-goal editor. At least one goal remains enabled.
+- **Goals** — standard and custom goals can be enabled/disabled and reordered with a persisted drag handle; custom goals also expose chevron edit and swipe-to-delete. A floating plus opens the add-goal editor. At least one goal remains enabled.
 - **Edit Fast** — reuses the Fast screen’s active goal selector, Custom/Open-ended actions, and Note control; Start and End use theme-aware native date/time controls. End time is required. Save and Delete are the only bottom actions.
 - **FAQ** — offline local help.
 - **Privacy Policy** — offline local copy.
@@ -70,7 +70,7 @@ These are standard native stack pushes with system headers and back buttons. Thi
 Small home-screen widgets are implemented on both platforms.
 
 - Inactive: “Ready to fast?” and an action to open the app.
-- Active: elapsed time and the planned goal or open-ended state.
+- Active: app identity, goal name/hours, one elapsed-or-remaining timer, and planned-goal progress.
 - Tap: opens `simple-fasting://`.
 - Refresh: requested whenever active fasting state changes.
 
@@ -89,6 +89,8 @@ The fallback `src/widgets/fasting-widget.tsx` must keep the same `.tsx` extensio
 
 Notifications are local only through `expo-notifications`.
 
+On first launch, the app requests notification permission. Granting it enables fast-end reminders while daily reminders remain opt-in; denying it disables and grays reminder controls until permission is restored in system settings.
+
 - fast-end notification for a planned fast;
 - optional daily reminder;
 - permission handling;
@@ -106,7 +108,7 @@ MMKV stores:
 - `history`.
 - `diagnostics` — at most 50 recent privacy-filtered local app errors.
 
-History is the source of truth for statistics and charts, which are derived in memory rather than persisted in a separate cache. Users can import JSON or CSV exports without overwriting existing session IDs, export through the native share sheet, bulk-delete selected history entries, and clear all local data with confirmation.
+History is the source of truth for statistics and charts, which are derived in memory rather than persisted in a separate cache. Users can import JSON or CSV exports without overwriting existing or time-overlapping sessions; the result reports saved and skipped counts. Users can also export through the native share sheet, bulk-delete selected history entries, and clear all local data with confirmation.
 
 Core fasting writes complete before optional notification cleanup or rescheduling. If the platform notification service fails, local fasting state remains usable and startup does not enter a blocking recovery screen.
 
