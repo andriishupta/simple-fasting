@@ -10,7 +10,7 @@ export type ChartDatum = { label: string; value: number };
 
 const useChartWidth = (): number => {
   const { width } = useWindowDimensions();
-  return Math.max(220, Math.min(460, width - Spacing.four * 4));
+  return Math.max(210, Math.min(440, width - 112));
 };
 
 export function HeatmapGrid({
@@ -26,21 +26,30 @@ export function HeatmapGrid({
   const maxValue = Math.max(1, ...cells.map((cell) => cell.value));
 
   return (
-    <View style={[styles.heatmap, { maxWidth: columns * (compact ? 9 : 18) }]}>
-      {cells.map((cell) => (
-        <View
-          key={cell.id}
-          accessible
-          accessibilityLabel={`${cell.id}: ${cell.value.toFixed(1)} fasting hours`}
-          style={[
-            compact ? styles.compactHeatmapCell : styles.heatmapCell,
-            {
-              backgroundColor: theme.accent,
-              opacity: cell.value === 0 ? 0.12 : 0.28 + (cell.value / maxValue) * 0.72,
-            },
-          ]}
-        />
-      ))}
+    <View style={styles.heatmapSection}>
+      <View style={[styles.heatmap, { maxWidth: columns * (compact ? 9 : 18) }]}>
+        {cells.map((cell) => (
+          <View
+            key={cell.id}
+            accessible
+            accessibilityLabel={`${cell.id}: ${cell.value.toFixed(1)} fasting hours`}
+            style={[
+              compact ? styles.compactHeatmapCell : styles.heatmapCell,
+              {
+                backgroundColor: theme.accent,
+                opacity: cell.value === 0 ? 0.1 : 0.25 + (cell.value / maxValue) * 0.75,
+              },
+            ]}
+          />
+        ))}
+      </View>
+      <View style={styles.heatmapLegend}>
+        <ThemedText type="small" themeColor="textSecondary">Less</ThemedText>
+        {[0.15, 0.4, 0.7, 1].map((opacity) => (
+          <View key={opacity} style={[styles.legendCell, { backgroundColor: theme.accent, opacity }]} />
+        ))}
+        <ThemedText type="small" themeColor="textSecondary">More</ThemedText>
+      </View>
     </View>
   );
 }
@@ -69,7 +78,9 @@ export function FastingBarChart({
         initialSpacing={8}
         endSpacing={8}
         roundedTop
-        hideRules
+        roundedBottom
+        rulesColor={theme.backgroundSelected}
+        rulesThickness={1}
         yAxisThickness={0}
         xAxisThickness={0}
         yAxisTextStyle={{ color: theme.textSecondary, fontSize: 11 }}
@@ -111,7 +122,8 @@ export function FastingLineChart({
         endOpacity={0.02}
         dataPointsColor={theme.accent}
         dataPointsRadius={4}
-        hideRules
+        rulesColor={theme.backgroundSelected}
+        rulesThickness={1}
         yAxisThickness={0}
         xAxisThickness={0}
         yAxisTextStyle={{ color: theme.textSecondary, fontSize: 11 }}
@@ -154,7 +166,10 @@ export function CompletionDonut({ value }: { value: number }) {
 }
 
 const styles = StyleSheet.create({
+  heatmapSection: { gap: Spacing.two },
   heatmap: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  heatmapLegend: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  legendCell: { width: 12, height: 12, borderRadius: 3 },
   heatmapCell: { width: 14, height: 14, borderRadius: 3 },
   compactHeatmapCell: { width: 5, height: 5, borderRadius: 1 },
   donut: { alignItems: 'center' },

@@ -12,14 +12,16 @@ import {
 } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { Picker } from '@expo/ui/community/picker';
+import * as DocumentPicker from 'expo-document-picker';
+import { File } from 'expo-file-system';
 import {
-  Activity,
   Bell,
   Bug,
   ChevronRight,
   CircleHelp,
   ExternalLink,
   FileText,
+  FileUp,
   Globe,
   Info,
   Laptop,
@@ -65,12 +67,14 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import {
   getActiveFastState,
+  mergeImportedFastSessions,
   reconcileActiveFastEndNotification,
   refreshFastSnapshots,
 } from '@/storage/fasting-storage';
 import { cancelScheduledNotification } from '@/storage/notification-storage';
 import { initializeAppStorage } from '@/storage/storage-migrations';
 import { shareDiagnosticReport } from '@/storage/diagnostic-storage';
+import { parseImportSessions } from '@/storage/data-import';
 
 const themeOptions = [
   {
@@ -167,6 +171,47 @@ export default function SettingsScreen() {
       await shareDiagnosticReport();
     } catch {
       Alert.alert('Share failed', 'The local diagnostic report could not be created.');
+    }
+  };
+  const reportBug = (): void => {
+    Alert.alert(
+      'Report a bug',
+      'You can email us directly or share a local diagnostic file through Mail. Diagnostics never include fasting history or notes.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Email', onPress: () => void openExternalAction(openBugReportEmail) },
+        { text: 'Share diagnostics', onPress: () => void exportDiagnostics() },
+      ],
+    );
+  };
+  const importData = async (): Promise<void> => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/json', 'text/csv', 'text/comma-separated-values'],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) return;
+      const asset = result.assets[0];
+      if (asset.size !== undefined && asset.size > 5_000_000) {
+        Alert.alert('File too large', 'Choose a Simple Fasting export smaller than 5 MB.');
+        return;
+      }
+      const sessions = parseImportSessions({
+        content: await new File(asset.uri).text(),
+        filename: asset.name,
+      });
+      const imported = mergeImportedFastSessions(sessions);
+      Alert.alert(
+        'Import complete',
+        imported === 0
+          ? 'No new sessions were found. Existing sessions were left unchanged.'
+          : `${imported} fasting session${imported === 1 ? '' : 's'} added. Existing data was left unchanged.`,
+      );
+    } catch (error) {
+      Alert.alert(
+        'Import failed',
+        error instanceof Error ? error.message : 'The selected file could not be imported.',
+      );
     }
   };
   const clearLocalData = (): void => {
@@ -270,6 +315,12 @@ export default function SettingsScreen() {
 
         <SettingsSection title="Data">
           <SettingsActionRow
+            icon={FileUp}
+            title="Import JSON or CSV"
+            description="Add sessions from a Simple Fasting export."
+            onPress={() => void importData()}
+          />
+          <SettingsActionRow
             icon={FileText}
             title="Export JSON"
             description="Fasting data and app metadata."
@@ -307,13 +358,7 @@ export default function SettingsScreen() {
             icon={Bug}
             title="Report bug"
             description="bugs@simplefasting.app"
-            onPress={() => openExternalAction(openBugReportEmail)}
-          />
-          <SettingsActionRow
-            icon={Activity}
-            title="Share diagnostics"
-            description="Local errors only. Review before sharing."
-            onPress={exportDiagnostics}
+            onPress={reportBug}
           />
           <SettingsActionRow
             icon={Mail}

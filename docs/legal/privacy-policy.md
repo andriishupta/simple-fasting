@@ -62,7 +62,7 @@ Exports are created only when you request them. An export leaves the app when yo
 
 When certain app errors occur, Simple Fasting may keep up to 50 recent diagnostic events in local app storage. A diagnostic event can include its time and category, a sanitized error name and message, limited component context, app version, build version, and platform. The diagnostic report is designed not to include fasting history, goals, notes, settings, account identifiers, advertising identifiers, or device identifiers. Potential email addresses, web addresses, and local file paths in error text are redacted where recognized, but you should still review a report before sharing it.
 
-Diagnostic events are not analytics and are not automatically transmitted. They remain on the device until they are removed by the rolling limit, app-data clearing, or uninstall behavior. The report leaves the app only when you choose Share diagnostics and select a destination in the operating-system share sheet. If you attach it to an email, the email practices in Section 5 apply.
+Diagnostic events are not analytics and are not automatically transmitted. They remain on the device until they are removed by the rolling limit, app-data clearing, or uninstall behavior. A report leaves the app only when you choose the diagnostic option inside Report bug and select a destination in the operating-system share sheet. If you attach it to an email, the email practices in Section 5 apply.
 
 ## 7. Purposes and legal grounds
 

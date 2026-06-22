@@ -126,7 +126,7 @@
           },
           {
             "type": "paragraph",
-            "text": "Diagnostic events are not analytics and are not automatically transmitted. They remain on the device until they are removed by the rolling limit, app-data clearing, or uninstall behavior. The report leaves the app only when you choose Share diagnostics and select a destination in the operating-system share sheet. If you attach it to an email, the email practices in Section 5 apply."
+            "text": "Diagnostic events are not analytics and are not automatically transmitted. They remain on the device until they are removed by the rolling limit, app-data clearing, or uninstall behavior. A report leaves the app only when you choose the diagnostic option inside Report bug and select a destination in the operating-system share sheet. If you attach it to an email, the email practices in Section 5 apply."
           }
         ]
       },
@@ -664,7 +664,7 @@
           },
           {
             "type": "paragraph",
-            "text": "In Settings, Share diagnostics creates a JSON report and opens the operating-system share sheet. Nothing is sent unless you choose a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the diagnostic log."
+            "text": "In Settings, Report bug offers an optional diagnostic JSON file through the operating-system share sheet. Nothing is sent unless you choose that option and a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the diagnostic log."
           }
         ]
       },
@@ -675,6 +675,10 @@
           {
             "type": "paragraph",
             "text": "Yes. Create a JSON or CSV export from Settings, then save or share it through the operating-system share sheet."
+          },
+          {
+            "type": "paragraph",
+            "text": "You can later import either Simple Fasting export format on another device. Import adds valid completed sessions, skips session IDs already stored on that device, and does not replace settings or an active fast. Keep exports private because they can contain fasting dates and notes."
           },
           {
             "type": "paragraph",

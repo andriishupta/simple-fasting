@@ -18,6 +18,6 @@ describe('LocalDocumentScreen shared-content integration', () => {
 
     expect(screen.getByText('Version 1.2')).toBeOnTheScreen();
     expect(screen.getByText('Does the app collect crash or diagnostic information?')).toBeOnTheScreen();
-    expect(screen.getByText(/Nothing is sent unless you choose a destination/)).toBeOnTheScreen();
+    expect(screen.getByText(/Nothing is sent unless you choose that option and a destination/)).toBeOnTheScreen();
   });
 });

@@ -50,11 +50,13 @@ Do not email medical records, passwords, government identifiers, payment informa
 
 It does not send analytics or crash reports automatically. After certain storage, reminder-restoration, or rendering errors, the app may keep up to 50 recent diagnostic events locally. These events contain limited error and app-build context and are designed not to contain fasting history, goals, notes, settings, advertising identifiers, or device identifiers.
 
-In Settings, Share diagnostics creates a JSON report and opens the operating-system share sheet. Nothing is sent unless you choose a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the diagnostic log.
+In Settings, Report bug offers an optional diagnostic JSON file through the operating-system share sheet. Nothing is sent unless you choose that option and a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the diagnostic log.
 
 ## Can I export my data?
 
 Yes. Create a JSON or CSV export from Settings, then save or share it through the operating-system share sheet.
+
+You can later import either Simple Fasting export format on another device. Import adds valid completed sessions, skips session IDs already stored on that device, and does not replace settings or an active fast. Keep exports private because they can contain fasting dates and notes.
 
 The file leaves Simple Fasting when you choose a destination. You are responsible for its recipients, storage, security, and deletion after export.
 

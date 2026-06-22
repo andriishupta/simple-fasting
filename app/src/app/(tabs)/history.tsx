@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SegmentedControl as ExpoSegmentedControl } from '@expo/ui/community/segmented-control';
-import { ChevronRight, Trash2 } from 'lucide-react-native';
+import { Check, ChevronRight, Trash2 } from 'lucide-react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { FadeIn, FadeInUp, FadingTransition } from 'react-native-reanimated';
 
@@ -24,6 +24,7 @@ import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
   deleteFastSession,
+  deleteFastSessions,
   formatDuration,
   formatHours,
   getSessionDurationSeconds,
@@ -149,6 +150,11 @@ function DataViewPicker({
 }
 
 function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
+  const theme = useTheme();
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
+  const selecting = selectionMode;
+
   if (sessions.length === 0) {
     return (
       <FeedbackState
@@ -161,14 +167,97 @@ function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
 
   return (
     <View style={styles.list}>
+      <View style={styles.listActions}>
+        <ThemedText type="small" themeColor="textSecondary">
+          {selecting ? `${selectedIds.size} selected` : `${sessions.length} fasts`}
+        </ThemedText>
+        <View style={styles.listActionButtons}>
+          {selecting ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setSelectedIds(new Set());
+                setSelectionMode(false);
+              }}
+              style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
+              <ThemedText type="smallBold" themeColor="textSecondary">Cancel</ThemedText>
+            </Pressable>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={selecting ? 'Delete selected fasts' : 'Select fasts'}
+            accessibilityState={{ disabled: selecting && selectedIds.size === 0 }}
+            disabled={selecting && selectedIds.size === 0}
+            onPress={() => {
+              if (!selecting) {
+                setSelectionMode(true);
+                return;
+              }
+              if (selectedIds.size === 0) return;
+              Alert.alert(
+                `Delete ${selectedIds.size} fast${selectedIds.size === 1 ? '' : 's'}?`,
+                'This permanently removes the selected sessions from local history.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                      deleteFastSessions([...selectedIds]);
+                      setSelectedIds(new Set());
+                      setSelectionMode(false);
+                    },
+                  },
+                ],
+              );
+            }}
+            style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
+            <ThemedText
+              type="smallBold"
+              style={
+                selecting
+                  ? { color: selectedIds.size === 0 ? theme.textSecondary : theme.danger }
+                  : undefined
+              }>
+              {selecting ? 'Delete' : 'Select'}
+            </ThemedText>
+          </Pressable>
+        </View>
+      </View>
       {sessions.map((session, index) => (
-        <HistoryItem key={session.id} session={session} index={index} />
+        <HistoryItem
+          key={session.id}
+          session={session}
+          index={index}
+          selecting={selecting}
+          selected={selectedIds.has(session.id)}
+          onToggle={() =>
+            setSelectedIds((current) => {
+              const next = new Set(current);
+              if (next.has(session.id)) next.delete(session.id);
+              else next.add(session.id);
+              return next;
+            })
+          }
+        />
       ))}
     </View>
   );
 }
 
-function HistoryItem({ session, index }: { session: FastSession; index: number }) {
+function HistoryItem({
+  session,
+  index,
+  selecting,
+  selected,
+  onToggle,
+}: {
+  session: FastSession;
+  index: number;
+  selecting: boolean;
+  selected: boolean;
+  onToggle: () => void;
+}) {
   const theme = useTheme();
   const editSession = (): void => router.push(`/history/${session.id}`);
   const deleteSession = (): void => {
@@ -185,8 +274,12 @@ function HistoryItem({ session, index }: { session: FastSession; index: number }
   return (
     <Animated.View
       entering={FadeInUp.delay(Math.min(index, 5) * 35).duration(180)}
-      style={styles.swipeContainer}>
+      style={[
+        styles.swipeContainer,
+        { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
+      ]}>
       <ReanimatedSwipeable
+        enabled={!selecting}
         friction={1.5}
         rightThreshold={44}
         overshootRight={false}
@@ -204,10 +297,11 @@ function HistoryItem({ session, index }: { session: FastSession; index: number }
         )}>
         <Pressable
           accessibilityRole="button"
-          onPress={editSession}
+          accessibilityState={{ selected }}
+          onPress={selecting ? onToggle : editSession}
           style={({ pressed }) => [
             styles.item,
-            { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
+            { backgroundColor: theme.background },
             pressed && styles.pressed,
           ]}>
           <View style={styles.itemText}>
@@ -219,7 +313,20 @@ function HistoryItem({ session, index }: { session: FastSession; index: number }
               }
             />
           </View>
-          <ChevronRight size={18} color={theme.textSecondary} />
+          {selecting ? (
+            <View
+              style={[
+                styles.selectionIndicator,
+                {
+                  backgroundColor: selected ? theme.accent : 'transparent',
+                  borderColor: selected ? theme.accent : theme.textSecondary,
+                },
+              ]}>
+              {selected ? <Check size={15} color={theme.background} strokeWidth={3} /> : null}
+            </View>
+          ) : (
+            <ChevronRight size={18} color={theme.textSecondary} />
+          )}
         </Pressable>
       </ReanimatedSwipeable>
     </Animated.View>
@@ -400,17 +507,30 @@ const styles = StyleSheet.create({
   list: {
     gap: Spacing.two,
   },
+  listActions: { minHeight: 36, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  listActionButtons: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  textAction: { minHeight: 36, justifyContent: 'center', paddingHorizontal: Spacing.two },
   item: {
     minHeight: 76,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
+    padding: Spacing.three,
+  },
+  swipeContainer: {
+    overflow: 'hidden',
     borderWidth: 1,
     borderRadius: Radius.surface,
     borderCurve: 'continuous',
-    padding: Spacing.three,
   },
-  swipeContainer: { overflow: 'hidden', borderRadius: Radius.surface, borderCurve: 'continuous' },
+  selectionIndicator: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderRadius: 12,
+  },
   deleteAction: {
     width: 88,
     alignItems: 'center',

@@ -168,13 +168,34 @@ export const cancelFast = async (): Promise<ActiveFastState> => {
 };
 
 export const deleteFastSession = (sessionId: string): HistoryState => {
+  return deleteFastSessions([sessionId]);
+};
+
+export const deleteFastSessions = (sessionIds: readonly string[]): HistoryState => {
   const historyState = getHistoryState();
+  const ids = new Set(sessionIds);
 
   return saveHistoryState({
     ...historyState,
-    sessions: historyState.sessions.filter((session) => session.id !== sessionId),
+    sessions: historyState.sessions.filter((session) => !ids.has(session.id)),
     updatedAt: now(),
   });
+};
+
+export const mergeImportedFastSessions = (sessions: readonly FastSession[]): number => {
+  const historyState = getHistoryState();
+  const existingIds = new Set(historyState.sessions.map((session) => session.id));
+  const additions = sessions.filter((session) => !existingIds.has(session.id));
+  if (additions.length === 0) return 0;
+
+  saveHistoryState({
+    ...historyState,
+    sessions: [...historyState.sessions, ...additions].sort((first, second) =>
+      second.startedAt.localeCompare(first.startedAt),
+    ),
+    updatedAt: now(),
+  });
+  return additions.length;
 };
 
 export const updateFastSession = ({

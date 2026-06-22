@@ -90,11 +90,12 @@ Stats are presented as separate neutral two-column metric tiles without accent-o
 - the History segment includes a completed-session count capped at `99+`;
 - labeled duration with its nearby goal pill, start/end values, and a horizontal planned-fast progress bar;
 - tap-to-edit and a native-feeling left swipe that reveals destructive Delete on iOS and Android;
+- selection mode with confirmation for bulk deletion;
 - native stack Edit Fast screen for changing dates, goal duration, and note.
 
 Edit Fast reuses the Fast screen’s goal selector, inline This-time editor, Open-ended action, and Note control. Only enabled goals are offered. Duration and Schedule are presented as grouped sections. Start and required End values use theme-aware native date/time controls without duplicate formatted timestamps. The screen has Save and ghost-style Delete actions; there is no redundant Cancel or Clear End action.
 
-History is the source of truth for statistics and chart calculations. Multi-select and bulk delete are not implemented.
+History is the source of truth for statistics and chart calculations. Bulk deletion is an explicit selection mode and always requires confirmation.
 
 ## Settings Screen
 
@@ -171,7 +172,7 @@ Statistics and charts are derived directly from History; no unused persisted cac
 
 Storage initialization failures show retry and explicit reset controls. Optional notification restoration failures do not block access to fasting data or the core timer.
 
-Storage initialization, reminder restoration, and render failures can add a limited local diagnostic event. Diagnostic exports exclude fasting history, notes, goals, settings, and device identifiers, redact common email/URL/file-path text, and are shared only through an explicit Settings action. The app does not include remote crash reporting or analytics.
+Storage initialization, reminder restoration, and render failures can add a limited local diagnostic event. Diagnostic exports exclude fasting history, notes, goals, settings, and device identifiers, redact common email/URL/file-path text, and are shared only through the diagnostic option inside Report bug. The app does not include remote crash reporting or analytics.
 
 Before the first public release, storage changes may be breaking and development data may be reset when explicitly approved. After the first public release, persisted schema changes require migrations and backward compatibility.
 

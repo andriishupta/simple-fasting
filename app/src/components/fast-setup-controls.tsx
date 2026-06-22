@@ -7,7 +7,7 @@ import {
   SlidersHorizontal,
   SquarePen,
 } from 'lucide-react-native';
-import { Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import Animated, { FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
@@ -83,30 +83,44 @@ export function FastGoalSelector({
         </ThemedText>
       </View>
 
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        decelerationRate="fast"
+        snapToInterval={108 + Spacing.two}
+        contentContainerStyle={styles.goalRail}>
+        {goals.map((goal) => {
+          const selected = goal.id === selectedGoalId;
+          return (
+          <Pressable
+            key={goal.id}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            onPress={() => onSelectGoal(goal.id)}
+            style={({ pressed }) => [
+              styles.goalCard,
+              {
+                backgroundColor: selected ? theme.accentBackground : theme.background,
+                borderColor: selected ? theme.accent : theme.backgroundSelected,
+              },
+              pressed && styles.pressed,
+            ]}>
+            <ThemedText type="smallBold" style={styles.goalCardName} numberOfLines={1}>
+              {goal.name}
+            </ThemedText>
+            <ThemedText type="small" themeColor={selected ? 'accent' : 'textSecondary'}>
+              {formatGoalDuration(goal.targetDurationHours)}
+            </ThemedText>
+          </Pressable>
+          );
+        })}
+      </ScrollView>
+
       <View
         style={[
           styles.options,
           { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
         ]}>
-        {goals.map((goal) => (
-          <Pressable
-            key={goal.id}
-            accessibilityRole="button"
-            accessibilityState={{ selected: goal.id === selectedGoalId }}
-            onPress={() => onSelectGoal(goal.id)}
-            style={({ pressed }) => [styles.optionRow, pressed && styles.pressed]}>
-            <View style={styles.optionLabel}>
-              <ThemedText>{goal.name}</ThemedText>
-            </View>
-            <ThemedText type="small" themeColor="textSecondary">
-              {formatGoalDuration(goal.targetDurationHours)}
-            </ThemedText>
-            {goal.id === selectedGoalId ? (
-              <Check size={16} color={theme.accent} strokeWidth={2.5} />
-            ) : null}
-          </Pressable>
-        ))}
-
         <View style={styles.optionRow}>
           <Pressable
             accessibilityRole="button"
@@ -324,6 +338,18 @@ const styles = StyleSheet.create({
   goalHero: { textAlign: 'center', fontSize: 40, lineHeight: 46, fontWeight: '700' },
   customGoalHero: { fontSize: 34, lineHeight: 40 },
   centeredText: { textAlign: 'center', fontVariant: ['tabular-nums'] },
+  goalRail: { gap: Spacing.two, paddingHorizontal: Spacing.half },
+  goalCard: {
+    width: 108,
+    minHeight: 72,
+    justifyContent: 'center',
+    gap: Spacing.one,
+    borderWidth: 1,
+    borderRadius: Radius.surface,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+  },
+  goalCardName: { fontSize: 16 },
   options: {
     overflow: 'hidden',
     borderWidth: 1,

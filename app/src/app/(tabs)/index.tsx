@@ -81,8 +81,7 @@ export default function HomeScreen() {
   const [recentlyCompletedSessionId, setRecentlyCompletedSessionId] = useState<string | null>(null);
   const activeSession = activeFastState.session;
   const shouldScroll =
-    height < 700 ||
-    activeSession !== null ||
+    height < (activeSession === null ? 700 : 760) ||
     operationError !== null ||
     noteVisible ||
     customDurationExpanded ||
@@ -337,7 +336,7 @@ function ActiveFast({
 }) {
   const theme = useTheme();
   const { width } = useWindowDimensions();
-  const ringSize = Math.min(268, width - Spacing.four * 2);
+  const ringSize = Math.min(244, width - Spacing.four * 2);
   const progress = goalSeconds === null ? 1 : Math.min(1, elapsedSeconds / goalSeconds);
   const remainingSeconds = goalSeconds === null ? null : Math.max(0, goalSeconds - elapsedSeconds);
   const shownSeconds =
@@ -354,60 +353,51 @@ function ActiveFast({
           <View style={[styles.statusDot, { backgroundColor: theme.accent }]} />
           <ThemedText type="smallBold" style={{ color: theme.accent }}>
             {goalDurationHours > 0
-              ? `${goalName} · ${formatGoalDuration(goalDurationHours)}`
+              ? goalName === formatGoalDuration(goalDurationHours)
+                ? goalName
+                : `${goalName} · ${formatGoalDuration(goalDurationHours)}`
               : 'Open-ended fast'}
           </ThemedText>
         </View>
-        {goalSeconds !== null ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Show ${timerView === TimerViewPreference.Elapsed ? 'remaining' : 'elapsed'} time`}
-            onPress={() =>
-              onTimerViewChange(
-                timerView === TimerViewPreference.Elapsed
-                  ? TimerViewPreference.Remaining
-                  : TimerViewPreference.Elapsed,
-              )
-            }
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.timerViewButton,
-              { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
-              pressed && styles.pressed,
-            ]}>
-            <Hourglass size={17} color={theme.accent} />
-            <View style={[styles.timerViewDot, { backgroundColor: theme.accent }]} />
-          </Pressable>
-        ) : null}
       </View>
       <ProgressRing
         size={ringSize}
         progress={progress}
         color={theme.accent}
         trackColor={theme.backgroundSelected}>
-        <Pressable
-          accessibilityRole={goalSeconds === null ? undefined : 'button'}
-          accessibilityLabel="Toggle elapsed and remaining time"
-          onPress={() => {
-            if (goalSeconds !== null) {
-              onTimerViewChange(
-                timerView === TimerViewPreference.Elapsed
-                  ? TimerViewPreference.Remaining
-                  : TimerViewPreference.Elapsed,
-              );
-            }
-          }}
-          style={({ pressed }) => [styles.timerContent, pressed && styles.pressed]}>
-          <ThemedText themeColor="textSecondary">
+        <View style={styles.timerContent}>
+          <View style={styles.timerLabelRow}>
+            <ThemedText themeColor="textSecondary">
             {timerView === TimerViewPreference.Elapsed ? 'Elapsed' : 'Remaining'}
-          </ThemedText>
+            </ThemedText>
+            {goalSeconds !== null ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Show ${timerView === TimerViewPreference.Elapsed ? 'remaining' : 'elapsed'} time`}
+                onPress={() =>
+                  onTimerViewChange(
+                    timerView === TimerViewPreference.Elapsed
+                      ? TimerViewPreference.Remaining
+                      : TimerViewPreference.Elapsed,
+                  )
+                }
+                hitSlop={10}
+                style={({ pressed }) => [
+                  styles.timerViewButton,
+                  { backgroundColor: theme.accentBackground },
+                  pressed && styles.pressed,
+                ]}>
+                <Hourglass size={16} color={theme.accent} strokeWidth={2.25} />
+              </Pressable>
+            ) : null}
+          </View>
           <ThemedText type="title" selectable style={styles.timer}>
             {formatDuration(shownSeconds)}
           </ThemedText>
           <ThemedText themeColor="textSecondary" selectable>
             {formatGoalDuration(goalDurationHours)}
           </ThemedText>
-        </Pressable>
+        </View>
       </ProgressRing>
 
       <View
@@ -551,7 +541,7 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 56,
   },
-  active: { alignItems: 'center', gap: Spacing.four, paddingTop: Spacing.three },
+  active: { alignItems: 'center', gap: Spacing.three, paddingTop: Spacing.two },
   statusPill: {
     minHeight: 32,
     flexDirection: 'row',
@@ -570,14 +560,13 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   timerViewButton: {
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 15,
   },
-  timerViewDot: { position: 'absolute', top: 5, right: 5, width: 5, height: 5, borderRadius: 3 },
+  timerLabelRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   timerContent: {
     position: 'absolute',
     inset: 0,

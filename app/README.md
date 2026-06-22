@@ -51,8 +51,8 @@ The active state shows a compact progress timer, start/end times, local reminder
 - **Appearance** — System/Light/Dark and settled-scroll accent selection.
 - **Goals** — opens Goals.
 - **Notifications** — fast-end reminder and daily reminder with a minimal Hours/Minutes wheel that follows the active theme without a nested card or redundant label.
-- **Data** — JSON export, CSV export, and Clear data.
-- **About** — website, FAQ, bug-report email (`bugs@simplefasting.app`), privacy-filtered local diagnostic export, support email, and build version.
+- **Data** — non-destructive JSON/CSV import, JSON export, CSV export, and Clear data.
+- **About** — website, FAQ, bug reporting with an optional privacy-filtered local diagnostic file, support email, and build version.
 - **Legal** — external and offline Privacy Policy and Terms.
 
 ### Supporting Stack Screens
@@ -81,6 +81,8 @@ The local `with-widget-version` config plugin keeps the generated iOS extension 
 
 Widgets are native extensions/providers and are not available from Expo Go or a JavaScript-only update. After changing widget code, plugins, bundle identifiers, or app groups, regenerate and reinstall a development/EAS build, launch the app once, then use the system widget picker. On Android, use a launcher/emulator image that supports home-screen widgets. If an old binary was installed before widget plugins were configured, uninstall it before installing the rebuilt binary.
 
+The fallback `src/widgets/fasting-widget.tsx` must keep the same `.tsx` extension as the `.ios.tsx` and `.android.tsx` implementations. A `.ts` fallback takes precedence during Metro resolution and silently prevents the native widget layout/task handler from registering.
+
 `expo config --type prebuild` should show the iOS `ExpoWidgetsTarget`, `app.simplefasting.ExpoWidgetsTarget`, and `group.app.simplefasting`. A generated Android prebuild should contain the `FastingWidget` receiver and `widgetprovider_fastingwidget.xml`.
 
 ## Notifications
@@ -104,11 +106,11 @@ MMKV stores:
 - `history`.
 - `diagnostics` — at most 50 recent privacy-filtered local app errors.
 
-History is the source of truth for statistics and charts, which are derived in memory rather than persisted in a separate cache. Users can export JSON or CSV through the native share sheet and can clear all local data with confirmation.
+History is the source of truth for statistics and charts, which are derived in memory rather than persisted in a separate cache. Users can import JSON or CSV exports without overwriting existing session IDs, export through the native share sheet, bulk-delete selected history entries, and clear all local data with confirmation.
 
 Core fasting writes complete before optional notification cleanup or rescheduling. If the platform notification service fails, local fasting state remains usable and startup does not enter a blocking recovery screen.
 
-Storage initialization, reminder restoration, and render errors can be recorded locally. Nothing is uploaded automatically. The diagnostic JSON excludes fasting history, notes, goals, settings, and device identifiers, redacts common email/URL/path text, and leaves the app only after **Share diagnostics** is selected. Clear data also clears diagnostics.
+Storage initialization, reminder restoration, and render errors can be recorded locally. Nothing is uploaded automatically. The diagnostic JSON excludes fasting history, notes, goals, settings, and device identifiers, redacts common email/URL/path text, and leaves the app only when the user chooses the diagnostic option in **Report bug** and selects a share destination. Clear data also clears diagnostics.
 
 Before the first public release, breaking local schema changes are acceptable. After release, persisted changes require explicit migrations and backward compatibility.
 
