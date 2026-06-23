@@ -9,7 +9,6 @@ import { FeedbackState } from '@/components/feedback-state';
 import { AppErrorBoundary } from '@/components/app-error-boundary';
 import { FastSavedNoticeProvider } from '@/components/fast-saved-notice-context';
 import { NotificationOnboardingScreen } from '@/components/notification-onboarding-screen';
-import { StartupLogoAnimation } from '@/components/startup-logo-animation';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { AppThemeProvider, useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
@@ -74,7 +73,6 @@ function RootLayoutContent({
   const colorScheme = useAppThemeColorScheme();
   const settings = useSettings();
   const theme = useTheme();
-  const [logoAnimationDone, setLogoAnimationDone] = useState(false);
   const navigationTheme = useMemo(() => {
     const baseTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
 
@@ -195,9 +193,7 @@ function RootLayoutContent({
 
   return (
     <ThemeProvider value={navigationTheme}>
-      {startupState.status === 'ready' && !logoAnimationDone ? (
-        <StartupLogoAnimation onDone={() => setLogoAnimationDone(true)} />
-      ) : startupState.status === 'ready' && !settings.onboardingCompleted ? (
+      {startupState.status === 'ready' && !settings.onboardingCompleted ? (
         <NotificationOnboardingScreen
           onAllowNotifications={allowOnboardingNotifications}
           onSkip={skipOnboardingNotifications}
@@ -223,6 +219,22 @@ function RootLayoutContent({
                 headerTransparent: true,
                 headerShadowVisible: false,
                 headerBlurEffect: 'none',
+                headerBackButtonDisplayMode: 'minimal',
+              }}
+            />
+            <Stack.Screen
+              name="goals/new"
+              options={{
+                title: 'New Goal',
+                headerShown: true,
+                headerBackButtonDisplayMode: 'minimal',
+              }}
+            />
+            <Stack.Screen
+              name="goals/[id]"
+              options={{
+                title: 'Edit Goal',
+                headerShown: true,
                 headerBackButtonDisplayMode: 'minimal',
               }}
             />

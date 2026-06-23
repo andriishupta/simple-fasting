@@ -1,7 +1,9 @@
 import {
+  GoalDurationFormat,
   TimerViewPreference,
   type ActiveFastState,
 } from '@/storage/app-storage';
+import { formatGoalDuration } from '@/utils/fast-goals';
 
 export type FastingWidgetModel =
   | {
@@ -35,6 +37,7 @@ export const createFastingWidgetModel = (
   state: ActiveFastState,
   currentTime = Date.now(),
   goalName?: string,
+  goalDurationFormat: GoalDurationFormat = GoalDurationFormat.Hours,
 ): FastingWidgetModel => {
   const { session, timerViewPreference } = state;
 
@@ -64,7 +67,7 @@ export const createFastingWidgetModel = (
     accessibilityLabel: `${goalName ?? 'Fasting'} ${displayTime}`,
     displayTime,
     headline: hasGoal
-      ? `${goalName ?? `${session.goalDurationHours}h goal`} · ${session.goalDurationHours}h`
+      ? `${goalName ?? 'Fasting goal'} · ${formatGoalDuration(session.goalDurationHours, goalDurationFormat)}`
       : 'Open-ended fast',
     goalDurationHours: session.goalDurationHours,
     goalEndsAt: startedAt + goalMinutes * 60_000,

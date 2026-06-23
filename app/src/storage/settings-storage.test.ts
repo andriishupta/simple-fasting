@@ -5,6 +5,7 @@ import {
   DataViewPreference,
   FastStatus,
   FastingGoalType,
+  GoalDurationFormat,
   StorageKey,
   ThemePreference,
   appStorage,
@@ -28,6 +29,7 @@ import {
   refreshSettingsSnapshot,
   saveSettings,
   setAccentColorName,
+  setGoalDurationFormat,
   setDailyReminderTimeAndSchedule,
   setDataViewPreference,
   setFastingGoalEnabled,
@@ -38,6 +40,7 @@ import {
   updateNotificationSettings,
 } from '@/storage/settings-storage';
 import * as notificationStorage from '@/storage/notification-storage';
+import { updateFastingWidget } from '@/widgets/fasting-widget';
 import { createSession } from '../../test/fixtures';
 
 jest.mock('@/storage/notification-storage', () => ({
@@ -50,6 +53,10 @@ jest.mock('@/storage/notification-storage', () => ({
   },
   requestLocalNotificationPermission: jest.fn(),
   scheduleDailyReminderNotification: jest.fn(),
+}));
+
+jest.mock('@/widgets/fasting-widget', () => ({
+  updateFastingWidget: jest.fn(),
 }));
 
 const timestamp = '2026-06-21T12:00:00.000Z';
@@ -65,6 +72,7 @@ const mockGetLocalNotificationPermissionState = jest.mocked(
 const mockRequestLocalNotificationPermission = jest.mocked(
   notificationStorage.requestLocalNotificationPermission,
 );
+const mockUpdateFastingWidget = jest.mocked(updateFastingWidget);
 
 describe('settings storage integration', () => {
   const initialPlatform = Platform.OS;
@@ -82,6 +90,7 @@ describe('settings storage integration', () => {
     );
     mockRequestLocalNotificationPermission.mockClear();
     mockRequestLocalNotificationPermission.mockResolvedValue(true);
+    mockUpdateFastingWidget.mockClear();
   });
 
   afterEach(() => {
@@ -93,13 +102,16 @@ describe('settings storage integration', () => {
   test('persists appearance and data-view choices', () => {
     setThemePreference(ThemePreference.Dark);
     setAccentColorName(AccentColorName.Teal);
+    setGoalDurationFormat(GoalDurationFormat.Days);
     setDataViewPreference(DataViewPreference.History);
 
     expect(getSettings()).toMatchObject({
       themePreference: ThemePreference.Dark,
       accentColorName: AccentColorName.Teal,
+      goalDurationFormat: GoalDurationFormat.Days,
       dataViewPreference: DataViewPreference.History,
     });
+    expect(mockUpdateFastingWidget).toHaveBeenCalledTimes(1);
     expect(appStorage.get(StorageKey.Settings)).toEqual(getSettings());
     expect(getEffectiveColorScheme({ themePreference: ThemePreference.System, systemColorScheme: 'light' })).toBe('light');
     expect(getEffectiveColorScheme({ themePreference: ThemePreference.System, systemColorScheme: 'dark' })).toBe('dark');

@@ -3,6 +3,7 @@ import {
   DataViewPreference,
   DiagnosticEventKind,
   FastStatus,
+  GoalDurationFormat,
   StorageSchemaVersion,
   ThemePreference,
 } from '@/storage/app-storage';
@@ -31,6 +32,7 @@ describe('storage validation', () => {
         themePreference: 'invalid',
         accentColorName: AccentColorName.Green,
         dataViewPreference: 'graphs',
+        goalDurationFormat: 'invalid',
         lastUsedGoalDurationHours: -1,
         notifications: {
           fastEndReminderEnabled: false,
@@ -54,6 +56,7 @@ describe('storage validation', () => {
       themePreference: ThemePreference.System,
       accentColorName: AccentColorName.Green,
       dataViewPreference: DataViewPreference.Charts,
+      goalDurationFormat: GoalDurationFormat.Hours,
       lastUsedGoalDurationHours: 16,
       notifications: {
         fastEndReminderEnabled: false,

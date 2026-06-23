@@ -43,6 +43,7 @@ import { TabScreenShell } from '@/components/tab-screen-shell';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
   setAccentColorName,
+  setGoalDurationFormat,
   setThemePreference,
   refreshSettingsSnapshot,
   updateNotificationSettingsAndSchedule,
@@ -66,6 +67,7 @@ import {
 } from '@/storage/settings-storage';
 import {
   AccentColorName,
+  GoalDurationFormat,
   StorageKey,
   ThemePreference,
   appStorage,
@@ -109,6 +111,19 @@ const accentOptions = [
   AccentColorName.Blue,
   AccentColorName.Purple,
   AccentColorName.Pink,
+] as const;
+
+const goalDurationFormatOptions = [
+  {
+    label: 'Hours',
+    description: 'Show goals as 24 hours.',
+    value: GoalDurationFormat.Hours,
+  },
+  {
+    label: 'Days + hours',
+    description: 'Show goals as 1d or 1d 4h.',
+    value: GoalDurationFormat.Days,
+  },
 ] as const;
 
 const accentItemWidth = 76;
@@ -313,6 +328,10 @@ export default function SettingsScreen() {
           <AccentPicker
             selectedAccentName={settings.accentColorName}
             onSelect={setAccentColorName}
+          />
+          <GoalDurationFormatPicker
+            selectedValue={settings.goalDurationFormat}
+            onSelect={setGoalDurationFormat}
           />
         </SettingsSection>
 
@@ -681,6 +700,55 @@ function AccentPicker({
   );
 }
 
+function GoalDurationFormatPicker({
+  selectedValue,
+  onSelect,
+}: {
+  selectedValue: GoalDurationFormat;
+  onSelect: (value: GoalDurationFormat) => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <View style={[styles.goalFormatControl, { borderTopColor: theme.backgroundSelected }]}>
+      <View style={styles.goalFormatHeading}>
+        <ThemedText type="smallBold">Goal time display</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Used across Fast, Goals, History, and widgets.
+        </ThemedText>
+      </View>
+      <View style={styles.goalFormatOptions}>
+        {goalDurationFormatOptions.map((option) => {
+          const selected = option.value === selectedValue;
+
+          return (
+            <Pressable
+              key={option.value}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              onPress={() => onSelect(option.value)}
+              style={({ pressed }) => [
+                styles.goalFormatOption,
+                {
+                  backgroundColor: selected ? theme.accentBackground : theme.backgroundElement,
+                  borderColor: selected ? theme.accentBorder : theme.backgroundSelected,
+                },
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText type="smallBold" style={selected ? { color: theme.accent } : undefined}>
+                {option.label}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {option.description}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function SettingsSwitch({
   icon,
   title,
@@ -913,6 +981,28 @@ const styles = StyleSheet.create({
     height: 48,
     borderWidth: 2,
     borderRadius: 24,
+  },
+  goalFormatControl: {
+    gap: Spacing.two,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    padding: Spacing.three,
+  },
+  goalFormatHeading: {
+    gap: Spacing.half,
+  },
+  goalFormatOptions: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  goalFormatOption: {
+    minHeight: 74,
+    flex: 1,
+    justifyContent: 'center',
+    gap: Spacing.one,
+    borderWidth: 1,
+    borderRadius: 14,
+    borderCurve: 'continuous',
+    padding: Spacing.two,
   },
   row: {
     minHeight: 72,

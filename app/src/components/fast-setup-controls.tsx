@@ -13,6 +13,7 @@ import Animated, { FadeInDown, FadeOutUp, LinearTransition } from 'react-native-
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useSettings } from '@/storage/settings-storage';
 import {
   customGoalId,
   formatGoalDuration,
@@ -56,6 +57,7 @@ export function FastGoalSelector({
   onCustomDurationExpandedChange: (expanded: boolean) => void;
 }) {
   const theme = useTheme();
+  const { goalDurationFormat } = useSettings();
   const selectedGoal = goals.find((goal) => goal.id === selectedGoalId);
   const selectedDuration =
     selectedGoalId === unlimitedGoalId
@@ -75,11 +77,17 @@ export function FastGoalSelector({
       <View style={styles.hero}>
         <ThemedText
           selectable
-          style={[styles.goalHero, selectedGoalId === customGoalId && styles.customGoalHero]}>
+          style={styles.goalHeroName}>
           {selectedGoalName}
         </ThemedText>
-        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.centeredText}>
-          {selectedDuration === 0 ? 'No time limit' : formatGoalDuration(selectedDuration)}
+        <ThemedText
+          selectable
+          type="subtitle"
+          themeColor="textSecondary"
+          style={styles.goalHeroDuration}>
+          {selectedDuration === 0
+            ? 'No time limit'
+            : formatGoalDuration(selectedDuration, goalDurationFormat)}
         </ThemedText>
       </View>
 
@@ -109,7 +117,7 @@ export function FastGoalSelector({
               {goal.name}
             </ThemedText>
             <ThemedText type="small" themeColor={selected ? 'accent' : 'textSecondary'}>
-              {formatGoalDuration(goal.targetDurationHours)}
+              {formatGoalDuration(goal.targetDurationHours, goalDurationFormat)}
             </ThemedText>
           </Pressable>
           );
@@ -143,7 +151,7 @@ export function FastGoalSelector({
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Edit custom duration, currently ${formatGoalDuration(customDurationHours)}`}
+            accessibilityLabel={`Edit custom duration, currently ${formatGoalDuration(customDurationHours, goalDurationFormat)}`}
             onPress={() => {
               onSelectGoal(customGoalId);
               onCustomDurationExpandedChange(!customDurationExpanded);
@@ -151,7 +159,7 @@ export function FastGoalSelector({
             hitSlop={8}
             style={({ pressed }) => [styles.optionEdit, pressed && styles.pressed]}>
             <ThemedText type="small" themeColor="textSecondary">
-              {formatGoalDuration(customDurationHours)}
+              {formatGoalDuration(customDurationHours, goalDurationFormat)}
             </ThemedText>
             <ChevronRight size={16} color={theme.textSecondary} />
           </Pressable>
@@ -196,12 +204,11 @@ export function FastNoteEditor({
   const theme = useTheme();
 
   return (
-    <View style={styles.noteControl}>
-      <View
-        style={[
-          styles.options,
-          { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
-        ]}>
+    <View
+      style={[
+        styles.options,
+        { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
+      ]}>
         <View style={styles.optionRow}>
           <OptionIcon icon="note" />
           <View style={styles.optionLabel}>
@@ -219,9 +226,12 @@ export function FastNoteEditor({
             />
           </View>
         </View>
-      </View>
       {enabled ? (
-        <Animated.View entering={FadeInDown.duration(180)} exiting={FadeOutUp.duration(140)}>
+        <Animated.View
+          entering={FadeInDown.duration(180)}
+          exiting={FadeOutUp.duration(140)}
+          layout={LinearTransition.duration(180)}
+          style={styles.noteInputWrap}>
           <TextInput
             accessibilityLabel="Fast note"
             value={value}
@@ -233,9 +243,8 @@ export function FastNoteEditor({
             style={[
               styles.input,
               {
-                color: theme.text,
-                backgroundColor: theme.background,
                 borderColor: theme.backgroundSelected,
+                color: theme.text,
               },
             ]}
           />
@@ -335,8 +344,19 @@ function PickerColumn({
 const styles = StyleSheet.create({
   goalSelector: { gap: Spacing.three },
   hero: { alignItems: 'center', gap: Spacing.one, paddingHorizontal: Spacing.four },
-  goalHero: { textAlign: 'center', fontSize: 40, lineHeight: 46, fontWeight: '700' },
-  customGoalHero: { fontSize: 34, lineHeight: 40 },
+  goalHeroName: {
+    textAlign: 'center',
+    maxWidth: '100%',
+    fontSize: 34,
+    lineHeight: 40,
+    fontWeight: '700',
+  },
+  goalHeroDuration: {
+    textAlign: 'center',
+    fontSize: 18,
+    lineHeight: 24,
+    fontVariant: ['tabular-nums'],
+  },
   centeredText: { textAlign: 'center', fontVariant: ['tabular-nums'] },
   goalRail: { gap: Spacing.two, paddingHorizontal: Spacing.half },
   goalCard: {
@@ -399,7 +419,10 @@ const styles = StyleSheet.create({
   },
   pickerColumn: { flex: 1, alignItems: 'center' },
   picker: { width: '100%', minHeight: 152 },
-  noteControl: { gap: Spacing.two },
+  noteInputWrap: {
+    paddingHorizontal: Spacing.two,
+    paddingBottom: Spacing.two,
+  },
   input: {
     minHeight: 56,
     borderWidth: 1,
@@ -408,6 +431,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 16,
+    backgroundColor: 'transparent',
   },
   pressed: { opacity: 0.68 },
 });

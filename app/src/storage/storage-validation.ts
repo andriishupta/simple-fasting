@@ -4,6 +4,7 @@ import {
   DiagnosticEventKind,
   FastStatus,
   FastingGoalType,
+  GoalDurationFormat,
   GoalKind,
   StorageKey,
   StorageSchemaVersion,
@@ -61,6 +62,7 @@ const themePreferences = Object.values(ThemePreference);
 const accentColorNames = Object.values(AccentColorName);
 const dataViewPreferences = Object.values(DataViewPreference);
 const timerViewPreferences = Object.values(TimerViewPreference);
+const goalDurationFormats = Object.values(GoalDurationFormat);
 const fastStatuses = Object.values(FastStatus);
 const fastingGoalTypes = Object.values(FastingGoalType);
 const diagnosticEventKinds = Object.values(DiagnosticEventKind);
@@ -178,6 +180,9 @@ export const repairSettings = (
     lastUsedGoalDurationHours: isNonNegativeNumber(value.lastUsedGoalDurationHours)
       ? value.lastUsedGoalDurationHours
       : defaults.lastUsedGoalDurationHours,
+    goalDurationFormat: isEnumValue(goalDurationFormats, value.goalDurationFormat)
+      ? value.goalDurationFormat
+      : defaults.goalDurationFormat,
     dataViewPreference:
       value.dataViewPreference === 'graphs'
         ? DataViewPreference.Charts

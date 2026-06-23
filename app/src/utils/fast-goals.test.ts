@@ -1,4 +1,7 @@
 import {
+  GoalDurationFormat,
+} from '@/storage/app-storage';
+import {
   customGoalId,
   formatGoalDuration,
   getGoalSelectionId,
@@ -10,10 +13,18 @@ describe('fast goal helpers', () => {
   test.each([
     [0, 'Unlimited'],
     [16, '16 hours'],
-    [24, '1d'],
-    [49, '2d 1h'],
+    [24, '24 hours'],
+    [49, '49 hours'],
   ])('formats %s hours', (hours, expected) => {
     expect(formatGoalDuration(hours as number)).toBe(expected);
+  });
+
+  test.each([
+    [16, '16 hours'],
+    [24, '1d'],
+    [49, '2d 1h'],
+  ])('formats %s hours as days when requested', (hours, expected) => {
+    expect(formatGoalDuration(hours as number, GoalDurationFormat.Days)).toBe(expected);
   });
 
   test('selects standard, custom, and unlimited goal identifiers', () => {

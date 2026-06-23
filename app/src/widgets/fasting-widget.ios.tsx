@@ -115,10 +115,16 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
 const fastingWidget = createWidget<FastingWidgetProps>('FastingWidget', FastingWidgetView);
 
 export const updateFastingWidget = (state: ActiveFastState): void => {
-  const goalName = appStorage
-    .get(StorageKey.Settings)
-    ?.goals.find((goal) => goal.targetDurationHours === state.session?.goalDurationHours)?.name;
-  const model = createFastingWidgetModel(state, Date.now(), goalName);
+  const settings = appStorage.get(StorageKey.Settings);
+  const goalName = settings?.goals.find(
+    (goal) => goal.targetDurationHours === state.session?.goalDurationHours,
+  )?.name;
+  const model = createFastingWidgetModel(
+    state,
+    Date.now(),
+    goalName,
+    settings?.goalDurationFormat,
+  );
   const props: FastingWidgetProps =
     model.status === 'inactive'
       ? {

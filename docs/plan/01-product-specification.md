@@ -108,6 +108,7 @@ Settings uses consistent grouped native-style surfaces.
 - System, Light, and Dark themes;
 - horizontally scrolling accent-color selector;
 - accent changes only after scrolling settles.
+- goal time display format, defaulting to hours and optionally showing day-based labels; the preference is used consistently on Fast, Goals, History, widgets, and local fast-end reminder text.
 
 ### Goals
 
@@ -154,7 +155,7 @@ No push-notification backend is used.
 
 Small home-screen widgets are implemented for iOS and Android.
 
-When inactive, the widget invites the user to open the app and start a fast. When active, it shows the app identity, goal name and hours, the persisted elapsed/remaining label, one timer, and planned-goal progress without redundant timer or goal labels. Tapping opens the app through `simple-fasting://`.
+When inactive, the widget invites the user to open the app and start a fast. When active, it shows the app identity, goal name and formatted goal duration, the persisted elapsed/remaining label, one timer, and planned-goal progress without redundant timer or goal labels. Tapping opens the app through `simple-fasting://`.
 
 - iOS uses `expo-widgets` and SwiftUI-backed Expo UI.
 - Android uses `react-native-android-widget`.
@@ -169,7 +170,7 @@ MMKV keys:
 | Key | Purpose |
 | --- | --- |
 | `metadata` | Schema, app version, Expo version, initialization timestamps |
-| `settings` | Theme, accent, goals, last selected duration, Data view, onboarding flags, and reminder preferences |
+| `settings` | Theme, accent, goal duration display format, goals, last selected duration, Data view, onboarding flags, and reminder preferences |
 | `activeFast` | Active session and reminder state |
 | `history` | Completed fasting sessions; source of truth |
 | `diagnostics` | Up to 50 recent privacy-filtered local error events; never uploaded automatically |
@@ -197,7 +198,7 @@ The application should feel calm, minimal, fast, and native.
 - Expo Router navigation, stack headers, native tab chrome, and picker items resolve from the same app theme and accent palette.
 - Native tab bars use an opaque themed background during tab transitions; native segmented and date/time controls receive the resolved app appearance explicitly.
 - Persisted MMKV settings are loaded before the first themed render, and explicit Light/Dark preferences are synchronized with native `Appearance` so UIKit/Android controls do not briefly use the wrong scheme.
-- Native splash has no artificial delay. After local storage initialization, a subtle Reanimated logo intro may draw a short progress arc for roughly 150–250 ms before showing onboarding or the home tabs.
+- Native splash has no artificial delay and uses a minimal black/white mark. After local storage initialization, the app goes directly to onboarding or the home tabs without an additional branded animation.
 - First-run onboarding is limited to the notification explanation screen: “Stay informed about your fasts,” with **Allow Notifications** and **Not Now** actions.
 - Neutral page background with consistent white/dark surfaces, thin borders, and grouped rows.
 - Safe-area and native tab-bar spacing on both platforms.

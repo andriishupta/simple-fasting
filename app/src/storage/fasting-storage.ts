@@ -21,6 +21,7 @@ import {
   cancelScheduledNotification,
   scheduleFastEndNotification,
 } from '@/storage/notification-storage';
+import { formatGoalDuration } from '@/utils/fast-goals';
 import { updateFastingWidget } from '@/widgets/fasting-widget';
 
 const now = (): string => new Date().toISOString();
@@ -98,6 +99,7 @@ export const startFast = async ({
   const fastEndNotificationId = await scheduleFastEndNotification({
     session,
     enabled: fastEndReminderEnabled,
+    goalDurationLabel: formatGoalDuration(goalDurationHours, settings.goalDurationFormat),
   }).catch(() => null);
   await cancelDailyReminderNotification().catch(() => undefined);
 
@@ -272,6 +274,10 @@ export const reconcileActiveFastEndNotification = async (): Promise<ActiveFastSt
     session: activeFastState.session,
     enabled:
       settings.notifications.fastEndReminderEnabled && activeFastState.fastEndReminderEnabled,
+    goalDurationLabel: formatGoalDuration(
+      activeFastState.session.goalDurationHours,
+      settings.goalDurationFormat,
+    ),
   });
 
   return saveActiveFastState({
@@ -300,6 +306,10 @@ export const setActiveFastEndReminderEnabled = async (
   const fastEndNotificationId = await scheduleFastEndNotification({
     session: activeFastState.session,
     enabled: fastEndReminderEnabled,
+    goalDurationLabel: formatGoalDuration(
+      activeFastState.session.goalDurationHours,
+      getSettings().goalDurationFormat,
+    ),
   });
 
   return saveActiveFastState({

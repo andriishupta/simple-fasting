@@ -40,6 +40,11 @@ export enum TimerViewPreference {
   Remaining = 'remaining',
 }
 
+export enum GoalDurationFormat {
+  Hours = 'hours',
+  Days = 'days',
+}
+
 export enum FastStatus {
   Active = 'active',
   Completed = 'completed',
@@ -95,6 +100,7 @@ export type AppSettings = {
   accentColorName: AccentColorName;
   goals: readonly FastingGoal[];
   lastUsedGoalDurationHours: number;
+  goalDurationFormat: GoalDurationFormat;
   dataViewPreference: DataViewPreference;
   onboardingCompleted: boolean;
   notificationPromptShown: boolean;
@@ -239,6 +245,7 @@ export const createDefaultAppSettings = (updatedAt: Timestamp): AppSettings => (
   accentColorName: AccentColorName.Blue,
   goals: createDefaultGoals(updatedAt),
   lastUsedGoalDurationHours: 16,
+  goalDurationFormat: GoalDurationFormat.Hours,
   dataViewPreference: DataViewPreference.Stats,
   onboardingCompleted: false,
   notificationPromptShown: false,

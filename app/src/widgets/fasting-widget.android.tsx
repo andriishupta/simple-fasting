@@ -129,10 +129,16 @@ function AndroidFastingWidget({
 }
 
 const renderFastingWidget = (state: ActiveFastState): WidgetRepresentation => {
-  const goalName = appStorage
-    .get(StorageKey.Settings)
-    ?.goals.find((goal) => goal.targetDurationHours === state.session?.goalDurationHours)?.name;
-  const model = createFastingWidgetModel(state, Date.now(), goalName);
+  const settings = appStorage.get(StorageKey.Settings);
+  const goalName = settings?.goals.find(
+    (goal) => goal.targetDurationHours === state.session?.goalDurationHours,
+  )?.name;
+  const model = createFastingWidgetModel(
+    state,
+    Date.now(),
+    goalName,
+    settings?.goalDurationFormat,
+  );
 
   return {
     light: <AndroidFastingWidget model={model} theme={lightTheme} />,

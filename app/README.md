@@ -48,7 +48,7 @@ The active state shows a compact progress timer, start/end times, local reminder
 
 ### Settings
 
-- **Appearance** — System/Light/Dark and settled-scroll accent selection.
+- **Appearance** — System/Light/Dark, settled-scroll accent selection, and the app-wide goal time display format.
 - **Goals** — opens Goals.
 - **Notifications** — fast-end reminder and daily reminder with a minimal Hours/Minutes wheel that follows the active theme without a nested card or redundant label.
 - **Data** — non-destructive JSON/CSV import, JSON export, CSV export, and Clear data.
@@ -70,7 +70,7 @@ These are standard native stack pushes with system headers and back buttons. Thi
 Small home-screen widgets are implemented on both platforms.
 
 - Inactive: “Ready to fast?” and an action to open the app.
-- Active: app identity, goal name/hours, one elapsed-or-remaining timer, and planned-goal progress.
+- Active: app identity, goal name/formatted duration, one elapsed-or-remaining timer, and planned-goal progress.
 - Tap: opens `simple-fasting://`.
 - Refresh: requested whenever active fasting state changes.
 
@@ -103,7 +103,7 @@ There is no push-notification server.
 MMKV stores:
 
 - `metadata`;
-- `settings` — preferences, goals, reminder preferences, `onboardingCompleted`, and `notificationPromptShown`;
+- `settings` — preferences, goal duration display format, goals, reminder preferences, `onboardingCompleted`, and `notificationPromptShown`;
 - `activeFast`;
 - `history`.
 - `diagnostics` — at most 50 recent privacy-filtered local app errors.
@@ -118,7 +118,7 @@ Storage initialization, reminder restoration, and render errors can be recorded 
 
 ## Startup and onboarding
 
-Startup prioritizes reaching the timer quickly. Native splash is hidden as soon as synchronous local storage initialization succeeds or fails. A subtle Reanimated logo intro draws a small progress arc for roughly 220 ms, then the app shows either onboarding or the home tabs. If this animation becomes noticeable or slows startup, remove it.
+Startup prioritizes reaching the timer quickly. Native splash is hidden as soon as synchronous local storage initialization succeeds or fails. The app does not run an additional branded splash animation; it shows either onboarding or the home tabs immediately after startup is ready.
 
 The onboarding state stores only `onboardingCompleted` and `notificationPromptShown` in MMKV. The notification permission itself is never stored.
 

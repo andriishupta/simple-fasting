@@ -126,9 +126,11 @@ export const cancelScheduledNotification = async (
 export const scheduleFastEndNotification = async ({
   session,
   enabled,
+  goalDurationLabel,
 }: {
   session: FastSession;
   enabled: boolean;
+  goalDurationLabel?: string;
 }): Promise<string | null> => {
   if (!enabled || session.goalDurationHours <= 0 || Platform.OS === 'web') {
     return null;
@@ -147,10 +149,10 @@ export const scheduleFastEndNotification = async ({
   }
 
   return Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'Fast goal reached',
-      body: `${session.goalDurationHours} hour fast complete.`,
-    },
+      content: {
+        title: 'Fast goal reached',
+        body: `${goalDurationLabel ?? `${session.goalDurationHours} hours`} fast complete.`,
+      },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: triggerDate,

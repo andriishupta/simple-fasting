@@ -1,4 +1,8 @@
-import { TimerViewPreference, createEmptyActiveFastState } from '@/storage/app-storage';
+import {
+  GoalDurationFormat,
+  TimerViewPreference,
+  createEmptyActiveFastState,
+} from '@/storage/app-storage';
 import { createFastingWidgetModel } from '@/widgets/fasting-widget-model';
 import { createSession } from '../../test/fixtures';
 
@@ -28,7 +32,7 @@ describe('fasting widget model', () => {
     expect(model).toEqual(expect.objectContaining({
       status: 'active',
       displayTime: '2h 30m',
-      headline: '2h goal · 2h',
+      headline: 'Fasting goal · 2 hours',
       subtitle: 'Elapsed',
       progress: 1,
       goalEndsAt: Date.parse('2026-06-21T12:00:00.000Z'),
@@ -48,7 +52,18 @@ describe('fasting widget model', () => {
     };
 
     expect(createFastingWidgetModel(state, now, '18:6')).toEqual(
-      expect.objectContaining({ displayTime: '1h 30m', headline: '18:6 · 4h', subtitle: 'Remaining', progress: 0.625 }),
+      expect.objectContaining({ displayTime: '1h 30m', headline: '18:6 · 4 hours', subtitle: 'Remaining', progress: 0.625 }),
+    );
+    expect(createFastingWidgetModel({
+      ...state,
+      session: createSession({
+        id: 'day-format',
+        startedAt: '2026-06-21T10:00:00.000Z',
+        endedAt: null,
+        goalDurationHours: 24,
+      }),
+    }, now, 'Extended', GoalDurationFormat.Days)).toEqual(
+      expect.objectContaining({ headline: 'Extended · 1d' }),
     );
     expect(createFastingWidgetModel(state, Date.parse('2026-06-22T10:00:00.000Z'))).toEqual(
       expect.objectContaining({

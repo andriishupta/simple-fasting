@@ -39,7 +39,7 @@ import {
   startFast,
   useActiveFastState,
 } from '@/storage/fasting-storage';
-import { TimerViewPreference } from '@/storage/app-storage';
+import { TimerViewPreference, type GoalDurationFormat } from '@/storage/app-storage';
 import {
   setLastUsedGoalDurationHours,
   useSettings,
@@ -209,8 +209,9 @@ export default function HomeScreen() {
               goalName={
                 settings.goals.find(
                   (goal) => goal.targetDurationHours === activeSession.goalDurationHours,
-                )?.name ?? formatGoalDuration(activeSession.goalDurationHours)
+                )?.name ?? (activeSession.goalDurationHours > 0 ? 'This Time' : 'Open-ended fast')
               }
+              goalDurationFormat={settings.goalDurationFormat}
               startedAt={activeSession.startedAt}
               reason={activeSession.reason}
               elapsedSeconds={getElapsedSeconds(activeSession, currentTime)}
@@ -325,6 +326,7 @@ function ReadyToFast({
 function ActiveFast({
   goalDurationHours,
   goalName,
+  goalDurationFormat,
   startedAt,
   reason,
   elapsedSeconds,
@@ -338,6 +340,7 @@ function ActiveFast({
 }: {
   goalDurationHours: number;
   goalName: string;
+  goalDurationFormat: GoalDurationFormat;
   startedAt: string;
   reason: string | null;
   elapsedSeconds: number;
@@ -360,20 +363,21 @@ function ActiveFast({
       : elapsedSeconds;
   const startedDate = new Date(startedAt);
   const endDate = goalSeconds === null ? null : new Date(startedDate.getTime() + goalSeconds * 1000);
+  const goalTitle = goalDurationHours > 0 ? goalName : 'Open-ended fast';
+  const goalSubtitle =
+    goalDurationHours > 0 ? formatGoalDuration(goalDurationHours, goalDurationFormat) : 'No time limit';
 
   return (
     <Animated.View entering={FadeIn.duration(180)} style={styles.active}>
       <View style={styles.activeHeading}>
-        <View style={[styles.statusPill, { backgroundColor: theme.accentBackground }]}>
-          <View style={[styles.statusDot, { backgroundColor: theme.accent }]} />
-          <ThemedText type="smallBold" style={{ color: theme.accent }}>
-            {goalDurationHours > 0
-              ? goalName === formatGoalDuration(goalDurationHours)
-                ? goalName
-                : `${goalName} · ${formatGoalDuration(goalDurationHours)}`
-              : 'Open-ended fast'}
-          </ThemedText>
-        </View>
+        <ThemedText
+          selectable
+          style={styles.activeGoalName}>
+          {goalTitle}
+        </ThemedText>
+        <ThemedText type="subtitle" themeColor="textSecondary" selectable style={styles.activeGoalDuration}>
+          {goalSubtitle}
+        </ThemedText>
       </View>
       <ProgressRing
         size={ringSize}
@@ -412,9 +416,6 @@ function ActiveFast({
           </View>
           <ThemedText type="title" selectable style={styles.timer}>
             {formatDuration(shownSeconds)}
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" selectable>
-            {formatGoalDuration(goalDurationHours)}
           </ThemedText>
         </View>
       </ProgressRing>
@@ -555,22 +556,24 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   active: { alignItems: 'center', gap: Spacing.three, paddingTop: Spacing.two },
-  statusPill: {
-    minHeight: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    borderRadius: 16,
-    paddingHorizontal: Spacing.three,
-  },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
   activeHeading: {
     width: '100%',
-    minHeight: 40,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.two,
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.four,
+  },
+  activeGoalName: {
+    textAlign: 'center',
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: '700',
+  },
+  activeGoalDuration: {
+    textAlign: 'center',
+    fontSize: 18,
+    lineHeight: 24,
+    fontVariant: ['tabular-nums'],
   },
   timerViewButton: {
     width: 30,

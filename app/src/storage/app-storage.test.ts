@@ -3,6 +3,7 @@ import { createMMKV } from 'react-native-mmkv';
 import {
   AccentColorName,
   DataViewPreference,
+  GoalDurationFormat,
   StorageKey,
   ThemePreference,
   appStorage,
@@ -28,6 +29,7 @@ describe('app storage', () => {
       themePreference: ThemePreference.System,
       accentColorName: AccentColorName.Blue,
       lastUsedGoalDurationHours: 16,
+      goalDurationFormat: GoalDurationFormat.Hours,
       dataViewPreference: DataViewPreference.Stats,
       onboardingCompleted: false,
       notificationPromptShown: false,

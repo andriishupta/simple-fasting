@@ -80,6 +80,7 @@ describe('fasting lifecycle integration', () => {
     expect(mockScheduleFastEndNotification).toHaveBeenCalledWith({
       session: expect.objectContaining({ goalDurationHours: 16 }),
       enabled: true,
+      goalDurationLabel: '16 hours',
     });
 
     jest.setSystemTime(new Date('2026-06-22T02:30:00.000Z'));

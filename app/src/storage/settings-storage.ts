@@ -8,6 +8,7 @@ import * as WebBrowser from 'expo-web-browser';
 import {
   appStorage,
   createDefaultAppSettings,
+  createEmptyActiveFastState,
   StorageKey,
   AccentColorName,
   FastingGoalType,
@@ -17,6 +18,7 @@ import {
   type AppSettings,
   type DataViewPreference as DataViewPreferenceType,
   type FastingGoal,
+  type GoalDurationFormat as GoalDurationFormatType,
   type NotificationSettings,
   type ThemePreference as ThemePreferenceType,
 } from '@/storage/app-storage';
@@ -28,6 +30,7 @@ import {
   requestLocalNotificationPermission,
   scheduleDailyReminderNotification,
 } from '@/storage/notification-storage';
+import { updateFastingWidget } from '@/widgets/fasting-widget';
 
 export enum SettingsExportFormat {
   Json = 'json',
@@ -214,6 +217,20 @@ export const setLastUsedGoalDurationHours = (lastUsedGoalDurationHours: number):
     lastUsedGoalDurationHours,
     updatedAt: now(),
   }));
+
+export const setGoalDurationFormat = (
+  goalDurationFormat: GoalDurationFormatType,
+): AppSettings => {
+  const settings = updateSettings((currentSettings) => ({
+    ...currentSettings,
+    goalDurationFormat,
+    updatedAt: now(),
+  }));
+
+  updateFastingWidget(appStorage.get(StorageKey.ActiveFast) ?? createEmptyActiveFastState(now()));
+
+  return settings;
+};
 
 const createGoalId = (): string =>
   `goal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

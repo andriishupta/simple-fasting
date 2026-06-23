@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { router } from 'expo-router';
 import { ChevronRight, GripVertical, Plus, Trash2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -11,124 +11,23 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { AppButton } from '@/components/app-button';
 import { AppSurface } from '@/components/app-surface';
-import { FeedbackState } from '@/components/feedback-state';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { FastingGoalType, type FastingGoal } from '@/storage/app-storage';
 import {
-  createFastingGoal,
   deleteFastingGoal,
   moveFastingGoal,
   setFastingGoalEnabled,
-  updateFastingGoal,
   useSettings,
 } from '@/storage/settings-storage';
-
-type GoalDraft = {
-  goalId: string | null;
-  name: string;
-  targetDurationHours: string;
-};
-
-const maxGoalDurationHours = 40 * 24;
-
-const createEmptyDraft = (goals: readonly FastingGoal[]): GoalDraft => ({
-  goalId: null,
-  name: '',
-  targetDurationHours: `${
-    [16, 18, 20, 24, 12, 14].find(
-      (duration) => !goals.some((goal) => goal.targetDurationHours === duration),
-    ) ??
-    (goals.length === 0
-      ? 16
-      : Math.min(
-          maxGoalDurationHours,
-          Math.max(...goals.map((goal) => goal.targetDurationHours)) + 1,
-        ))
-  }`,
-});
-
-const createGoalDraft = (goal: FastingGoal): GoalDraft => ({
-  goalId: goal.id,
-  name: goal.name,
-  targetDurationHours: `${goal.targetDurationHours}`,
-});
-
-const formatGoalDuration = (hours: number): string => {
-  if (hours < 24) return `${hours} hours`;
-
-  const days = Math.floor(hours / 24);
-  const remainingHours = hours % 24;
-
-  return remainingHours === 0 ? `${days} days` : `${days}d ${remainingHours}h`;
-};
+import { formatGoalDuration } from '@/utils/fast-goals';
 
 export default function GoalsScreen() {
   const settings = useSettings();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const [draft, setDraft] = useState<GoalDraft | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
-
-  const saveDraft = (): void => {
-    if (draft === null) return;
-
-    const name = draft.name.trim();
-    const targetDurationHours = Number(draft.targetDurationHours);
-
-    if (name.length === 0) {
-      setValidationError('Enter a name for this goal.');
-      return;
-    }
-
-    if (name.length > 60) {
-      setValidationError('Goal names can be up to 60 characters.');
-      return;
-    }
-
-    if (
-      !Number.isInteger(targetDurationHours) ||
-      targetDurationHours < 1 ||
-      targetDurationHours > maxGoalDurationHours
-    ) {
-      setValidationError('Choose a whole number from 1 hour to 40 days.');
-      return;
-    }
-
-    const duplicateDuration = settings.goals.some(
-      (goal) =>
-        goal.id !== draft.goalId && goal.targetDurationHours === targetDurationHours,
-    );
-
-    if (duplicateDuration) {
-      setValidationError('A goal with this duration already exists.');
-      return;
-    }
-
-    try {
-      if (draft.goalId === null) {
-        createFastingGoal({ name, targetDurationHours });
-      } else if (
-        updateFastingGoal({
-          goalId: draft.goalId,
-          name,
-          targetDurationHours,
-        }) === undefined
-      ) {
-        setValidationError('This goal no longer exists.');
-        return;
-      }
-    } catch {
-      setValidationError('This goal could not be saved. Your existing goals were not changed.');
-      return;
-    }
-
-    setDraft(null);
-    setValidationError(null);
-  };
 
   const confirmDelete = (goal: FastingGoal): void => {
     if (goal.type === FastingGoalType.Standard) return;
@@ -145,12 +44,6 @@ export default function GoalsScreen() {
             try {
               if (!deleteFastingGoal(goal.id)) {
                 Alert.alert('Goal not deleted', 'At least one fasting goal is required.');
-                return;
-              }
-
-              if (draft?.goalId === goal.id) {
-                setDraft(null);
-                setValidationError(null);
               }
             } catch {
               Alert.alert('Goal not deleted', 'Your saved goals were not changed.');
@@ -180,111 +73,25 @@ export default function GoalsScreen() {
               index={index}
               onDelete={() => confirmDelete(goal)}
               onEdit={() => {
-                setDraft(createGoalDraft(goal));
-                setValidationError(null);
+                router.push({ pathname: '/goals/[id]', params: { id: goal.id } });
               }}
               onMove={(destinationIndex) => moveFastingGoal(goal.id, destinationIndex)}
             />
           ))}
         </View>
-
-        {draft !== null ? (
-          <AppSurface style={styles.editor}>
-            <ThemedText type="subtitle">
-              {draft.goalId === null ? 'New goal' : 'Edit goal'}
-            </ThemedText>
-
-            {validationError !== null ? (
-              <FeedbackState
-                kind="error"
-                title="Check this goal"
-                description={validationError}
-                action={{ label: 'Dismiss', onPress: () => setValidationError(null) }}
-              />
-            ) : null}
-
-            <View style={styles.field}>
-              <ThemedText type="smallBold">Name</ThemedText>
-              <TextInput
-                accessibilityLabel="Goal name"
-                autoCapitalize="sentences"
-                maxLength={60}
-                value={draft.name}
-                onChangeText={(name) => setDraft((current) => current && { ...current, name })}
-                placeholder="For example, Weekday fast"
-                placeholderTextColor={theme.textSecondary}
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: theme.background,
-                    borderColor: theme.backgroundSelected,
-                    color: theme.text,
-                  },
-                ]}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <ThemedText type="smallBold">Duration in hours</ThemedText>
-              <TextInput
-                accessibilityLabel="Goal duration in hours"
-                keyboardType="number-pad"
-                maxLength={3}
-                value={draft.targetDurationHours}
-                onChangeText={(targetDurationHours) =>
-                  setDraft(
-                    (current) =>
-                      current && {
-                        ...current,
-                        targetDurationHours: targetDurationHours.replaceAll(/\D/g, ''),
-                      },
-                  )
-                }
-                placeholder="16"
-                placeholderTextColor={theme.textSecondary}
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: theme.background,
-                    borderColor: theme.backgroundSelected,
-                    color: theme.text,
-                  },
-                ]}
-              />
-            </View>
-
-            <View style={styles.actions}>
-              <AppButton
-                label="Cancel"
-                variant="ghost"
-                fullWidth
-                onPress={() => {
-                  setDraft(null);
-                  setValidationError(null);
-                }}
-              />
-              <AppButton label="Save goal" fullWidth onPress={saveDraft} />
-            </View>
-          </AppSurface>
-        ) : null}
         </View>
       </ScrollView>
-      {draft === null ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add goal"
-          onPress={() => {
-            setDraft(createEmptyDraft(settings.goals));
-            setValidationError(null);
-          }}
-          style={({ pressed }) => [
-            styles.fab,
-            { backgroundColor: theme.accent, bottom: insets.bottom + Spacing.three },
-            pressed && styles.pressed,
-          ]}>
-          <Plus size={26} color={theme.accentForeground} strokeWidth={2.5} />
-        </Pressable>
-      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Add goal"
+        onPress={() => router.push('/goals/new')}
+        style={({ pressed }) => [
+          styles.fab,
+          { backgroundColor: theme.accent, bottom: insets.bottom + Spacing.three },
+          pressed && styles.pressed,
+        ]}>
+        <Plus size={26} color={theme.accentForeground} strokeWidth={2.5} />
+      </Pressable>
     </View>
   );
 }
@@ -303,6 +110,7 @@ function GoalRow({
   onMove: (destinationIndex: number) => void;
 }) {
   const theme = useTheme();
+  const settings = useSettings();
   const translateY = useSharedValue(0);
   const dragGesture = Gesture.Pan()
     .activateAfterLongPress(120)
@@ -347,7 +155,7 @@ function GoalRow({
             </View>
           </View>
           <ThemedText type="small" themeColor="textSecondary" selectable>
-            {formatGoalDuration(goal.targetDurationHours)}
+            {formatGoalDuration(goal.targetDurationHours, settings.goalDurationFormat)}
           </ThemedText>
         </Pressable>
         <Switch
@@ -369,6 +177,8 @@ function GoalRow({
     <Animated.View style={animatedStyle}>
       {isCustom ? (
         <ReanimatedSwipeable
+          containerStyle={styles.swipeable}
+          childrenContainerStyle={styles.swipeableChildren}
           friction={2}
           overshootRight={false}
           renderRightActions={() => (
@@ -448,20 +258,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.one,
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 16,
   },
-  editor: {
-    gap: Spacing.three,
-  },
-  field: {
-    gap: Spacing.one,
-  },
-  input: {
-    minHeight: 44,
-    borderWidth: 1,
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    fontSize: 16,
-  },
+  swipeable: { borderRadius: 16, borderCurve: 'continuous', overflow: 'hidden' },
+  swipeableChildren: { borderRadius: 16, borderCurve: 'continuous', overflow: 'hidden' },
   fab: {
     position: 'absolute',
     right: Spacing.four,

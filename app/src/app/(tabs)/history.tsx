@@ -41,15 +41,13 @@ import {
 import { useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
 import { setDataViewPreference, useSettings } from '@/storage/settings-storage';
 import { getChartData, getFastingStats } from '@/utils/fasting-analytics';
+import { formatGoalDuration } from '@/utils/fast-goals';
 
 type DataView = DataViewPreference;
 
 const formatPercent = (value: number): string => `${Math.round(value * 100)}%`;
 
 const formatChartHours = (hours: number): string => `${formatHours(hours)}h`;
-
-const formatGoalLabel = (goalDurationHours: number): string =>
-  goalDurationHours <= 0 ? 'Open-ended' : `${goalDurationHours}h goal`;
 
 const formatLocaleDateTime = (timestamp: string): string =>
   new Intl.DateTimeFormat(undefined, {
@@ -349,6 +347,7 @@ function HistorySummary({
   endedLabel: string;
 }) {
   const theme = useTheme();
+  const settings = useSettings();
   const progress =
     session.goalDurationHours > 0
       ? durationSeconds / (session.goalDurationHours * 3600)
@@ -363,7 +362,9 @@ function HistorySummary({
             <ThemedText type="smallBold">{formatDuration(durationSeconds)}</ThemedText>
             <View style={[styles.goalPill, { backgroundColor: theme.accentBackground }]}>
               <ThemedText type="smallBold" themeColor="accent">
-                {formatGoalLabel(session.goalDurationHours)}
+                {session.goalDurationHours <= 0
+                  ? 'Open-ended'
+                  : `${formatGoalDuration(session.goalDurationHours, settings.goalDurationFormat)} goal`}
               </ThemedText>
             </View>
           </View>
