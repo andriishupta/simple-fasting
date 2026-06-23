@@ -17,12 +17,12 @@ import {
   createExportContent,
   createExportFilename,
   createFastingGoal,
+  completeNotificationOnboarding,
   deleteFastingGoal,
   escapeCsvValue,
   getAccentPalette,
   getEffectiveColorScheme,
   getSettings,
-  initializeNotificationPermission,
   moveFastingGoal,
   LocalNotificationPermissionState,
   refreshSettingsSnapshot,
@@ -33,6 +33,7 @@ import {
   setFastingGoalEnabled,
   setThemePreference,
   shareDataExport,
+  syncNotificationPermissionState,
   updateFastingGoal,
   updateNotificationSettings,
 } from '@/storage/settings-storage';
@@ -156,36 +157,38 @@ describe('settings storage integration', () => {
     expect(getSettings().notifications.dailyReminderNotificationId).toBeNull();
   });
 
-  test('enables only fast-end reminders after first-launch permission is granted', async () => {
-    mockGetLocalNotificationPermissionState.mockResolvedValue(
-      LocalNotificationPermissionState.Undetermined,
-    );
+  test('completes notification onboarding and enables only fast-end reminders when allowed', () => {
+    completeNotificationOnboarding({ notificationsAllowed: true });
 
-    await initializeNotificationPermission();
-
-    expect(mockRequestLocalNotificationPermission).toHaveBeenCalledTimes(1);
     expect(getSettings().notifications).toMatchObject({
       fastEndReminderEnabled: true,
       dailyReminderEnabled: false,
     });
+    expect(getSettings()).toMatchObject({
+      onboardingCompleted: true,
+      notificationPromptShown: true,
+    });
   });
 
-  test('disables reminders without prompting again after permission is denied', async () => {
+  test('syncs denied OS notification permission without prompting', async () => {
     updateNotificationSettings((notifications) => ({
       ...notifications,
       fastEndReminderEnabled: true,
       dailyReminderEnabled: true,
+      dailyReminderNotificationId: 'daily-1',
     }));
     mockGetLocalNotificationPermissionState.mockResolvedValue(
       LocalNotificationPermissionState.Denied,
     );
 
-    await initializeNotificationPermission();
+    await syncNotificationPermissionState();
 
     expect(mockRequestLocalNotificationPermission).not.toHaveBeenCalled();
+    expect(mockCancelScheduledNotification).toHaveBeenCalledWith('daily-1');
     expect(getSettings().notifications).toMatchObject({
       fastEndReminderEnabled: false,
       dailyReminderEnabled: false,
+      dailyReminderNotificationId: null,
     });
   });
 

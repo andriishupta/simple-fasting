@@ -29,6 +29,8 @@ describe('app storage', () => {
       accentColorName: AccentColorName.Blue,
       lastUsedGoalDurationHours: 16,
       dataViewPreference: DataViewPreference.Stats,
+      onboardingCompleted: false,
+      notificationPromptShown: false,
     });
     expect(createEmptyActiveFastState(timestamp).session).toBeNull();
     expect(createEmptyHistoryState(timestamp).sessions).toEqual([]);

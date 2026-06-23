@@ -1,6 +1,8 @@
 # Simple Fasting
 
-Privacy-first, offline-first fasting tracker with no account, backend, analytics, ads, or subscription.
+Privacy-first, offline-first fasting tracker with no account, backend, ads, subscription, analytics SDK, or installation identifier.
+
+V1 uses only local app diagnostics that the user explicitly shares and native platform crash reporting available through Apple App Store Connect and Google Play Console. The app does not send fasting history, dates, durations, goals, notes, reminder schedules, export contents, contact details, advertising identifiers, or precise location to an analytics backend.
 
 - `app/` — Expo React Native application for iOS and Android.
 - `www/` — static Astro website.

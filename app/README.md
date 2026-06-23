@@ -89,11 +89,11 @@ The fallback `src/widgets/fasting-widget.tsx` must keep the same `.tsx` extensio
 
 Notifications are local only through `expo-notifications`.
 
-On first launch, the app requests notification permission. Granting it enables fast-end reminders while daily reminders remain opt-in; denying it disables and grays reminder controls until permission is restored in system settings.
+On first launch, a small onboarding screen explains reminders and offers **Allow Notifications** or **Not Now**. Granting notification permission enables fast-end reminders while daily reminders remain opt-in. Skipping or denying notifications keeps reminders off and shows an **Enable Notifications** action in Settings.
 
 - fast-end notification for a planned fast;
 - optional daily reminder;
-- permission handling;
+- permission handling derived from the operating system on app launch, foreground, and Settings open;
 - cancellation and startup reconciliation.
 
 There is no push-notification server.
@@ -103,16 +103,30 @@ There is no push-notification server.
 MMKV stores:
 
 - `metadata`;
-- `settings`;
+- `settings` — preferences, goals, reminder preferences, `onboardingCompleted`, and `notificationPromptShown`;
 - `activeFast`;
 - `history`.
 - `diagnostics` — at most 50 recent privacy-filtered local app errors.
+
+The app does not store a `notificationsEnabled` value. Notification availability is always derived from `expo-notifications` permission state because users can change it in iOS or Android settings outside the app.
 
 History is the source of truth for statistics and charts, which are derived in memory rather than persisted in a separate cache. Users can import JSON or CSV exports without overwriting existing or time-overlapping sessions; the result reports saved and skipped counts. Users can also export through the native share sheet, bulk-delete selected history entries, and clear all local data with confirmation.
 
 Core fasting writes complete before optional notification cleanup or rescheduling. If the platform notification service fails, local fasting state remains usable and startup does not enter a blocking recovery screen.
 
-Storage initialization, reminder restoration, and render errors can be recorded locally. Nothing is uploaded automatically. The diagnostic JSON excludes fasting history, notes, goals, settings, and device identifiers, redacts common email/URL/path text, and leaves the app only when the user chooses the diagnostic option in **Report bug** and selects a share destination. Clear data also clears diagnostics.
+Storage initialization, reminder restoration, and render errors can be recorded locally. The optional diagnostic JSON excludes fasting history, notes, goals, settings, and device identifiers, redacts common email/URL/path text, and leaves the app only when the user chooses the diagnostic option in **Report bug** and selects a share destination. Clear data clears these local diagnostics.
+
+## Startup and onboarding
+
+Startup prioritizes reaching the timer quickly. Native splash is hidden as soon as synchronous local storage initialization succeeds or fails. A subtle Reanimated logo intro draws a small progress arc for roughly 220 ms, then the app shows either onboarding or the home tabs. If this animation becomes noticeable or slows startup, remove it.
+
+The onboarding state stores only `onboardingCompleted` and `notificationPromptShown` in MMKV. The notification permission itself is never stored.
+
+## Reporting and diagnostics
+
+The app has no analytics SDK, event tracking, telemetry backend, installation UUID, advertising identifier usage, or anonymous profile. V1 relies on Apple App Store Connect and Google Play Console Android Vitals for native platform crash and release-health reporting where the user, platform, and store settings allow it.
+
+Local diagnostics are stored only on-device and leave the app only when the user chooses **Report bug → Share diagnostics** and selects a destination from the native share sheet. Do not add PostHog, Sentry, or another reporting SDK for V1–V3 without an explicit product/privacy decision and updated legal documentation.
 
 Before the first public release, breaking local schema changes are acceptable. After release, persisted changes require explicit migrations and backward compatibility.
 

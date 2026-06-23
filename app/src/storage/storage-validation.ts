@@ -184,6 +184,12 @@ export const repairSettings = (
         : isEnumValue(dataViewPreferences, value.dataViewPreference)
           ? value.dataViewPreference
           : defaults.dataViewPreference,
+    onboardingCompleted: isBoolean(value.onboardingCompleted)
+      ? value.onboardingCompleted
+      : defaults.onboardingCompleted,
+    notificationPromptShown: isBoolean(value.notificationPromptShown)
+      ? value.notificationPromptShown
+      : defaults.notificationPromptShown,
     notifications: {
       fastEndReminderEnabled: isBoolean(notifications.fastEndReminderEnabled)
         ? notifications.fastEndReminderEnabled

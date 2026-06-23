@@ -14,7 +14,9 @@ The product intentionally has:
 
 - no account;
 - no backend or cloud dependency;
-- no analytics, tracking, ads, or subscription;
+- no advertising, cross-app tracking, behavioral profiling, or subscription;
+- no analytics SDK, event tracking, telemetry backend, or installation identifier;
+- native Apple App Store Connect and Google Play Console crash/vitals reporting where available through the platforms;
 - no required internet connection for fasting, history, statistics, goals, or local help;
 - local ownership through JSON and CSV export.
 
@@ -125,7 +127,9 @@ Goals is a native stack screen with a transparent large-title header.
 - local fast-end reminder;
 - local daily fasting reminder;
 - minimal grouped native Hours/Minutes wheel for reminder time with theme-aware item colors and no nested card or redundant label;
-- notification state is reconciled at startup.
+- notification permission is read directly from the operating system at app launch, app foreground, and Settings open;
+- Settings shows reminder controls only when notifications are granted; otherwise it shows “Notifications are disabled” with an **Enable Notifications** action that opens the native app notification settings or requests permission when still undetermined;
+- notification state is reconciled at startup without showing a permission prompt.
 
 No push-notification backend is used.
 
@@ -165,17 +169,21 @@ MMKV keys:
 | Key | Purpose |
 | --- | --- |
 | `metadata` | Schema, app version, Expo version, initialization timestamps |
-| `settings` | Theme, accent, goals, last selected duration, Data view, and notifications |
+| `settings` | Theme, accent, goals, last selected duration, Data view, onboarding flags, and reminder preferences |
 | `activeFast` | Active session and reminder state |
 | `history` | Completed fasting sessions; source of truth |
 | `diagnostics` | Up to 50 recent privacy-filtered local error events; never uploaded automatically |
+
+Settings stores `onboardingCompleted` and `notificationPromptShown`. It does not store `notificationsEnabled`; notification availability is derived from `Notifications.getPermissionsAsync()` because iOS and Android permissions can change outside the app.
 
 State management uses React state, small hooks, and MMKV subscriptions. No global state framework is used.
 Statistics and charts are derived directly from History; no unused persisted cache or speculative widget settings are kept.
 
 Storage initialization failures show retry and explicit reset controls. Optional notification restoration failures do not block access to fasting data or the core timer.
 
-Storage initialization, reminder restoration, and render failures can add a limited local diagnostic event. Diagnostic exports exclude fasting history, notes, goals, settings, and device identifiers, redact common email/URL/file-path text, and are shared only through the diagnostic option inside Report bug. The app does not include remote crash reporting or analytics.
+Storage initialization, reminder restoration, and render failures can add a limited local diagnostic event. Diagnostic exports exclude fasting history, notes, goals, settings, and device identifiers, redact common email/URL/file-path text, and are shared only through the diagnostic option inside Report bug.
+
+The app does not add PostHog, Sentry, or another analytics/crash-reporting SDK in V1. Basic release reliability should use native Apple App Store Connect and Google Play Console crash/vitals reporting where available through the platforms. Missing platform reports never block startup or a local app operation.
 
 Before the first public release, storage changes may be breaking and development data may be reset when explicitly approved. After the first public release, persisted schema changes require migrations and backward compatibility.
 
@@ -189,6 +197,8 @@ The application should feel calm, minimal, fast, and native.
 - Expo Router navigation, stack headers, native tab chrome, and picker items resolve from the same app theme and accent palette.
 - Native tab bars use an opaque themed background during tab transitions; native segmented and date/time controls receive the resolved app appearance explicitly.
 - Persisted MMKV settings are loaded before the first themed render, and explicit Light/Dark preferences are synchronized with native `Appearance` so UIKit/Android controls do not briefly use the wrong scheme.
+- Native splash has no artificial delay. After local storage initialization, a subtle Reanimated logo intro may draw a short progress arc for roughly 150–250 ms before showing onboarding or the home tabs.
+- First-run onboarding is limited to the notification explanation screen: “Stay informed about your fasts,” with **Allow Notifications** and **Not Now** actions.
 - Neutral page background with consistent white/dark surfaces, thin borders, and grouped rows.
 - Safe-area and native tab-bar spacing on both platforms.
 - Minimal animation; platform-native transitions are preferred.
@@ -198,6 +208,8 @@ The application should feel calm, minimal, fast, and native.
 
 - Data remains on the device unless the user explicitly exports or shares it.
 - No personal information is required.
+- No analytics SDK, product-event tracking, telemetry backend, installation identifier, advertising identifier, or anonymous profile is used in V1.
+- Native platform crash/vitals reporting and optional user-shared diagnostics must never intentionally include fasting history, dates, durations, goals, notes, reminder schedules, export contents, contact details, advertising identifiers, or precise location.
 - No secrets, tokens, or credentials belong in source control.
 - External website and email actions are optional; core tracking and offline copies remain available without internet.
 
@@ -208,7 +220,7 @@ The following are not part of the implemented app:
 - accounts or sync;
 - backend APIs;
 - payment, premium, donation, or subscription flows;
-- analytics or advertising;
+- advertising, cross-app tracking, behavioral profiling, session replay, analytics SDKs, event tracking, telemetry backends, or installation identifiers;
 - health-platform integrations;
 - social features or complex meal tracking;
 - advanced widgets and Live Activities.

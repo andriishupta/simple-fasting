@@ -118,7 +118,7 @@ Required before submission:
 - support URL and support email;
 - final legal provider/controller name, postal address, contact phone, and governing jurisdiction inserted after entity and distribution decisions are complete;
 - qualified legal review of Privacy Policy and Terms for launch countries, including U.S. consumer, health-app, children, sanctions/export-control, and app-store requirements;
-- honest privacy/data-safety declarations reflecting no tracking, accounts, backend, or advertising;
+- honest privacy/data-safety declarations reflecting no analytics SDK, no installation identifier, native Apple/Google platform crash reporting, user-shared local diagnostics, and no accounts, backend, advertising, cross-app tracking, or health-data transmission;
 - release notes and version number.
 
 Do not advertise medium/large widgets, Live Activities, Dynamic Island, bulk history actions, sync, or payments until they exist and have been tested.
@@ -143,5 +143,5 @@ Do not advertise medium/large widgets, Live Activities, Dynamic Island, bulk his
 - Local notifications reconcile reliably.
 - Small widgets reflect active/inactive state.
 - Export and clear-data flows work.
-- No account, analytics, advertising, or backend dependency is introduced.
+- No account, advertising, cross-app tracking, analytics SDK, telemetry backend, installation identifier, or backend dependency is introduced; native platform crash/vitals reporting and optional user-shared diagnostics never block core features.
 - Store copy matches the actual shipped feature set.

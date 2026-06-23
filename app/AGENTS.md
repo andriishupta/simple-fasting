@@ -39,9 +39,11 @@ The app intentionally avoids:
 - Accounts
 - Backends
 - Cloud Sync
-- Analytics
 - Advertising
-- Tracking
+- Advertising or cross-app tracking
+- Behavioral profiling
+
+The app has no approved analytics SDK, telemetry backend, installation UUID, anonymous profile, product-event tracking, autocapture, screen/touch capture, session replay, GeoIP, or local fasting-content reporting. V1 uses native Apple App Store Connect / Google Play Console crash reporting where available and local diagnostics shared only after explicit user action. Do not add PostHog, Sentry, or another reporting SDK without explicit approval and updated privacy documentation.
 
 The goal is not feature count.
 

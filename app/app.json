@@ -61,6 +61,7 @@
         }
       ],
       "./plugins/with-widget-version",
+      "./plugins/with-ios-react-native-source-build",
       [
         "react-native-android-widget",
         {

@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+import { Linking, Platform } from 'react-native';
 
 import { type FastSession } from '@/storage/app-storage';
 
@@ -55,18 +56,18 @@ export const requestLocalNotificationPermission = async (): Promise<boolean> => 
     await Notifications.setNotificationChannelAsync(notificationChannelId, {
       name: 'Fasting reminders',
       importance: Notifications.AndroidImportance.DEFAULT,
-    });
+    }).catch(() => undefined);
   }
 
-  const existingPermissions = await Notifications.getPermissionsAsync();
+  const existingPermissions = await Notifications.getPermissionsAsync().catch(() => null);
 
-  if (existingPermissions.granted) {
+  if (existingPermissions?.granted === true) {
     return true;
   }
 
-  const requestedPermissions = await Notifications.requestPermissionsAsync();
+  const requestedPermissions = await Notifications.requestPermissionsAsync().catch(() => null);
 
-  return requestedPermissions.granted;
+  return requestedPermissions?.granted === true;
 };
 
 export const getLocalNotificationPermissionState = async (): Promise<LocalNotificationPermissionState> => {
@@ -74,7 +75,11 @@ export const getLocalNotificationPermissionState = async (): Promise<LocalNotifi
     return LocalNotificationPermissionState.Denied;
   }
 
-  const permissions = await Notifications.getPermissionsAsync();
+  const permissions = await Notifications.getPermissionsAsync().catch(() => null);
+
+  if (permissions === null) {
+    return LocalNotificationPermissionState.Denied;
+  }
 
   if (permissions.granted) return LocalNotificationPermissionState.Granted;
   return permissions.status === Notifications.PermissionStatus.UNDETERMINED
@@ -82,14 +87,30 @@ export const getLocalNotificationPermissionState = async (): Promise<LocalNotifi
     : LocalNotificationPermissionState.Denied;
 };
 
+export const openLocalNotificationSettings = async (): Promise<void> => {
+  if (Platform.OS === 'android') {
+    const appPackage = Constants.expoConfig?.android?.package ?? 'app.simplefasting';
+
+    await Linking.sendIntent('android.settings.APP_NOTIFICATION_SETTINGS', [
+      {
+        key: 'android.provider.extra.APP_PACKAGE',
+        value: appPackage,
+      },
+    ]).catch(() => Linking.openSettings());
+    return;
+  }
+
+  await Linking.openSettings();
+};
+
 export const hasLocalNotificationPermission = async (): Promise<boolean> => {
   if (Platform.OS === 'web') {
     return false;
   }
 
-  const permissions = await Notifications.getPermissionsAsync();
+  const permissions = await Notifications.getPermissionsAsync().catch(() => null);
 
-  return permissions.granted;
+  return permissions?.granted === true;
 };
 
 export const cancelScheduledNotification = async (
@@ -99,7 +120,7 @@ export const cancelScheduledNotification = async (
     return;
   }
 
-  await Notifications.cancelScheduledNotificationAsync(notificationId);
+  await Notifications.cancelScheduledNotificationAsync(notificationId).catch(() => undefined);
 };
 
 export const scheduleFastEndNotification = async ({
@@ -135,7 +156,7 @@ export const scheduleFastEndNotification = async ({
       date: triggerDate,
       channelId: notificationChannelId,
     },
-  });
+  }).catch(() => null);
 };
 
 export const scheduleDailyReminderNotification = async (
@@ -162,5 +183,5 @@ export const scheduleDailyReminderNotification = async (
       minute: reminderTime.minute,
       channelId: notificationChannelId,
     },
-  });
+  }).catch(() => null);
 };

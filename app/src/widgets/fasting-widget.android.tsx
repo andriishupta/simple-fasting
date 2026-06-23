@@ -66,7 +66,7 @@ function AndroidFastingWidget({
         alignItems: 'flex-start',
       }}>
       <TextWidget
-        text={isActive ? 'FASTING · SIMPLE FASTING' : 'SIMPLE FASTING'}
+        text="SIMPLE FASTING"
         style={{ color: theme.accent, fontSize: 12, fontWeight: '700', letterSpacing: 0.08 }}
       />
       {isActive ? (

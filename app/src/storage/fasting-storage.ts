@@ -101,9 +101,10 @@ export const startFast = async ({
   }).catch(() => null);
   await cancelDailyReminderNotification().catch(() => undefined);
 
-  return fastEndNotificationId === null
+  const savedState = fastEndNotificationId === null
     ? activeFastState
     : saveActiveFastState({ ...activeFastState, fastEndNotificationId, updatedAt: now() });
+  return savedState;
 };
 
 export const endFast = async (): Promise<FastSession | null> => {

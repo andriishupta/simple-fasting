@@ -1,7 +1,7 @@
 ---
 id: faq
 title: Frequently Asked Questions
-version: 1.2
+version: 1.3
 description: Answers about Simple Fasting accounts, privacy, tracking, email, local diagnostics, exports, health, availability, and future changes.
 intro: Practical answers about the current Simple Fasting app. Features described as future or planned are not part of the current release.
 ---
@@ -12,9 +12,11 @@ No. The current app has no free or paid accounts, registration, or login. Core f
 
 If optional accounts are introduced later, we will explain what information they use and update the Privacy Policy before materially different collection begins.
 
-## Does the free app track me?
+## Does the free app use analytics?
 
-No. The current app has no advertising SDK, analytics SDK, cross-app tracking, behavioral profiling, or Simple Fasting backend. We do not sell personal information or share it for targeted advertising.
+No. The current app does not use an analytics SDK, does not track product events, and does not create an installation identifier. There is no PostHog, Sentry, advertising identifier, cross-app tracking, behavioral profiling, session replay, or analytics backend in V1.
+
+The app does not send fasting dates, times, durations, history, goals, notes, reminder schedules, export contents, contacts, GPS location, email, or other health or personal content to analytics.
 
 App stores, operating systems, website hosting, email, backups, and destinations you choose for exports are separate services with their own data practices.
 
@@ -48,9 +50,11 @@ Do not email medical records, passwords, government identifiers, payment informa
 
 ## Does the app collect crash or diagnostic information?
 
-It does not send analytics or crash reports automatically. After certain storage, reminder-restoration, or rendering errors, the app may keep up to 50 recent diagnostic events locally. These events contain limited error and app-build context and are designed not to contain fasting history, goals, notes, settings, advertising identifiers, or device identifiers.
+The app does not include a third-party crash-reporting SDK. Apple App Store Connect and Google Play Console may provide native crash, ANR, device, operating-system, app-version, and release-health information according to the app store and device settings controlled by those platforms.
 
-In Settings, Report bug offers an optional diagnostic JSON file through the operating-system share sheet. Nothing is sent unless you choose that option and a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the diagnostic log.
+Separately, after certain storage, reminder-restoration, or rendering errors, the app may keep up to 50 recent diagnostic events locally. These events contain limited error and app-build context and are designed not to contain fasting history, goals, notes, settings, advertising identifiers, or device identifiers.
+
+In Settings, Report bug offers an optional local diagnostic JSON file through the operating-system share sheet. That file is not shared unless you choose it and a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the local diagnostic log.
 
 ## Can I export my data?
 
@@ -70,7 +74,9 @@ Create and safely store an export before clearing data or uninstalling if you ne
 
 Notifications, widgets, clocks, and background work depend on operating-system permissions, scheduling, battery controls, and device behavior. They can be delayed, suppressed, inaccurate, or unavailable.
 
-The app asks for notification permission on first launch. If allowed, fast-end reminders start enabled and daily reminders remain off until you opt in. If denied, reminder settings stay unavailable until notifications are allowed in the device's system settings.
+On first launch, onboarding explains notifications and lets you choose **Allow Notifications** or **Not Now**. If allowed, fast-end reminders start enabled and daily reminders remain off until you opt in. If skipped or denied, reminder settings show **Enable Notifications** until notifications are allowed in the device's system settings.
+
+The app reads notification permission directly from iOS or Android on app launch, foreground, and Settings open. It does not store a separate notifications-enabled flag.
 
 Check app and device settings, but do not rely on Simple Fasting for an emergency, medication, medical, or other safety-critical alarm.
 

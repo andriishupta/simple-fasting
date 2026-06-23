@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
 import { FastStatus } from '@/storage/app-storage';
@@ -8,6 +8,7 @@ import {
   hasLocalNotificationPermission,
   getLocalNotificationPermissionState,
   LocalNotificationPermissionState,
+  openLocalNotificationSettings,
   parseReminderTime,
   requestLocalNotificationPermission,
   scheduleDailyReminderNotification,
@@ -38,6 +39,8 @@ describe('notification storage', () => {
     setPlatform('ios');
     jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({ granted: true } as never);
     jest.mocked(Notifications.requestPermissionsAsync).mockResolvedValue({ granted: true } as never);
+    jest.mocked(Notifications.setNotificationChannelAsync).mockResolvedValue(undefined as never);
+    jest.mocked(Notifications.cancelScheduledNotificationAsync).mockResolvedValue(undefined as never);
     jest.mocked(Notifications.scheduleNotificationAsync).mockResolvedValue('notification-1');
   });
 
@@ -114,6 +117,24 @@ describe('notification storage', () => {
     );
   });
 
+  test('opens platform notification settings', async () => {
+    const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
+
+    await openLocalNotificationSettings();
+    expect(openSettings).toHaveBeenCalledTimes(1);
+
+    setPlatform('android');
+    const sendIntent = jest.spyOn(Linking, 'sendIntent').mockResolvedValue(undefined);
+
+    await openLocalNotificationSettings();
+    expect(sendIntent).toHaveBeenCalledWith(
+      'android.settings.APP_NOTIFICATION_SETTINGS',
+      expect.arrayContaining([
+        expect.objectContaining({ key: 'android.provider.extra.APP_PACKAGE' }),
+      ]),
+    );
+  });
+
   test('schedules a future fast-end notification', async () => {
     const session = createSession({
       id: 'active',
@@ -141,6 +162,25 @@ describe('notification storage', () => {
     expect(await scheduleFastEndNotification({ session: future, enabled: true })).toBeNull();
     setPlatform('web');
     expect(await scheduleFastEndNotification({ session: future, enabled: true })).toBeNull();
+  });
+
+  test('fails closed when native notification APIs reject', async () => {
+    const future = createSession({
+      id: 'future',
+      status: FastStatus.Active,
+      startedAt: '2026-06-21T09:00:00.000Z',
+      endedAt: null,
+      goalDurationHours: 16,
+    });
+
+    jest.mocked(Notifications.getPermissionsAsync).mockRejectedValueOnce(new Error('disabled') as never);
+    expect(await hasLocalNotificationPermission()).toBe(false);
+
+    jest.mocked(Notifications.scheduleNotificationAsync).mockRejectedValueOnce(new Error('denied') as never);
+    expect(await scheduleFastEndNotification({ session: future, enabled: true })).toBeNull();
+
+    jest.mocked(Notifications.cancelScheduledNotificationAsync).mockRejectedValueOnce(new Error('missing') as never);
+    await expect(cancelScheduledNotification('old')).resolves.toBeUndefined();
   });
 
   test('schedules only valid authorized daily reminders', async () => {

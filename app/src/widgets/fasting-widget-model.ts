@@ -51,9 +51,11 @@ export const createFastingWidgetModel = (
   const elapsedMinutes = Math.max(0, Math.floor((currentTime - startedAt) / 60_000));
   const goalMinutes = session.goalDurationHours * 60;
   const hasGoal = goalMinutes > 0;
+  const showsRemaining =
+    timerViewPreference === TimerViewPreference.Remaining && hasGoal && elapsedMinutes < goalMinutes;
   const shownMinutes =
-    timerViewPreference === TimerViewPreference.Remaining && hasGoal
-      ? Math.max(0, goalMinutes - elapsedMinutes)
+    showsRemaining
+      ? goalMinutes - elapsedMinutes
       : elapsedMinutes;
   const displayTime = formatTimerMinutes(shownMinutes);
 
@@ -70,9 +72,9 @@ export const createFastingWidgetModel = (
     progress: hasGoal ? Math.min(1, elapsedMinutes / goalMinutes) : 0,
     startedAt,
     subtitle:
-      timerViewPreference === TimerViewPreference.Remaining && hasGoal
+      showsRemaining
         ? 'Remaining'
         : 'Elapsed',
-    timerView: timerViewPreference,
+    timerView: showsRemaining ? TimerViewPreference.Remaining : TimerViewPreference.Elapsed,
   };
 };

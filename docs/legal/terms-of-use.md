@@ -1,8 +1,8 @@
 ---
 id: terms-of-use
 title: Terms of Use
-version: 1.2
-effectiveDate: 2026-06-21
+version: 1.3
+effectiveDate: 2026-06-22
 description: Terms governing Simple Fasting, including eligibility, health disclaimers, app-store terms, local data, acceptable use, sanctions, and future features.
 intro: These terms govern use of the Simple Fasting app and website. They include important health, local-data, app-store, and legal-compliance provisions.
 ---
@@ -61,7 +61,7 @@ Notifications, widgets, clocks, background execution, and device backups depend 
 
 ## 8. Privacy
 
-The Privacy Policy explains current data practices, including limited privacy-filtered diagnostic events stored locally after certain app errors. The current app has no free or paid account, advertising SDK, analytics SDK, cross-app tracking, or Simple Fasting backend. Local-first does not mean that your unlocked device, notifications, widgets, device backups, emails, diagnostic reports, or exported files cannot expose information to others.
+The Privacy Policy explains current data practices, including no analytics SDK, no installation identifier, native Apple App Store Connect and Google Play Console crash reporting where available through the platforms, and local diagnostic events stored after certain app errors. The current app has no free or paid account, advertising SDK, cross-app tracking, behavioral profiling, or Simple Fasting backend. Local-first does not mean that your unlocked device, notifications, widgets, device backups, platform crash reports, emails, diagnostic reports, or exported files cannot expose information to others.
 
 You are responsible for information you choose to place in notes, emails, exports, diagnostic-report destinations, and other third-party destinations. Review files before sharing and do not submit content you lack the right to use or disclose.
 
@@ -73,7 +73,7 @@ New functionality may require additional terms, privacy disclosures, permissions
 
 ## 10. Third-party services and store rules
 
-App stores, operating systems, devices, email providers, hosting providers, export destinations, and linked websites are operated by others. Their availability, security, terms, privacy practices, fees, and decisions are outside our control.
+App stores, operating systems, devices, Apple App Store Connect, Google Play Console, email providers, hosting providers, export destinations, and linked websites are operated by others. Their availability, security, terms, privacy practices, fees, and decisions are outside our control.
 
 You must comply with applicable third-party agreements when using Simple Fasting, including app-store, operating-system, device, network, and export-destination terms. Features may differ by platform, country, device, operating-system version, and permission settings.
 

@@ -1,16 +1,19 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet } from 'react-native';
+import { Alert, AppState, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import * as SplashScreen from 'expo-splash-screen';
 
 import { FeedbackState } from '@/components/feedback-state';
 import { AppErrorBoundary } from '@/components/app-error-boundary';
 import { FastSavedNoticeProvider } from '@/components/fast-saved-notice-context';
+import { NotificationOnboardingScreen } from '@/components/notification-onboarding-screen';
+import { StartupLogoAnimation } from '@/components/startup-logo-animation';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { AppThemeProvider, useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
-import { DiagnosticEventKind, appStorage } from '@/storage/app-storage';
+import { DiagnosticEventKind } from '@/storage/app-storage';
 import { recordDiagnosticError } from '@/storage/diagnostic-storage';
 import {
   reconcileActiveFastEndNotification,
@@ -18,18 +21,23 @@ import {
 } from '@/storage/fasting-storage';
 import {
   reconcileDailyReminderNotification,
-  initializeNotificationPermission,
+  completeNotificationOnboarding,
+  requestLocalNotificationPermission,
   refreshSettingsSnapshot,
+  syncNotificationPermissionState,
+  useSettings,
 } from '@/storage/settings-storage';
 import { configureLocalNotificationBehavior } from '@/storage/notification-storage';
-import { initializeAppStorage } from '@/storage/storage-migrations';
+import { initializeAppStorage, resetAppStorage } from '@/storage/storage-migrations';
+
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 type StartupState =
   | { status: 'loading' }
   | { status: 'ready' }
   | { status: 'error'; message: string };
 
-export default function RootLayout() {
+function RootLayout() {
   const [startupState, setStartupState] = useState<StartupState>(() => {
     try {
       initializeAppStorage();
@@ -64,7 +72,9 @@ function RootLayoutContent({
   setStartupState: React.Dispatch<React.SetStateAction<StartupState>>;
 }) {
   const colorScheme = useAppThemeColorScheme();
+  const settings = useSettings();
   const theme = useTheme();
+  const [logoAnimationDone, setLogoAnimationDone] = useState(false);
   const navigationTheme = useMemo(() => {
     const baseTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
 
@@ -107,7 +117,7 @@ function RootLayoutContent({
           style: 'destructive',
           onPress: () => {
             try {
-              appStorage.clear();
+              resetAppStorage();
               initializeStorage();
             } catch (error) {
               setStartupState({
@@ -123,11 +133,17 @@ function RootLayoutContent({
   };
 
   useEffect(() => {
+    if (startupState.status === 'loading') return;
+
+    void SplashScreen.hideAsync().catch(() => undefined);
+  }, [startupState.status]);
+
+  useEffect(() => {
     if (startupState.status !== 'ready') return;
 
     void (async () => {
       await configureLocalNotificationBehavior();
-      await initializeNotificationPermission();
+      await syncNotificationPermissionState();
       await Promise.all([
         reconcileDailyReminderNotification(),
         reconcileActiveFastEndNotification(),
@@ -141,9 +157,52 @@ function RootLayoutContent({
     });
   }, [startupState.status]);
 
+  useEffect(() => {
+    if (startupState.status !== 'ready') return;
+
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+
+      void syncNotificationPermissionState()
+        .then(() =>
+          Promise.all([
+            reconcileDailyReminderNotification(),
+            reconcileActiveFastEndNotification(),
+          ]),
+        )
+        .catch((error: unknown) => {
+          recordDiagnosticError({ kind: DiagnosticEventKind.ReminderReconciliation, error });
+        });
+    });
+
+    return () => subscription.remove();
+  }, [startupState.status]);
+
+  const allowOnboardingNotifications = async (): Promise<void> => {
+    const notificationsAllowed = await requestLocalNotificationPermission();
+    completeNotificationOnboarding({ notificationsAllowed });
+    refreshSettingsSnapshot();
+    await Promise.all([
+      reconcileDailyReminderNotification(),
+      reconcileActiveFastEndNotification(),
+    ]).catch(() => undefined);
+  };
+
+  const skipOnboardingNotifications = (): void => {
+    completeNotificationOnboarding({ notificationsAllowed: false });
+    refreshSettingsSnapshot();
+  };
+
   return (
     <ThemeProvider value={navigationTheme}>
-      {startupState.status === 'ready' ? (
+      {startupState.status === 'ready' && !logoAnimationDone ? (
+        <StartupLogoAnimation onDone={() => setLogoAnimationDone(true)} />
+      ) : startupState.status === 'ready' && !settings.onboardingCompleted ? (
+        <NotificationOnboardingScreen
+          onAllowNotifications={allowOnboardingNotifications}
+          onSkip={skipOnboardingNotifications}
+        />
+      ) : startupState.status === 'ready' ? (
         <FastSavedNoticeProvider>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
@@ -254,3 +313,5 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
   },
 });
+
+export default RootLayout;

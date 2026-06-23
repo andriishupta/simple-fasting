@@ -212,6 +212,8 @@ Prefer:
 
 Privacy is part of the product.
 
+The mobile app's native-only crash reporting approach does not authorize analytics on the website. Website analytics still require separate explicit approval and documentation.
+
 ---
 
 # App Store Support

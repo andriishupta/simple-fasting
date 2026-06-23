@@ -98,7 +98,7 @@ Core principles:
 - Offline First
 - No Account Required
 - No Backend Required
-- No Tracking
+- No advertising or cross-app tracking
 - No Ads
 - No Subscription
 - Fast UX
@@ -200,11 +200,16 @@ Never hardcode sensitive values.
 
 Default assumptions:
 
-- No analytics
-- No tracking
+- No analytics SDK
+- No telemetry backend
+- No product-event tracking
+- No installation identifier
+- No autocaptured screens, touches, session replay, advertising, cross-app tracking, profiling, or GeoIP
 - No advertising SDKs
 - No user accounts
-- No personal data collection
+- No fasting history, dates, durations, goals, notes, reminder schedules, exports, contact details, advertising identifiers, or precise location in reporting
+
+The app must not create an installation UUID or anonymous analytics profile for V1. Basic reliability reporting comes from Apple App Store Connect and Google Play Console platform crash/vitals reports, plus local diagnostics shared only after explicit user action. New remote reporting, identifiers, events, or properties require an explicit privacy review and corresponding documentation update.
 
 Any feature that collects user data requires explicit approval.
 

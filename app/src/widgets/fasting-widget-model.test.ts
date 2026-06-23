@@ -35,7 +35,7 @@ describe('fasting widget model', () => {
     }));
   });
 
-  test('shows remaining time without going below zero', () => {
+  test('shows remaining time before the goal and elapsed time after the goal', () => {
     const state = {
       ...createEmptyActiveFastState(new Date(now).toISOString()),
       timerViewPreference: TimerViewPreference.Remaining,
@@ -51,7 +51,12 @@ describe('fasting widget model', () => {
       expect.objectContaining({ displayTime: '1h 30m', headline: '18:6 · 4h', subtitle: 'Remaining', progress: 0.625 }),
     );
     expect(createFastingWidgetModel(state, Date.parse('2026-06-22T10:00:00.000Z'))).toEqual(
-      expect.objectContaining({ displayTime: '0h 00m', progress: 1 }),
+      expect.objectContaining({
+        displayTime: '24h 00m',
+        progress: 1,
+        subtitle: 'Elapsed',
+        timerView: TimerViewPreference.Elapsed,
+      }),
     );
   });
 

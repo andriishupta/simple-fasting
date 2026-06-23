@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Alert,
+  InteractionManager,
   Pressable,
   StyleSheet,
   View,
@@ -64,7 +65,9 @@ export default function DataScreen() {
   const selectDataView = (view: DataView): void => {
     setSelectedView(view);
 
-    if (view !== settings.dataViewPreference) setDataViewPreference(view);
+    if (view !== settings.dataViewPreference) {
+      InteractionManager.runAfterInteractions(() => setDataViewPreference(view));
+    }
   };
 
   return (
@@ -402,7 +405,7 @@ function HistoryTime({ label, value }: { label: string; value: string }) {
 }
 
 function StatsPanel({ history }: { history: HistoryState }) {
-  const stats = getFastingStats(history);
+  const stats = useMemo(() => getFastingStats(history), [history]);
 
   return (
     <View style={styles.statGrid}>
@@ -432,7 +435,7 @@ function StatTile({ label, value }: {
 }
 
 function ChartsPanel({ history }: { history: HistoryState }) {
-  const chartData = getChartData(history);
+  const chartData = useMemo(() => getChartData(history), [history]);
 
   return (
     <Animated.View entering={FadeIn.duration(180)} layout={FadingTransition} style={styles.content}>

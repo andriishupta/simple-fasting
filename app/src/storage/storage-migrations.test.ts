@@ -6,7 +6,7 @@ import {
   StorageSchemaVersion,
   appStorage,
 } from '@/storage/app-storage';
-import { initializeAppStorage } from '@/storage/storage-migrations';
+import { initializeAppStorage, resetAppStorage } from '@/storage/storage-migrations';
 
 const initialTime = new Date('2026-06-21T12:00:00.000Z');
 
@@ -30,6 +30,24 @@ describe('storage initialization and migration', () => {
     expect(appStorage.get(StorageKey.ActiveFast)?.session).toBeNull();
     expect(appStorage.get(StorageKey.History)?.sessions).toEqual([]);
     expect(appStorage.get(StorageKey.Diagnostics)?.events).toEqual([]);
+  });
+
+  test('does not create an installation identifier during initialization', () => {
+    initializeAppStorage();
+
+    initializeAppStorage();
+
+    expect(createMMKV().getString('installationId')).toBeUndefined();
+  });
+
+  test('clears all local app data without preserving an installation identifier', () => {
+    initializeAppStorage();
+    createMMKV().set('installationId', JSON.stringify({ schemaVersion: 1, installationId: 'old' }));
+
+    resetAppStorage();
+
+    expect(createMMKV().getString('installationId')).toBeUndefined();
+    expect(appStorage.get(StorageKey.History)?.sessions).toEqual([]);
   });
 
   test('normalizes legacy values and preserves the original initialization time', () => {

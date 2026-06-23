@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   AppState,
   Alert,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -55,6 +54,7 @@ import {
   LocalNotificationPermissionState,
   openBugReportEmail,
   openFaq,
+  openLocalNotificationSettings,
   openPrivacyPolicy,
   openSupportEmail,
   openTerms,
@@ -78,7 +78,7 @@ import {
   refreshFastSnapshots,
 } from '@/storage/fasting-storage';
 import { cancelScheduledNotification } from '@/storage/notification-storage';
-import { initializeAppStorage } from '@/storage/storage-migrations';
+import { resetAppStorage } from '@/storage/storage-migrations';
 import { shareDiagnosticReport } from '@/storage/diagnostic-storage';
 import { parseImportSessions } from '@/storage/data-import';
 
@@ -158,6 +158,7 @@ export default function SettingsScreen() {
         return;
       }
 
+      setNotificationPermissionState(await getLocalNotificationPermissionState());
       await updateNotificationSettingsAndSchedule((notifications) => ({
         ...notifications,
         fastEndReminderEnabled,
@@ -175,6 +176,7 @@ export default function SettingsScreen() {
         return;
       }
 
+      setNotificationPermissionState(await getLocalNotificationPermissionState());
       await updateNotificationSettingsAndSchedule((notifications) => ({
         ...notifications,
         dailyReminderEnabled,
@@ -183,6 +185,27 @@ export default function SettingsScreen() {
             ? '20:00'
             : notifications.dailyReminderTime,
       }));
+    });
+  };
+  const enableNotificationsFromSettings = async (): Promise<void> => {
+    await runNotificationUpdate(async () => {
+      if (notificationPermissionState === LocalNotificationPermissionState.Undetermined) {
+        const granted = await requestLocalNotificationPermission();
+        setNotificationPermissionState(await getLocalNotificationPermissionState());
+
+        if (granted) {
+          await updateNotificationSettingsAndSchedule((notifications) => ({
+            ...notifications,
+            fastEndReminderEnabled: true,
+            dailyReminderEnabled: false,
+          }));
+          await reconcileActiveFastEndNotification();
+        }
+
+        return;
+      }
+
+      await openLocalNotificationSettings();
     });
   };
   const exportData = async (format: SettingsExportFormat): Promise<void> => {
@@ -252,9 +275,7 @@ export default function SettingsScreen() {
               try {
                 const settingsBeforeClear = appStorage.get(StorageKey.Settings);
                 const activeFastBeforeClear = getActiveFastState();
-
-                appStorage.clear();
-                initializeAppStorage();
+                resetAppStorage();
                 refreshSettingsSnapshot();
                 refreshFastSnapshots();
                 await Promise.all([
@@ -306,41 +327,42 @@ export default function SettingsScreen() {
 
         <SettingsSection
           title="Notifications"
-          description={notificationsAvailable ? undefined : 'Allow notifications to use reminders.'}
-          disabled={!notificationsAvailable}>
-          <SettingsSwitch
-            icon={Timer}
-            title="Fast end reminder"
-            description="Local notification when the goal is reached."
-            value={settings.notifications.fastEndReminderEnabled}
-            onValueChange={setFastEndReminderEnabled}
-            disabled={!notificationsAvailable}
-          />
-          <SettingsSwitch
-            icon={Bell}
-            title="Daily fasting reminder"
-            description="A local reminder to start your regular fast."
-            value={settings.notifications.dailyReminderEnabled}
-            onValueChange={setDailyReminderEnabled}
-            disabled={!notificationsAvailable}
-          />
-          {settings.notifications.dailyReminderEnabled && (
-            <TimePicker
-              value={settings.notifications.dailyReminderTime ?? '20:00'}
-              onChange={(dailyReminderTime) => {
-                void runNotificationUpdate(async () => {
-                  await setDailyReminderTimeAndSchedule(dailyReminderTime);
-                });
-              }}
-            />
-          )}
-          {!notificationsAvailable ? (
+          description={notificationsAvailable ? undefined : 'Notifications are disabled.'}>
+          {notificationsAvailable ? (
+            <>
+              <SettingsSwitch
+                icon={Timer}
+                title="Fast end reminder"
+                description="Local notification when the goal is reached."
+                value={settings.notifications.fastEndReminderEnabled}
+                onValueChange={setFastEndReminderEnabled}
+              />
+              <SettingsSwitch
+                icon={Bell}
+                title="Daily fasting reminder"
+                description="A local reminder to start your regular fast."
+                value={settings.notifications.dailyReminderEnabled}
+                onValueChange={setDailyReminderEnabled}
+              />
+              {settings.notifications.dailyReminderEnabled && (
+                <TimePicker
+                  value={settings.notifications.dailyReminderTime ?? '20:00'}
+                  onChange={(dailyReminderTime) => {
+                    void runNotificationUpdate(async () => {
+                      await setDailyReminderTimeAndSchedule(dailyReminderTime);
+                    });
+                  }}
+                />
+              )}
+            </>
+          ) : (
             <SettingsActionRow
               icon={Bell}
-              title="Open notification settings"
-              onPress={() => void Linking.openSettings()}
+              title="Enable Notifications"
+              description="Open system notification settings for Simple Fasting."
+              onPress={() => void enableNotificationsFromSettings()}
             />
-          ) : null}
+          )}
         </SettingsSection>
 
         <SettingsSection title="Data">

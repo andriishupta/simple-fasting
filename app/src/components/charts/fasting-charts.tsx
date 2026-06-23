@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
 
@@ -64,11 +65,19 @@ export function FastingBarChart({
   const theme = useTheme();
   const width = useChartWidth();
   const maxValue = Math.max(1, Math.ceil(Math.max(...data.map((item) => item.value), 0)));
+  const chartData = useMemo(
+    () => data.map((item) => ({ ...item, frontColor: theme.accent })),
+    [data, theme.accent],
+  );
+  const accessibilityLabel = useMemo(
+    () => data.map((item) => `${item.label}: ${formatValue(item.value)}`).join(', '),
+    [data, formatValue],
+  );
 
   return (
-    <View accessible accessibilityLabel={data.map((item) => `${item.label}: ${formatValue(item.value)}`).join(', ')}>
+    <View accessible accessibilityLabel={accessibilityLabel}>
       <BarChart
-        data={data.map((item) => ({ ...item, frontColor: theme.accent }))}
+        data={chartData}
         width={width}
         height={170}
         maxValue={maxValue}
@@ -103,11 +112,16 @@ export function FastingLineChart({
   const theme = useTheme();
   const width = useChartWidth();
   const maxValue = Math.max(1, Math.ceil(Math.max(...data.map((item) => item.value), 0)));
+  const chartData = useMemo(() => data.map((item) => ({ ...item })), [data]);
+  const accessibilityLabel = useMemo(
+    () => data.map((item) => `${item.label}: ${formatValue(item.value)}`).join(', '),
+    [data, formatValue],
+  );
 
   return (
-    <View accessible accessibilityLabel={data.map((item) => `${item.label}: ${formatValue(item.value)}`).join(', ')}>
+    <View accessible accessibilityLabel={accessibilityLabel}>
       <LineChart
-        data={data.map((item) => ({ ...item }))}
+        data={chartData}
         width={width}
         height={170}
         maxValue={maxValue}

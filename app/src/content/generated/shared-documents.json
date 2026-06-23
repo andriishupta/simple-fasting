@@ -2,9 +2,9 @@
   "privacy": {
     "id": "privacy-policy",
     "title": "Privacy Policy",
-    "version": "1.3",
+    "version": "1.4",
     "effectiveDate": "2026-06-22",
-    "description": "How Simple Fasting handles local app data, local diagnostics, website requests, support emails, exports, privacy rights, and future product changes.",
+    "description": "How Simple Fasting handles local app data, native platform crash reports, website requests, support emails, exports, privacy rights, and future product changes.",
     "intro": "Simple Fasting is built so fasting information can remain on your device. This policy describes the current app and website, what information may be handled, and the choices available to you.",
     "sections": [
       {
@@ -51,12 +51,24 @@
         ]
       },
       {
-        "id": "no-accounts-tracking-advertising-or-sale",
-        "title": "3. No accounts, tracking, advertising, or sale",
+        "id": "analytics-and-native-crash-reporting",
+        "title": "3. Analytics and native crash reporting",
         "blocks": [
           {
             "type": "paragraph",
-            "text": "The current app does not provide free or paid accounts. It does not include advertising SDKs, analytics SDKs, cross-app tracking, behavioral profiling, or a Simple Fasting backend."
+            "text": "The current app does not provide free or paid accounts and does not use an analytics SDK. We do not collect product events, create an installation identifier, build an analytics profile, use advertising identifiers, perform cross-app tracking, or transmit local fasting history to an analytics backend."
+          },
+          {
+            "type": "paragraph",
+            "text": "Crash and performance information may be collected by Apple App Store Connect and Google Play Console as part of their native platform services when you install the app through those stores and your device or store settings allow this reporting. Those platform reports can include technical information such as app version, operating-system version, device model, crash type, stack trace, crash-free sessions, crash-free users, ANRs on Android, and related diagnostic metadata controlled by Apple or Google."
+          },
+          {
+            "type": "paragraph",
+            "text": "Simple Fasting does not add PostHog, Sentry, or another third-party analytics or crash-reporting SDK in the current app. Platform-native reports are provided by Apple or Google under their own privacy controls and policies. We use available store crash information only to improve reliability and do not use it for advertising, cross-app tracking, behavioral profiling, or health-data analysis."
+          },
+          {
+            "type": "paragraph",
+            "text": "We do not intentionally send fasting dates, times, durations, history, goals, notes, reminder schedules, export contents, email addresses, names, phone numbers, contacts, GPS location, addresses, advertising identifiers, or health data through analytics or crash reporting."
           },
           {
             "type": "paragraph",
@@ -110,11 +122,11 @@
         "blocks": [
           {
             "type": "paragraph",
-            "text": "Notification permission is requested when the app first starts so you can choose whether to use reminders. If you allow it, the fast-end reminder is enabled by default while the optional daily reminder remains off until you enable it. If you deny permission, reminder controls remain unavailable unless you later allow notifications in system settings. Notifications are scheduled locally through the operating system. Supported widgets receive the limited local fasting state needed to display them."
+            "text": "Notification permission is requested only when you choose **Allow Notifications** in onboarding or enable reminders from Settings. If you allow it, the fast-end reminder is enabled by default while the optional daily reminder remains off until you enable it. If you choose **Not Now** or deny permission, reminder controls remain unavailable unless you later allow notifications in system settings. Notifications are scheduled locally through the operating system. Supported widgets receive the limited local fasting state needed to display them."
           },
           {
             "type": "paragraph",
-            "text": "You can change notification permissions in device settings and reminder or widget preferences in the app. Denying optional permissions may disable the related feature but does not prevent basic local fasting tracking."
+            "text": "The app stores whether onboarding was completed and whether the notification prompt was shown, but it does not store a separate “notifications enabled” value. Notification availability is read from the operating system because you can change it in device settings. Denying optional permissions may disable the related feature but does not prevent basic local fasting tracking."
           },
           {
             "type": "paragraph",
@@ -126,7 +138,7 @@
           },
           {
             "type": "paragraph",
-            "text": "Diagnostic events are not analytics and are not automatically transmitted. They remain on the device until they are removed by the rolling limit, app-data clearing, or uninstall behavior. A report leaves the app only when you choose the diagnostic option inside Report bug and select a destination in the operating-system share sheet. If you attach it to an email, the email practices in Section 5 apply."
+            "text": "The local diagnostic log is separate from Apple and Google platform crash reporting. It remains on the device until removed by the rolling limit, app-data clearing, or uninstall behavior. Its optional JSON report leaves the app only when you choose the diagnostic option inside Report bug and select a destination in the operating-system share sheet. If you attach it to an email, the email practices in Section 5 apply."
           }
         ]
       },
@@ -136,7 +148,7 @@
         "blocks": [
           {
             "type": "paragraph",
-            "text": "Where data-protection law requires a legal ground, we process website request data and support messages as necessary to provide requested services, communicate with you, secure and maintain the service, comply with legal obligations, and pursue legitimate interests that do not override your rights. Where consent is required, we will request it separately."
+            "text": "Where data-protection law requires a legal ground, we process website request data, support messages, optional diagnostic reports you choose to share, and available platform-native crash information to provide requested services, diagnose failures, secure and maintain the service, comply with legal obligations, and pursue legitimate interests that do not override your rights. Where consent is required, we will request it separately."
           },
           {
             "type": "paragraph",
@@ -225,11 +237,11 @@
         "blocks": [
           {
             "type": "paragraph",
-            "text": "Website and email providers may process technical or support information in countries other than your own. Those countries may have different privacy laws. Where required, providers and we must use recognized safeguards for international transfers."
+            "text": "Apple, Google, website, network, and email providers may process technical or support information in countries other than your own. Those countries may have different privacy laws. Where required, providers and we must use recognized safeguards for international transfers."
           },
           {
             "type": "paragraph",
-            "text": "Local app data remains subject to your device, platform, backup, and export choices and is not intentionally transferred to us."
+            "text": "Fasting history, goals, notes, settings, and other local app content remain subject to your device, platform, backup, and export choices and are not intentionally transferred to us through analytics or crash reporting."
           }
         ]
       },
@@ -274,8 +286,8 @@
   "terms": {
     "id": "terms-of-use",
     "title": "Terms of Use",
-    "version": "1.2",
-    "effectiveDate": "2026-06-21",
+    "version": "1.3",
+    "effectiveDate": "2026-06-22",
     "description": "Terms governing Simple Fasting, including eligibility, health disclaimers, app-store terms, local data, acceptable use, sanctions, and future features.",
     "intro": "These terms govern use of the Simple Fasting app and website. They include important health, local-data, app-store, and legal-compliance provisions.",
     "sections": [
@@ -399,7 +411,7 @@
         "blocks": [
           {
             "type": "paragraph",
-            "text": "The Privacy Policy explains current data practices, including limited privacy-filtered diagnostic events stored locally after certain app errors. The current app has no free or paid account, advertising SDK, analytics SDK, cross-app tracking, or Simple Fasting backend. Local-first does not mean that your unlocked device, notifications, widgets, device backups, emails, diagnostic reports, or exported files cannot expose information to others."
+            "text": "The Privacy Policy explains current data practices, including no analytics SDK, no installation identifier, native Apple App Store Connect and Google Play Console crash reporting where available through the platforms, and local diagnostic events stored after certain app errors. The current app has no free or paid account, advertising SDK, cross-app tracking, behavioral profiling, or Simple Fasting backend. Local-first does not mean that your unlocked device, notifications, widgets, device backups, platform crash reports, emails, diagnostic reports, or exported files cannot expose information to others."
           },
           {
             "type": "paragraph",
@@ -427,7 +439,7 @@
         "blocks": [
           {
             "type": "paragraph",
-            "text": "App stores, operating systems, devices, email providers, hosting providers, export destinations, and linked websites are operated by others. Their availability, security, terms, privacy practices, fees, and decisions are outside our control."
+            "text": "App stores, operating systems, devices, Apple App Store Connect, Google Play Console, email providers, hosting providers, export destinations, and linked websites are operated by others. Their availability, security, terms, privacy practices, fees, and decisions are outside our control."
           },
           {
             "type": "paragraph",
@@ -556,7 +568,7 @@
   "faq": {
     "id": "faq",
     "title": "Frequently Asked Questions",
-    "version": "1.2",
+    "version": "1.3",
     "description": "Answers about Simple Fasting accounts, privacy, tracking, email, local diagnostics, exports, health, availability, and future changes.",
     "intro": "Practical answers about the current Simple Fasting app. Features described as future or planned are not part of the current release.",
     "sections": [
@@ -575,12 +587,16 @@
         ]
       },
       {
-        "id": "does-the-free-app-track-me",
-        "title": "Does the free app track me?",
+        "id": "does-the-free-app-use-analytics",
+        "title": "Does the free app use analytics?",
         "blocks": [
           {
             "type": "paragraph",
-            "text": "No. The current app has no advertising SDK, analytics SDK, cross-app tracking, behavioral profiling, or Simple Fasting backend. We do not sell personal information or share it for targeted advertising."
+            "text": "No. The current app does not use an analytics SDK, does not track product events, and does not create an installation identifier. There is no PostHog, Sentry, advertising identifier, cross-app tracking, behavioral profiling, session replay, or analytics backend in V1."
+          },
+          {
+            "type": "paragraph",
+            "text": "The app does not send fasting dates, times, durations, history, goals, notes, reminder schedules, export contents, contacts, GPS location, email, or other health or personal content to analytics."
           },
           {
             "type": "paragraph",
@@ -660,11 +676,15 @@
         "blocks": [
           {
             "type": "paragraph",
-            "text": "It does not send analytics or crash reports automatically. After certain storage, reminder-restoration, or rendering errors, the app may keep up to 50 recent diagnostic events locally. These events contain limited error and app-build context and are designed not to contain fasting history, goals, notes, settings, advertising identifiers, or device identifiers."
+            "text": "The app does not include a third-party crash-reporting SDK. Apple App Store Connect and Google Play Console may provide native crash, ANR, device, operating-system, app-version, and release-health information according to the app store and device settings controlled by those platforms."
           },
           {
             "type": "paragraph",
-            "text": "In Settings, Report bug offers an optional diagnostic JSON file through the operating-system share sheet. Nothing is sent unless you choose that option and a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the diagnostic log."
+            "text": "Separately, after certain storage, reminder-restoration, or rendering errors, the app may keep up to 50 recent diagnostic events locally. These events contain limited error and app-build context and are designed not to contain fasting history, goals, notes, settings, advertising identifiers, or device identifiers."
+          },
+          {
+            "type": "paragraph",
+            "text": "In Settings, Report bug offers an optional local diagnostic JSON file through the operating-system share sheet. That file is not shared unless you choose it and a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the local diagnostic log."
           }
         ]
       },
@@ -710,7 +730,11 @@
           },
           {
             "type": "paragraph",
-            "text": "The app asks for notification permission on first launch. If allowed, fast-end reminders start enabled and daily reminders remain off until you opt in. If denied, reminder settings stay unavailable until notifications are allowed in the device's system settings."
+            "text": "On first launch, onboarding explains notifications and lets you choose **Allow Notifications** or **Not Now**. If allowed, fast-end reminders start enabled and daily reminders remain off until you opt in. If skipped or denied, reminder settings show **Enable Notifications** until notifications are allowed in the device's system settings."
+          },
+          {
+            "type": "paragraph",
+            "text": "The app reads notification permission directly from iOS or Android on app launch, foreground, and Settings open. It does not store a separate notifications-enabled flag."
           },
           {
             "type": "paragraph",

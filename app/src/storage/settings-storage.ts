@@ -24,6 +24,7 @@ import {
   cancelScheduledNotification,
   getLocalNotificationPermissionState,
   LocalNotificationPermissionState,
+  openLocalNotificationSettings,
   requestLocalNotificationPermission,
   scheduleDailyReminderNotification,
 } from '@/storage/notification-storage';
@@ -376,36 +377,58 @@ export const setDataViewPreference = (dataViewPreference: DataViewPreferenceType
     updatedAt: now(),
   }));
 
-export const updateNotificationSettings = (
-  update: (notifications: NotificationSettings) => NotificationSettings,
-): AppSettings =>
+export const completeNotificationOnboarding = ({
+  notificationsAllowed,
+}: {
+  notificationsAllowed: boolean;
+}): AppSettings =>
   updateSettings((settings) => ({
     ...settings,
-    notifications: update(settings.notifications),
+    onboardingCompleted: true,
+    notificationPromptShown: true,
+    notifications: {
+      ...settings.notifications,
+      fastEndReminderEnabled: notificationsAllowed,
+      dailyReminderEnabled: false,
+      dailyReminderNotificationId: notificationsAllowed
+        ? settings.notifications.dailyReminderNotificationId
+        : null,
+    },
     updatedAt: now(),
   }));
 
-export const initializeNotificationPermission = async (): Promise<LocalNotificationPermissionState> => {
-  const initialState = await getLocalNotificationPermissionState();
+export const updateNotificationSettings = (
+  update: (notifications: NotificationSettings) => NotificationSettings,
+): AppSettings => {
+  return updateSettings((currentSettings) => ({
+    ...currentSettings,
+    notifications: update(currentSettings.notifications),
+    updatedAt: now(),
+  }));
+};
 
-  if (initialState === LocalNotificationPermissionState.Granted) {
-    return initialState;
+export const syncNotificationPermissionState = async (): Promise<LocalNotificationPermissionState> => {
+  const permissionState = await getLocalNotificationPermissionState();
+
+  if (permissionState === LocalNotificationPermissionState.Granted) {
+    return permissionState;
   }
 
-  const granted =
-    initialState === LocalNotificationPermissionState.Undetermined
-      ? await requestLocalNotificationPermission()
-      : false;
+  const settings = getSettings();
+
+  await Promise.all([
+    cancelScheduledNotification(settings.notifications.dailyReminderNotificationId),
+    cancelScheduledNotification(appStorage.get(StorageKey.ActiveFast)?.fastEndNotificationId ?? null),
+  ]);
 
   updateNotificationSettings((notifications) => ({
     ...notifications,
-    fastEndReminderEnabled: granted,
+    fastEndReminderEnabled: false,
     dailyReminderEnabled: false,
+    dailyReminderNotificationId: null,
   }));
 
-  return granted
-    ? LocalNotificationPermissionState.Granted
-    : LocalNotificationPermissionState.Denied;
+  return permissionState;
 };
 
 export const reconcileDailyReminderNotification = async (): Promise<AppSettings> => {
@@ -611,6 +634,7 @@ export const shareDataExport = async (format: SettingsExportFormat): Promise<voi
 export {
   getLocalNotificationPermissionState,
   LocalNotificationPermissionState,
+  openLocalNotificationSettings,
   requestLocalNotificationPermission,
 };
 

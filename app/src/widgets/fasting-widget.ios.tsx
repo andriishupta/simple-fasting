@@ -21,6 +21,7 @@ type FastingWidgetProps = {
   goalDurationHours: number;
   goalEndsAt: number;
   goalLabel: string;
+  progress: number;
   startedAt: number;
   status: 'active' | 'inactive';
   timerView: TimerViewPreference;
@@ -81,7 +82,7 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
         widgetURL(appUrl),
       ]}>
       <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(accentColor)]}>
-        FASTING · SIMPLE FASTING
+        SIMPLE FASTING
       </Text>
       <Text modifiers={[font({ size: 14, weight: 'semibold' }), foregroundStyle(primaryColor)]}>
         {props.goalLabel}
@@ -91,7 +92,10 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
         {props.timerView === 'remaining' && hasGoal ? 'REMAINING' : 'ELAPSED'}
       </Text>
       <Text
-        timerInterval={{ lower: startedAt, upper: hasGoal ? goalEndsAt : distantFuture }}
+        timerInterval={{
+          lower: props.timerView === 'remaining' && hasGoal ? new Date() : startedAt,
+          upper: props.timerView === 'remaining' && hasGoal ? goalEndsAt : distantFuture,
+        }}
         countsDown={hasGoal && props.timerView === 'remaining'}
         modifiers={[
           font({ size: 27, weight: 'bold', design: 'rounded' }),
@@ -100,8 +104,7 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
       />
       {hasGoal ? (
         <ProgressView
-          timerInterval={{ lower: startedAt, upper: goalEndsAt }}
-          countsDown={false}
+          value={props.progress}
           modifiers={[progressViewStyle('linear'), foregroundStyle(accentColor)]}
         />
       ) : null}
@@ -122,6 +125,7 @@ export const updateFastingWidget = (state: ActiveFastState): void => {
           goalDurationHours: 0,
           goalEndsAt: 0,
           goalLabel: '',
+          progress: 0,
           startedAt: 0,
           status: 'inactive',
           timerView: TimerViewPreference.Elapsed,
@@ -130,6 +134,7 @@ export const updateFastingWidget = (state: ActiveFastState): void => {
           goalDurationHours: model.goalDurationHours,
           goalEndsAt: model.goalEndsAt,
           goalLabel: model.headline,
+          progress: model.progress,
           startedAt: model.startedAt,
           status: 'active',
           timerView: model.timerView,

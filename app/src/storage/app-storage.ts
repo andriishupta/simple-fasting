@@ -96,6 +96,8 @@ export type AppSettings = {
   goals: readonly FastingGoal[];
   lastUsedGoalDurationHours: number;
   dataViewPreference: DataViewPreference;
+  onboardingCompleted: boolean;
+  notificationPromptShown: boolean;
   notifications: NotificationSettings;
   updatedAt: Timestamp;
 };
@@ -238,6 +240,8 @@ export const createDefaultAppSettings = (updatedAt: Timestamp): AppSettings => (
   goals: createDefaultGoals(updatedAt),
   lastUsedGoalDurationHours: 16,
   dataViewPreference: DataViewPreference.Stats,
+  onboardingCompleted: false,
+  notificationPromptShown: false,
   notifications: {
     fastEndReminderEnabled: false,
     dailyReminderEnabled: false,

@@ -181,5 +181,9 @@ export const initializeAppStorage = (): void => {
     StorageKey.Diagnostics,
     diagnostics ?? createEmptyDiagnosticsState(timestamp),
   );
+};
 
+export const resetAppStorage = (): void => {
+  appStorage.clear();
+  initializeAppStorage();
 };
