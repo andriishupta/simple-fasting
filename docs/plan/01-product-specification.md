@@ -108,12 +108,12 @@ Settings uses consistent grouped native-style surfaces.
 - System, Light, and Dark themes;
 - horizontally scrolling accent-color selector;
 - accent changes only after scrolling settles.
-- goal time display format, defaulting to hours and optionally showing day-based labels; the preference is used consistently on Fast, Goals, History, widgets, and local fast-end reminder text.
 
 ### Goals
 
 Goals is a native stack screen with a transparent large-title header.
 
+- goal time display format, defaulting to hours and optionally showing day-based labels; the preference is used consistently on Fast, Goals, History, widgets, and local fast-end reminder text;
 - standard goals can be enabled or disabled but not deleted;
 - custom goals can be enabled/disabled, created, edited, and deleted;
 - goals can be reordered with a visible drag handle and the order persists in MMKV;
@@ -177,7 +177,7 @@ MMKV keys:
 
 Settings stores `onboardingCompleted` and `notificationPromptShown`. It does not store `notificationsEnabled`; notification availability is derived from `Notifications.getPermissionsAsync()` because iOS and Android permissions can change outside the app.
 
-State management uses React state, small hooks, and MMKV subscriptions. No global state framework is used.
+State management uses React state, small hooks, and MMKV subscriptions. No global state framework is used. The active timer derives elapsed time from `startedAt` and the device clock; it does not persist or accumulate elapsed seconds.
 Statistics and charts are derived directly from History; no unused persisted cache or speculative widget settings are kept.
 
 Storage initialization failures show retry and explicit reset controls. Optional notification restoration failures do not block access to fasting data or the core timer.
@@ -186,7 +186,7 @@ Storage initialization, reminder restoration, and render failures can add a limi
 
 The app does not add PostHog, Sentry, or another analytics/crash-reporting SDK in V1. Basic release reliability should use native Apple App Store Connect and Google Play Console crash/vitals reporting where available through the platforms. Missing platform reports never block startup or a local app operation.
 
-Before the first public release, storage changes may be breaking and development data may be reset when explicitly approved. After the first public release, persisted schema changes require migrations and backward compatibility.
+Until the project is explicitly declared production/public, all app work is V1 pre-release work. Storage changes may be breaking and development data may be reset when explicitly approved. Future migrations should be considered when shaping data, but migrations and compatibility layers are not implemented unless explicitly requested. After the first public release is declared, persisted schema changes require migrations and backward compatibility.
 
 ## UI System
 
@@ -198,8 +198,10 @@ The application should feel calm, minimal, fast, and native.
 - Expo Router navigation, stack headers, native tab chrome, and picker items resolve from the same app theme and accent palette.
 - Native tab bars use an opaque themed background during tab transitions; native segmented and date/time controls receive the resolved app appearance explicitly.
 - Persisted MMKV settings are loaded before the first themed render, and explicit Light/Dark preferences are synchronized with native `Appearance` so UIKit/Android controls do not briefly use the wrong scheme.
+- The active timer and progress ring avoid JS interval ticks; elapsed time is calculated from the saved start time and refreshed by native/UI-thread timing with foreground resynchronization.
 - Native splash has no artificial delay and uses a minimal black/white mark. After local storage initialization, the app goes directly to onboarding or the home tabs without an additional branded animation.
-- First-run onboarding is limited to the notification explanation screen: “Stay informed about your fasts,” with **Allow Notifications** and **Not Now** actions.
+- First-run onboarding starts with a welcome screen explaining Simple Fasting, local/offline use, no tracking, accent colors, and simple reminders. Users must explicitly check agreement to the Terms of Use and Privacy Policy before continuing.
+- After agreement, onboarding shows the notification explanation screen: “Stay informed about your fasts,” with **Allow Notifications** and **Not Now** actions.
 - Neutral page background with consistent white/dark surfaces, thin borders, and grouped rows.
 - Safe-area and native tab-bar spacing on both platforms.
 - Minimal animation; platform-native transitions are preferred.

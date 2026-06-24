@@ -189,6 +189,9 @@ export const repairSettings = (
         : isEnumValue(dataViewPreferences, value.dataViewPreference)
           ? value.dataViewPreference
           : defaults.dataViewPreference,
+    legalConsentAccepted: isBoolean(value.legalConsentAccepted)
+      ? value.legalConsentAccepted
+      : defaults.legalConsentAccepted,
     onboardingCompleted: isBoolean(value.onboardingCompleted)
       ? value.onboardingCompleted
       : defaults.onboardingCompleted,

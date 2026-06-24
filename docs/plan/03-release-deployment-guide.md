@@ -133,7 +133,7 @@ Do not advertise medium/large widgets, Live Activities, Dynamic Island, bulk his
 6. Submit to TestFlight and Google Play internal testing.
 7. Fix release-blocking issues without adding unrelated features.
 8. Submit production builds.
-9. After public release, require explicit storage migrations for every persisted schema change.
+9. After the project is explicitly declared public/production, require explicit storage migrations for every persisted schema change.
 
 ## Release Criteria
 

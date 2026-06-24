@@ -31,7 +31,7 @@ describe('fasting widget model', () => {
 
     expect(model).toEqual(expect.objectContaining({
       status: 'active',
-      displayTime: '2h 30m',
+      displayTime: '02:30:00',
       headline: 'Fasting goal · 2 hours',
       subtitle: 'Elapsed',
       progress: 1,
@@ -52,7 +52,7 @@ describe('fasting widget model', () => {
     };
 
     expect(createFastingWidgetModel(state, now, '18:6')).toEqual(
-      expect.objectContaining({ displayTime: '1h 30m', headline: '18:6 · 4 hours', subtitle: 'Remaining', progress: 0.625 }),
+      expect.objectContaining({ displayTime: '01:30:00', headline: '18:6 · 4 hours', subtitle: 'Remaining', progress: 0.625 }),
     );
     expect(createFastingWidgetModel({
       ...state,
@@ -67,7 +67,7 @@ describe('fasting widget model', () => {
     );
     expect(createFastingWidgetModel(state, Date.parse('2026-06-22T10:00:00.000Z'))).toEqual(
       expect.objectContaining({
-        displayTime: '24h 00m',
+        displayTime: '24:00:00',
         progress: 1,
         subtitle: 'Elapsed',
         timerView: TimerViewPreference.Elapsed,
@@ -89,7 +89,7 @@ describe('fasting widget model', () => {
 
     expect(model).toEqual(expect.objectContaining({
       status: 'active',
-      displayTime: '0h 00m',
+      displayTime: '00:00:00',
       hasGoal: false,
       progress: 0,
       headline: 'Open-ended fast',

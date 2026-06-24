@@ -117,11 +117,11 @@ Apple, Google, website, network, and email providers may process technical or su
 
 Fasting history, goals, notes, settings, and other local app content remain subject to your device, platform, backup, and export choices and are not intentionally transferred to us through analytics or crash reporting.
 
-## 13. Future accounts, paid features, and integrations
+## 13. New functionality
 
-We may add optional accounts, synchronization, paid features, health integrations, or other functionality in a future release. Those features are not part of the current app.
+The current app is Version 1 and does not include accounts, synchronization, paid features, health integrations, analytics SDKs, or a Simple Fasting backend.
 
-Before a new feature begins collecting or transmitting information in a materially different way, we will update this policy, describe the relevant data and purposes, and request permission or consent where required. A future free tier will not be treated as permission for advertising tracking or sale of personal information. Paid functionality may require separate payment-provider and account disclosures.
+Before any new feature begins collecting or transmitting information in a materially different way, we will update this policy, describe the relevant data and purposes, and request permission or consent where required.
 
 We will not silently turn existing local-only fasting information into remotely collected information.
 

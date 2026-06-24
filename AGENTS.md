@@ -55,7 +55,7 @@ Use this reference table to choose the right document before starting work:
 | General product behavior, feature requirements, architecture, UX, privacy, data model, widgets, notifications, app store metadata | `plan/01-product-specification.md` | You need the broad source of truth or are implementing v1 app behavior.                  |
 | Implementation sequencing, task breakdown, epic scope, development order                                                          | `plan/02-execution-plan.md`        | You need to decide what to build next or keep work aligned with the execution plan.      |
 | Release, deployment, platform setup, store preparation, EAS, TestFlight, Google Play, testing strategy                            | `plan/03-release-deployment-guide.md` | You are changing deployment, release, platform configuration, or store-facing materials. |
-| Future roadmap, versioning, migrations beyond v1, sync, accounts, health integrations, premium features                           | `plan/04-future-roadmap.md`        | You are evaluating whether a requested feature belongs now or is a future-version item.  |
+| V1 parking-lot scope, deferred ideas, sync, accounts, health integrations, premium features                                        | `plan/04-future-roadmap.md`        | You are evaluating whether a requested feature belongs in current V1 work or remains deferred. |
 
 When unsure, start with `plan/01-product-specification.md`, then consult the more specific document if the work is about execution order, deployment, or future evolution.
 
@@ -248,9 +248,9 @@ Requirements:
 - Versioned schema
 - Typed validation
 
-Before the first public v1 release, breaking storage changes are allowed when explicitly requested. Do not add compatibility code for abandoned development-only shapes by default, and do not clear local data without approval.
+Until the project is explicitly declared production/public, all app work is V1 pre-release work. Breaking storage changes and local data resets are allowed when they simplify the app or improve correctness, but do not clear local data without approval.
 
-After the first public release, persisted schema changes require migrations, backward compatibility, and upgrade testing. Persisted structures should remain migration-friendly now.
+Think about future migrations when shaping data, but do not implement compatibility layers or migrations for abandoned development-only shapes unless explicitly requested. After the first public release is declared, persisted schema changes will require migrations, backward compatibility, and upgrade testing.
 
 ---
 

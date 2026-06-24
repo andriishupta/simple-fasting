@@ -10,6 +10,7 @@ import { AppErrorBoundary } from '@/components/app-error-boundary';
 import { FastSavedNoticeProvider } from '@/components/fast-saved-notice-context';
 import { NotificationOnboardingScreen } from '@/components/notification-onboarding-screen';
 import { ThemedView } from '@/components/themed-view';
+import { WelcomeOnboardingScreen } from '@/components/welcome-onboarding-screen';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { AppThemeProvider, useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
 import { DiagnosticEventKind } from '@/storage/app-storage';
@@ -20,7 +21,10 @@ import {
 } from '@/storage/fasting-storage';
 import {
   reconcileDailyReminderNotification,
+  acceptLegalConsent,
   completeNotificationOnboarding,
+  openPrivacyPolicy,
+  openTerms,
   requestLocalNotificationPermission,
   refreshSettingsSnapshot,
   syncNotificationPermissionState,
@@ -190,10 +194,20 @@ function RootLayoutContent({
     completeNotificationOnboarding({ notificationsAllowed: false });
     refreshSettingsSnapshot();
   };
+  const acceptOnboardingLegalConsent = (): void => {
+    acceptLegalConsent();
+    refreshSettingsSnapshot();
+  };
 
   return (
     <ThemeProvider value={navigationTheme}>
-      {startupState.status === 'ready' && !settings.onboardingCompleted ? (
+      {startupState.status === 'ready' && !settings.legalConsentAccepted ? (
+        <WelcomeOnboardingScreen
+          onAccept={acceptOnboardingLegalConsent}
+          onOpenPrivacyPolicy={() => void openPrivacyPolicy()}
+          onOpenTerms={() => void openTerms()}
+        />
+      ) : startupState.status === 'ready' && !settings.onboardingCompleted ? (
         <NotificationOnboardingScreen
           onAllowNotifications={allowOnboardingNotifications}
           onSkip={skipOnboardingNotifications}

@@ -1,16 +1,28 @@
 import { useEffect, useState } from 'react';
 import {
   Alert,
+  AppState,
   Pressable,
   StyleSheet,
   Switch,
+  TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';
 import { router } from 'expo-router';
 import { ArrowDown, ArrowUp, CheckCircle2, ChevronRight } from 'lucide-react-native';
-import Animated, { FadeIn, FadeInUp, FadingTransition } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  FadeIn,
+  FadeInUp,
+  FadingTransition,
+  useAnimatedProps,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 
 import { AppButton } from '@/components/app-button';
 import { FeedbackState } from '@/components/feedback-state';
@@ -31,8 +43,6 @@ import { useTheme } from '@/hooks/use-theme';
 import {
   cancelFast,
   endFast,
-  formatDuration,
-  getElapsedSeconds,
   getGoalSeconds,
   setActiveFastEndReminderEnabled,
   setActiveFastTimerView,
@@ -44,6 +54,7 @@ import {
   setLastUsedGoalDurationHours,
   useSettings,
 } from '@/storage/settings-storage';
+import { formatDuration, formatDurationWorklet } from '@/utils/fasting-duration';
 
 const getInitialGoalId = (
   goals: readonly { id: string; targetDurationHours: number }[],
@@ -53,6 +64,87 @@ const getInitialGoalId = (
 
 const formatDateTime = (date: Date): string =>
   new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+
+const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+type AnimatedTextInputProps = {
+  text: string;
+  defaultValue: string;
+};
+const liveTimerHorizonSeconds = 366 * 24 * 60 * 60;
+
+const getElapsedSecondsFromStart = (startedAtMs: number): number =>
+  Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000));
+
+const getShownTimerSecondsWorklet = ({
+  elapsedSeconds,
+  goalSeconds,
+  timerView,
+}: {
+  elapsedSeconds: number;
+  goalSeconds: number | null;
+  timerView: TimerViewPreference;
+}): number => {
+  'worklet';
+
+  if (
+    timerView === TimerViewPreference.Remaining &&
+    goalSeconds !== null &&
+    elapsedSeconds < goalSeconds
+  ) {
+    return goalSeconds - elapsedSeconds;
+  }
+
+  return elapsedSeconds;
+};
+
+const getShownTimerLabelWorklet = ({
+  elapsedSeconds,
+  goalSeconds,
+  timerView,
+}: {
+  elapsedSeconds: number;
+  goalSeconds: number | null;
+  timerView: TimerViewPreference;
+}): string => {
+  'worklet';
+
+  return timerView === TimerViewPreference.Remaining &&
+    goalSeconds !== null &&
+    elapsedSeconds < goalSeconds
+    ? 'Remaining'
+    : 'Elapsed';
+};
+
+const useElapsedSecondsValue = (startedAt: string): SharedValue<number> => {
+  const startedAtMs = new Date(startedAt).getTime();
+  const elapsedSeconds = useSharedValue(getElapsedSecondsFromStart(startedAtMs));
+
+  useEffect(() => {
+    const startNativeTimer = (): void => {
+      const currentElapsedSeconds = getElapsedSecondsFromStart(startedAtMs);
+
+      cancelAnimation(elapsedSeconds);
+      elapsedSeconds.value = currentElapsedSeconds;
+      elapsedSeconds.value = withTiming(currentElapsedSeconds + liveTimerHorizonSeconds, {
+        duration: liveTimerHorizonSeconds * 1000,
+        easing: Easing.linear,
+      });
+    };
+
+    startNativeTimer();
+
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') startNativeTimer();
+    });
+
+    return () => {
+      subscription.remove();
+      cancelAnimation(elapsedSeconds);
+    };
+  }, [elapsedSeconds, startedAtMs]);
+
+  return elapsedSeconds;
+};
 
 export default function HomeScreen() {
   const { height } = useWindowDimensions();
@@ -83,7 +175,6 @@ export default function HomeScreen() {
   const [reason, setReason] = useState('');
   const [noteVisible, setNoteVisible] = useState(false);
   const [customDurationExpanded, setCustomDurationExpanded] = useState(false);
-  const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [operationError, setOperationError] = useState<string | null>(null);
   const activeSession = activeFastState.session;
   const shouldScroll =
@@ -97,13 +188,6 @@ export default function HomeScreen() {
     enabledGoals.some((goal) => goal.id === selectedGoalId)
       ? selectedGoalId
       : getInitialGoalId(enabledGoals, settings.lastUsedGoalDurationHours);
-
-  useEffect(() => {
-    if (activeSession === null) return;
-
-    const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, [activeSession]);
 
   const selectedGoal =
     enabledGoals.find((goal) => goal.id === effectiveSelectedGoalId) ?? storedGoal;
@@ -138,7 +222,6 @@ export default function HomeScreen() {
       });
       setReason('');
       setNoteVisible(false);
-      setCurrentTime(Date.now());
       setOperationError(null);
       dismissSavedFastNotice();
     } catch {
@@ -150,7 +233,7 @@ export default function HomeScreen() {
     try {
       const completedSession = await endFast();
       setOperationError(null);
-      if (completedSession !== null) setCurrentTime(Date.now());
+      if (completedSession === null) return;
     } catch {
       setOperationError('The fast could not be ended. Your active fast is still saved locally.');
     }
@@ -175,7 +258,8 @@ export default function HomeScreen() {
     <TabScreenShell
       scrollEnabled={shouldScroll}
       keyboardShouldPersistTaps="handled"
-      maxWidth={Math.min(MaxContentWidth, 560)}>
+      maxWidth={Math.min(MaxContentWidth, 560)}
+      contentStyle={styles.homeContent}>
         <ScreenHeading align="center">Simple Fasting</ScreenHeading>
         {operationError !== null ? (
           <FeedbackState
@@ -214,7 +298,6 @@ export default function HomeScreen() {
               goalDurationFormat={settings.goalDurationFormat}
               startedAt={activeSession.startedAt}
               reason={activeSession.reason}
-              elapsedSeconds={getElapsedSeconds(activeSession, currentTime)}
               goalSeconds={
                 activeSession.goalDurationHours > 0 ? getGoalSeconds(activeSession) : null
               }
@@ -329,7 +412,6 @@ function ActiveFast({
   goalDurationFormat,
   startedAt,
   reason,
-  elapsedSeconds,
   goalSeconds,
   reminderEnabled,
   timerView,
@@ -343,7 +425,6 @@ function ActiveFast({
   goalDurationFormat: GoalDurationFormat;
   startedAt: string;
   reason: string | null;
-  elapsedSeconds: number;
   goalSeconds: number | null;
   reminderEnabled: boolean;
   timerView: TimerViewPreference;
@@ -353,81 +434,85 @@ function ActiveFast({
   onCancel: () => void;
 }) {
   const theme = useTheme();
-  const { width } = useWindowDimensions();
-  const ringSize = Math.min(244, width - Spacing.four * 2);
-  const progress = goalSeconds === null ? 1 : Math.min(1, elapsedSeconds / goalSeconds);
-  const remainingSeconds = goalSeconds === null ? null : Math.max(0, goalSeconds - elapsedSeconds);
-  const shownSeconds =
-    timerView === TimerViewPreference.Remaining && remainingSeconds !== null
-      ? remainingSeconds
-      : elapsedSeconds;
   const startedDate = new Date(startedAt);
   const endDate = goalSeconds === null ? null : new Date(startedDate.getTime() + goalSeconds * 1000);
   const goalTitle = goalDurationHours > 0 ? goalName : 'Open-ended fast';
   const goalSubtitle =
     goalDurationHours > 0 ? formatGoalDuration(goalDurationHours, goalDurationFormat) : 'No time limit';
+  const initialElapsedSeconds = getElapsedSecondsFromStart(startedDate.getTime());
+  const elapsedSeconds = useElapsedSecondsValue(startedAt);
 
   return (
     <Animated.View entering={FadeIn.duration(180)} style={styles.active}>
-      <View style={styles.activeHeading}>
-        <ThemedText
-          selectable
-          style={styles.activeGoalName}>
-          {goalTitle}
-        </ThemedText>
-        <ThemedText type="subtitle" themeColor="textSecondary" selectable style={styles.activeGoalDuration}>
-          {goalSubtitle}
-        </ThemedText>
-      </View>
-      <ProgressRing
-        size={ringSize}
-        progress={progress}
-        color={theme.accent}
-        trackColor={theme.backgroundSelected}>
-        <View style={styles.timerContent}>
-          <View style={styles.timerLabelRow}>
-            <ThemedText themeColor="textSecondary">
-            {timerView === TimerViewPreference.Elapsed ? 'Elapsed' : 'Remaining'}
-            </ThemedText>
-            {goalSeconds !== null ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Show ${timerView === TimerViewPreference.Elapsed ? 'remaining' : 'elapsed'} time`}
-                onPress={() =>
-                  onTimerViewChange(
-                    timerView === TimerViewPreference.Elapsed
-                      ? TimerViewPreference.Remaining
-                      : TimerViewPreference.Elapsed,
-                  )
-                }
-                hitSlop={10}
-                style={({ pressed }) => [
-                  styles.timerViewButton,
-                  { backgroundColor: theme.accentBackground },
-                  pressed && styles.pressed,
-                ]}>
-                {timerView === TimerViewPreference.Elapsed ? (
-                  <ArrowUp size={17} color={theme.accent} strokeWidth={2.4} />
-                ) : (
-                  <ArrowDown size={17} color={theme.accent} strokeWidth={2.4} />
-                )}
-              </Pressable>
-            ) : null}
-          </View>
-          <ThemedText type="title" selectable style={styles.timer}>
-            {formatDuration(shownSeconds)}
-          </ThemedText>
-        </View>
-      </ProgressRing>
-
       <View
         style={[
-          styles.metrics,
+          styles.activeFastCard,
           { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
         ]}>
-        <Metric label="Started" value={formatDateTime(startedDate)} />
-        <View style={[styles.metricDivider, { backgroundColor: theme.backgroundSelected }]} />
-        <Metric label="Ends" value={endDate === null ? 'No planned end' : formatDateTime(endDate)} />
+        <View style={styles.activeFastTopLine}>
+          <View style={styles.activeDurationGroup}>
+            <View style={styles.timerLabelRow}>
+              <LiveTimerLabel
+                elapsedSeconds={elapsedSeconds}
+                goalSeconds={goalSeconds}
+                timerView={timerView}
+                color={theme.textSecondary}
+                initialElapsedSeconds={initialElapsedSeconds}
+              />
+              {goalSeconds !== null ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Show ${timerView === TimerViewPreference.Elapsed ? 'remaining' : 'elapsed'} time`}
+                  onPress={() =>
+                    onTimerViewChange(
+                      timerView === TimerViewPreference.Elapsed
+                        ? TimerViewPreference.Remaining
+                        : TimerViewPreference.Elapsed,
+                    )
+                  }
+                  hitSlop={10}
+                  style={({ pressed }) => [
+                    styles.timerViewButton,
+                    { backgroundColor: theme.accentBackground },
+                    pressed && styles.pressed,
+                  ]}>
+                  {timerView === TimerViewPreference.Elapsed ? (
+                    <ArrowUp size={17} color={theme.accent} strokeWidth={2.4} />
+                  ) : (
+                    <ArrowDown size={17} color={theme.accent} strokeWidth={2.4} />
+                  )}
+                </Pressable>
+              ) : null}
+            </View>
+            <LiveTimerText
+              elapsedSeconds={elapsedSeconds}
+              goalSeconds={goalSeconds}
+              timerView={timerView}
+              color={theme.text}
+              accessibilityLabel="Fasting timer"
+              initialElapsedSeconds={initialElapsedSeconds}
+            />
+          </View>
+          <View style={styles.activeGoalSummary}>
+            <ThemedText type="smallBold" style={styles.activeGoalSummaryName} numberOfLines={1}>
+              {goalTitle}
+            </ThemedText>
+            <ThemedText type="smallBold" themeColor="accent" style={styles.activeGoalSummaryDuration}>
+              {goalSubtitle}
+            </ThemedText>
+          </View>
+        </View>
+        <LinearTimerProgress
+          elapsedSeconds={elapsedSeconds}
+          goalSeconds={goalSeconds}
+          color={theme.accent}
+          trackColor={theme.backgroundSelected}
+        />
+        <View style={styles.activeFastTimes}>
+          <Metric label="Started" value={formatDateTime(startedDate)} />
+          <View style={[styles.metricDivider, { backgroundColor: theme.backgroundSelected }]} />
+          <Metric label="Ends" value={endDate === null ? 'No planned end' : formatDateTime(endDate)} />
+        </View>
       </View>
 
       {reason !== null ? (
@@ -477,49 +562,121 @@ function ActiveFast({
   );
 }
 
-function ProgressRing({
-  size,
-  progress,
+function LinearTimerProgress({
+  elapsedSeconds,
+  goalSeconds,
   color,
   trackColor,
-  children,
 }: {
-  size: number;
-  progress: number;
+  elapsedSeconds: SharedValue<number>;
+  goalSeconds: number | null;
   color: string;
   trackColor: string;
-  children: React.ReactNode;
 }) {
-  const strokeWidth = 14;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
+  const progressStyle = useAnimatedStyle(() => {
+    const progress =
+      goalSeconds === null ? 1 : Math.min(1, Math.max(0, elapsedSeconds.value / goalSeconds));
+
+    return {
+      width: `${progress * 100}%`,
+    };
+  }, [goalSeconds]);
 
   return (
-    <View style={{ width: size, height: size }}>
-      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={trackColor}
-          strokeWidth={strokeWidth}
-        />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={circumference * (1 - progress)}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-      </Svg>
-      {children}
+    <View
+      accessible
+      accessibilityLabel={
+        goalSeconds === null
+          ? 'Open-ended fasting timer'
+          : 'Fasting goal progress'
+      }
+      style={[styles.timerProgressTrack, { backgroundColor: trackColor }]}>
+      <Animated.View style={[styles.timerProgressFill, { backgroundColor: color }, progressStyle]} />
     </View>
+  );
+}
+
+function LiveTimerLabel({
+  elapsedSeconds,
+  goalSeconds,
+  timerView,
+  color,
+  initialElapsedSeconds,
+}: {
+  elapsedSeconds: SharedValue<number>;
+  goalSeconds: number | null;
+  timerView: TimerViewPreference;
+  color: string;
+  initialElapsedSeconds: number;
+}) {
+  const animatedProps = useAnimatedProps(() => {
+    const text = getShownTimerLabelWorklet({
+      elapsedSeconds: elapsedSeconds.value,
+      goalSeconds,
+      timerView,
+    });
+
+    return { text, defaultValue: text } satisfies AnimatedTextInputProps;
+  });
+
+  return (
+    <AnimatedTextInput
+      editable={false}
+      focusable={false}
+      pointerEvents="none"
+      underlineColorAndroid="transparent"
+      animatedProps={animatedProps as never}
+      defaultValue={getShownTimerLabelWorklet({
+        elapsedSeconds: initialElapsedSeconds,
+        goalSeconds,
+        timerView,
+      })}
+      style={[styles.timerLabel, { color }]}
+    />
+  );
+}
+
+function LiveTimerText({
+  elapsedSeconds,
+  goalSeconds,
+  timerView,
+  color,
+  accessibilityLabel,
+  initialElapsedSeconds,
+}: {
+  elapsedSeconds: SharedValue<number>;
+  goalSeconds: number | null;
+  timerView: TimerViewPreference;
+  color: string;
+  accessibilityLabel: string;
+  initialElapsedSeconds: number;
+}) {
+  const getText = (value: number): string =>
+    formatDuration(
+      getShownTimerSecondsWorklet({ elapsedSeconds: value, goalSeconds, timerView }),
+    );
+  const animatedProps = useAnimatedProps(() => {
+    const shownSeconds = getShownTimerSecondsWorklet({
+      elapsedSeconds: elapsedSeconds.value,
+      goalSeconds,
+      timerView,
+    });
+    const text = formatDurationWorklet(shownSeconds);
+
+    return { text, defaultValue: text } satisfies AnimatedTextInputProps;
+  });
+
+  return (
+    <AnimatedTextInput
+      accessibilityLabel={accessibilityLabel}
+      editable={false}
+      focusable={false}
+      pointerEvents="none"
+      underlineColorAndroid="transparent"
+      animatedProps={animatedProps as never}
+      defaultValue={getText(initialElapsedSeconds)}
+      style={[styles.timer, { color }]}
+    />
   );
 }
 
@@ -535,7 +692,14 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  stateContent: { flex: 1 },
+  homeContent: {
+    justifyContent: 'center',
+  },
+  stateContent: {
+    width: '100%',
+    flex: 1,
+    justifyContent: 'center',
+  },
   savedNotice: {
     minHeight: 64,
     flexDirection: 'row',
@@ -548,33 +712,14 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
   },
   savedNoticeText: { flex: 1, gap: Spacing.half },
-  ready: { flex: 1, gap: Spacing.three },
+  ready: { width: '100%', gap: Spacing.three },
   centeredText: { textAlign: 'center' },
   readyFooter: { minHeight: 56 },
   primaryAction: {
     width: '100%',
     minHeight: 56,
   },
-  active: { alignItems: 'center', gap: Spacing.three, paddingTop: Spacing.two },
-  activeHeading: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.four,
-  },
-  activeGoalName: {
-    textAlign: 'center',
-    fontSize: 32,
-    lineHeight: 38,
-    fontWeight: '700',
-  },
-  activeGoalDuration: {
-    textAlign: 'center',
-    fontSize: 18,
-    lineHeight: 24,
-    fontVariant: ['tabular-nums'],
-  },
+  active: { width: '100%', alignItems: 'center', gap: Spacing.three },
   timerViewButton: {
     width: 30,
     height: 30,
@@ -582,23 +727,68 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 15,
   },
-  timerLabelRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  timerContent: {
-    position: 'absolute',
-    inset: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.one,
-  },
-  timer: { fontVariant: ['tabular-nums'], fontSize: 42, lineHeight: 50 },
-  metrics: {
+  activeFastCard: {
     width: '100%',
+    gap: Spacing.two,
+    borderWidth: 1,
+    borderRadius: 20,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+  },
+  activeFastTopLine: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+  },
+  activeDurationGroup: {
+    flex: 1,
+    gap: Spacing.half,
+  },
+  activeGoalSummary: {
+    maxWidth: '42%',
+    alignItems: 'flex-end',
+    gap: Spacing.half,
+  },
+  activeGoalSummaryName: {
+    maxWidth: '100%',
+    textAlign: 'right',
+  },
+  activeGoalSummaryDuration: {
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
+  },
+  timerLabelRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  timerLabel: {
+    padding: 0,
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '400',
+  },
+  timer: {
+    minWidth: 190,
+    padding: 0,
+    textAlign: 'left',
+    fontSize: 40,
+    lineHeight: 48,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  timerProgressTrack: {
+    width: '100%',
+    height: 7,
+    overflow: 'hidden',
+    borderRadius: 4,
+  },
+  timerProgressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  activeFastTimes: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    borderWidth: 1,
-    borderRadius: 18,
-    borderCurve: 'continuous',
-    paddingVertical: Spacing.three,
+    paddingTop: Spacing.one,
   },
   metric: { flex: 1, alignItems: 'center', gap: Spacing.one, paddingHorizontal: Spacing.two },
   metricDivider: { width: 1 },

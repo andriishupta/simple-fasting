@@ -4,6 +4,7 @@ import {
   type ActiveFastState,
 } from '@/storage/app-storage';
 import { formatGoalDuration } from '@/utils/fast-goals';
+import { formatDuration } from '@/utils/fasting-duration';
 
 export type FastingWidgetModel =
   | {
@@ -26,13 +27,6 @@ export type FastingWidgetModel =
       timerView: TimerViewPreference;
     };
 
-const formatTimerMinutes = (minutes: number): string => {
-  const safeMinutes = Math.max(0, Math.floor(minutes));
-  const hours = Math.floor(safeMinutes / 60);
-
-  return `${hours}h ${String(safeMinutes % 60).padStart(2, '0')}m`;
-};
-
 export const createFastingWidgetModel = (
   state: ActiveFastState,
   currentTime = Date.now(),
@@ -51,16 +45,16 @@ export const createFastingWidgetModel = (
   }
 
   const startedAt = Date.parse(session.startedAt);
-  const elapsedMinutes = Math.max(0, Math.floor((currentTime - startedAt) / 60_000));
-  const goalMinutes = session.goalDurationHours * 60;
-  const hasGoal = goalMinutes > 0;
+  const elapsedSeconds = Math.max(0, Math.floor((currentTime - startedAt) / 1000));
+  const goalSeconds = session.goalDurationHours * 3600;
+  const hasGoal = goalSeconds > 0;
   const showsRemaining =
-    timerViewPreference === TimerViewPreference.Remaining && hasGoal && elapsedMinutes < goalMinutes;
-  const shownMinutes =
+    timerViewPreference === TimerViewPreference.Remaining && hasGoal && elapsedSeconds < goalSeconds;
+  const shownSeconds =
     showsRemaining
-      ? goalMinutes - elapsedMinutes
-      : elapsedMinutes;
-  const displayTime = formatTimerMinutes(shownMinutes);
+      ? goalSeconds - elapsedSeconds
+      : elapsedSeconds;
+  const displayTime = formatDuration(shownSeconds);
 
   return {
     status: 'active',
@@ -70,9 +64,9 @@ export const createFastingWidgetModel = (
       ? `${goalName ?? 'Fasting goal'} · ${formatGoalDuration(session.goalDurationHours, goalDurationFormat)}`
       : 'Open-ended fast',
     goalDurationHours: session.goalDurationHours,
-    goalEndsAt: startedAt + goalMinutes * 60_000,
+    goalEndsAt: startedAt + goalSeconds * 1000,
     hasGoal,
-    progress: hasGoal ? Math.min(1, elapsedMinutes / goalMinutes) : 0,
+    progress: hasGoal ? Math.min(1, elapsedSeconds / goalSeconds) : 0,
     startedAt,
     subtitle:
       showsRemaining

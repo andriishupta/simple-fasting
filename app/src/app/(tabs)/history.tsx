@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import {
   Alert,
   InteractionManager,
@@ -40,8 +40,9 @@ import {
 } from '@/storage/app-storage';
 import { useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
 import { setDataViewPreference, useSettings } from '@/storage/settings-storage';
-import { getChartData, getFastingStats } from '@/utils/fasting-analytics';
+import { getChartData, getFastingStats, type ChartData } from '@/utils/fasting-analytics';
 import { formatGoalDuration } from '@/utils/fast-goals';
+import { getLocalDayKey } from '@/utils/fasting-statistics';
 
 type DataView = DataViewPreference;
 
@@ -55,13 +56,38 @@ const formatLocaleDateTime = (timestamp: string): string =>
     timeStyle: 'short',
   }).format(new Date(timestamp));
 
+let chartDataCache: { key: string; value: ChartData } | null = null;
+
+const getChartDataCacheKey = (history: HistoryState, locale?: string): string =>
+  [
+    history.updatedAt,
+    history.sessions.length,
+    history.sessions[0]?.id ?? 'none',
+    history.sessions[0]?.updatedAt ?? 'none',
+    getLocalDayKey(new Date()),
+    locale ?? 'default',
+  ].join(':');
+
+const getCachedChartData = (history: HistoryState, locale?: string): ChartData => {
+  const key = getChartDataCacheKey(history, locale);
+  if (chartDataCache?.key === key) return chartDataCache.value;
+
+  const value = getChartData(history, new Date(), locale);
+  chartDataCache = { key, value };
+  return value;
+};
+
 export default function DataScreen() {
   const { height } = useWindowDimensions();
   const settings = useSettings();
   const [selectedView, setSelectedView] = useState<DataView>(settings.dataViewPreference);
+  const [chartsMounted, setChartsMounted] = useState(
+    () => settings.dataViewPreference === DataViewPreference.Charts,
+  );
   const shouldScroll = selectedView !== DataViewPreference.Stats || height < 700;
   const selectDataView = (view: DataView): void => {
     setSelectedView(view);
+    if (view === DataViewPreference.Charts) setChartsMounted(true);
 
     if (view !== settings.dataViewPreference) {
       InteractionManager.runAfterInteractions(() => setDataViewPreference(view));
@@ -73,15 +99,21 @@ export default function DataScreen() {
       scrollEnabled={shouldScroll}
       maxWidth={Math.min(MaxContentWidth, 640)}>
       <ScreenHeading>Data</ScreenHeading>
-      <DataPanel selectedView={selectedView} onSelectView={selectDataView} />
+      <DataPanel
+        chartsMounted={chartsMounted}
+        selectedView={selectedView}
+        onSelectView={selectDataView}
+      />
     </TabScreenShell>
   );
 }
 
 function DataPanel({
+  chartsMounted,
   selectedView,
   onSelectView,
 }: {
+  chartsMounted: boolean;
   selectedView: DataView;
   onSelectView: (view: DataView) => void;
 }) {
@@ -100,7 +132,13 @@ function DataPanel({
             <HistoryList sessions={historyState.sessions} />
           )}
           {selectedView === DataViewPreference.Stats && <StatsPanel history={historyState} />}
-          {selectedView === DataViewPreference.Charts && <ChartsPanel history={historyState} />}
+          {chartsMounted ? (
+            <View
+              pointerEvents={selectedView === DataViewPreference.Charts ? 'auto' : 'none'}
+              style={selectedView === DataViewPreference.Charts ? undefined : styles.hiddenPanel}>
+              <ChartsPanel history={historyState} />
+            </View>
+          ) : null}
         </>
       ) : (
         <View style={styles.emptyState}>
@@ -308,15 +346,6 @@ function HistoryItem({
             { backgroundColor: theme.background },
             pressed && styles.pressed,
           ]}>
-          <View style={styles.itemText}>
-            <HistorySummary
-              session={session}
-              durationSeconds={getSessionDurationSeconds(session)}
-              endedLabel={
-                session.endedAt === null ? 'In progress' : formatLocaleDateTime(session.endedAt)
-              }
-            />
-          </View>
           {selecting ? (
             <View
               style={[
@@ -328,9 +357,17 @@ function HistoryItem({
               ]}>
               {selected ? <Check size={15} color={theme.background} strokeWidth={3} /> : null}
             </View>
-          ) : (
-            <ChevronRight size={18} color={theme.textSecondary} />
-          )}
+          ) : null}
+          <View style={styles.itemText}>
+            <HistorySummary
+              session={session}
+              durationSeconds={getSessionDurationSeconds(session)}
+              showChevron={!selecting}
+              endedLabel={
+                session.endedAt === null ? 'In progress' : formatLocaleDateTime(session.endedAt)
+              }
+            />
+          </View>
         </Pressable>
       </ReanimatedSwipeable>
     </Animated.View>
@@ -340,10 +377,12 @@ function HistoryItem({
 function HistorySummary({
   session,
   durationSeconds,
+  showChevron,
   endedLabel,
 }: {
   session: FastSession;
   durationSeconds: number;
+  showChevron: boolean;
   endedLabel: string;
 }) {
   const theme = useTheme();
@@ -358,16 +397,17 @@ function HistorySummary({
       <View style={styles.historyTopLine}>
         <View style={styles.durationGroup}>
           <ThemedText type="small" themeColor="textSecondary">Duration</ThemedText>
-          <View style={styles.durationLine}>
-            <ThemedText type="smallBold">{formatDuration(durationSeconds)}</ThemedText>
-            <View style={[styles.goalPill, { backgroundColor: theme.accentBackground }]}>
-              <ThemedText type="smallBold" themeColor="accent">
-                {session.goalDurationHours <= 0
-                  ? 'Open-ended'
-                  : `${formatGoalDuration(session.goalDurationHours, settings.goalDurationFormat)} goal`}
-              </ThemedText>
-            </View>
+          <ThemedText type="smallBold">{formatDuration(durationSeconds)}</ThemedText>
+        </View>
+        <View style={styles.goalAction}>
+          <View style={[styles.goalPill, { backgroundColor: theme.accentBackground }]}>
+            <ThemedText type="smallBold" themeColor="accent">
+              {session.goalDurationHours <= 0
+                ? 'Open-ended'
+                : formatGoalDuration(session.goalDurationHours, settings.goalDurationFormat)}
+            </ThemedText>
           </View>
+          {showChevron ? <ChevronRight size={18} color={theme.textSecondary} /> : null}
         </View>
       </View>
       {progress !== null ? (
@@ -385,6 +425,7 @@ function HistorySummary({
       ) : null}
       <View style={styles.historyTimes}>
         <HistoryTime label="Started" value={formatLocaleDateTime(session.startedAt)} />
+        <View style={[styles.historyTimeDivider, { backgroundColor: theme.backgroundSelected }]} />
         <HistoryTime label="Ended" value={endedLabel} />
       </View>
       {session.reason !== null && (
@@ -399,8 +440,12 @@ function HistorySummary({
 function HistoryTime({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.historyTime}>
-      <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
-      <ThemedText type="smallBold" selectable>{value}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary" style={styles.historyTimeText}>
+        {label}
+      </ThemedText>
+      <ThemedText type="smallBold" selectable style={styles.historyTimeText}>
+        {value}
+      </ThemedText>
     </View>
   );
 }
@@ -435,8 +480,8 @@ function StatTile({ label, value }: {
   );
 }
 
-function ChartsPanel({ history }: { history: HistoryState }) {
-  const chartData = useMemo(() => getChartData(history), [history]);
+const ChartsPanel = memo(function ChartsPanel({ history }: { history: HistoryState }) {
+  const chartData = useMemo(() => getCachedChartData(history), [history]);
 
   return (
     <Animated.View entering={FadeIn.duration(180)} layout={FadingTransition} style={styles.content}>
@@ -469,7 +514,7 @@ function ChartsPanel({ history }: { history: HistoryState }) {
       </ChartSection>
     </Animated.View>
   );
-}
+}, (previous, next) => previous.history.updatedAt === next.history.updatedAt);
 
 function ChartSection({
   title,
@@ -499,6 +544,9 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  hiddenPanel: {
+    display: 'none',
+  },
   viewPicker: {
     minHeight: 36,
   },
@@ -511,7 +559,7 @@ const styles = StyleSheet.create({
   item: {
     minHeight: 76,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: Spacing.three,
     padding: Spacing.three,
   },
@@ -524,6 +572,7 @@ const styles = StyleSheet.create({
   selectionIndicator: {
     width: 24,
     height: 24,
+    alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
@@ -539,14 +588,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   historySummary: { gap: Spacing.two },
-  historyTopLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  historyTopLine: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+  },
   durationGroup: { gap: Spacing.half },
-  durationLine: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, flexWrap: 'wrap' },
+  goalAction: {
+    flexShrink: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: Spacing.one,
+  },
   goalPill: { borderRadius: Radius.pill, paddingHorizontal: Spacing.two, paddingVertical: Spacing.one },
   historyProgressTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
   historyProgressFill: { height: '100%', borderRadius: 3 },
-  historyTimes: { flexDirection: 'row', gap: Spacing.three },
-  historyTime: { flex: 1, gap: Spacing.half },
+  historyTimes: { flexDirection: 'row', alignItems: 'stretch' },
+  historyTime: { flex: 1, alignItems: 'center', gap: Spacing.half },
+  historyTimeText: { textAlign: 'center' },
+  historyTimeDivider: {
+    width: StyleSheet.hairlineWidth,
+    alignSelf: 'stretch',
+    marginHorizontal: Spacing.three,
+  },
   statGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

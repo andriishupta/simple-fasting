@@ -8,7 +8,6 @@ import * as WebBrowser from 'expo-web-browser';
 import {
   appStorage,
   createDefaultAppSettings,
-  createEmptyActiveFastState,
   StorageKey,
   AccentColorName,
   FastingGoalType,
@@ -30,7 +29,6 @@ import {
   requestLocalNotificationPermission,
   scheduleDailyReminderNotification,
 } from '@/storage/notification-storage';
-import { updateFastingWidget } from '@/widgets/fasting-widget';
 
 export enum SettingsExportFormat {
   Json = 'json',
@@ -220,17 +218,12 @@ export const setLastUsedGoalDurationHours = (lastUsedGoalDurationHours: number):
 
 export const setGoalDurationFormat = (
   goalDurationFormat: GoalDurationFormatType,
-): AppSettings => {
-  const settings = updateSettings((currentSettings) => ({
+): AppSettings =>
+  updateSettings((currentSettings) => ({
     ...currentSettings,
     goalDurationFormat,
     updatedAt: now(),
   }));
-
-  updateFastingWidget(appStorage.get(StorageKey.ActiveFast) ?? createEmptyActiveFastState(now()));
-
-  return settings;
-};
 
 const createGoalId = (): string =>
   `goal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -336,6 +329,8 @@ export const deleteFastingGoal = (goalId: string): boolean => {
 
 export const moveFastingGoal = (goalId: string, destinationIndex: number): AppSettings =>
   updateSettings((settings) => {
+    if (!Number.isFinite(destinationIndex)) return settings;
+
     const sourceIndex = settings.goals.findIndex((goal) => goal.id === goalId);
     if (sourceIndex < 0) return settings;
 
@@ -344,6 +339,8 @@ export const moveFastingGoal = (goalId: string, destinationIndex: number): AppSe
 
     const goals = [...settings.goals];
     const [goal] = goals.splice(sourceIndex, 1);
+    if (goal === undefined) return settings;
+
     goals.splice(boundedDestination, 0, goal);
 
     return { ...settings, goals, updatedAt: now() };
@@ -411,6 +408,13 @@ export const completeNotificationOnboarding = ({
         ? settings.notifications.dailyReminderNotificationId
         : null,
     },
+    updatedAt: now(),
+  }));
+
+export const acceptLegalConsent = (): AppSettings =>
+  updateSettings((settings) => ({
+    ...settings,
+    legalConsentAccepted: true,
     updatedAt: now(),
   }));
 

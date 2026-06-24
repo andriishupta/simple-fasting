@@ -31,6 +31,7 @@ describe('app storage', () => {
       lastUsedGoalDurationHours: 16,
       goalDurationFormat: GoalDurationFormat.Hours,
       dataViewPreference: DataViewPreference.Stats,
+      legalConsentAccepted: false,
       onboardingCompleted: false,
       notificationPromptShown: false,
     });

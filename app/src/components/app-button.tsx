@@ -18,6 +18,7 @@ export function AppButton({
   variant = 'primary',
   fullWidth = false,
   style,
+  disabled,
   ...pressableProps
 }: AppButtonProps) {
   const theme = useTheme();
@@ -56,9 +57,11 @@ export function AppButton({
         styles.button,
         fullWidth && styles.fullWidth,
         colors,
-        pressed && styles.pressed,
+        disabled && styles.disabled,
+        pressed && !disabled && styles.pressed,
         style,
       ]}
+      disabled={disabled}
       {...pressableProps}>
       <ThemedText type="smallBold" style={{ color: colors.color }}>
         {label}
@@ -82,5 +85,8 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.72,
+  },
+  disabled: {
+    opacity: 0.45,
   },
 });

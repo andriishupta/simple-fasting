@@ -258,7 +258,7 @@ All persistent data should:
 
 - Have types
 - Have schema versioning
-- Remain easy to migrate after public release
+- Remain simple enough to migrate after public release
 
 Example:
 
@@ -270,9 +270,9 @@ Example:
 
 Storage must survive app updates.
 
-Before the first public v1 release, explicitly requested breaking model changes do not need development-only backward compatibility. Keep the current shape internally valid, do not retain dead compatibility branches, and do not clear local data unless approved.
+Until the project is explicitly declared production/public, all app work is V1 pre-release work. Breaking model changes are allowed when they simplify the app or improve correctness, and development-only backward compatibility is not required. Keep the current shape internally valid, do not retain dead compatibility branches, and do not clear local data unless approved.
 
-After the first public release, storage must survive updates through explicit migrations and upgrade tests.
+Think about future migrations while naming and shaping data, but do not build migrations now unless explicitly requested. After the first public release is declared, storage must survive updates through explicit migrations and upgrade tests.
 
 ---
 
@@ -527,7 +527,7 @@ Canonical Privacy Policy, Terms of Use, and FAQ Markdown lives under `/docs`, ou
 
 ## Automated Testing
 
-- Keep storage, migration, notification, calculation, chart/statistics, export, and widget-model behavior covered by deterministic Jest tests.
+- Keep storage, notification, calculation, chart/statistics, export, and widget-model behavior covered by deterministic Jest tests. Migration tests are only required when an actual migration exists.
 - Use storage-level integration tests for complete local workflows and side-effect coordination.
 - Use React Native Testing Library for component interaction or native-render integration where it adds evidence.
 - Keep `.maestro` flows accessibility-label based and platform-neutral; the EAS workflow must run the same flow list on iOS and Android.

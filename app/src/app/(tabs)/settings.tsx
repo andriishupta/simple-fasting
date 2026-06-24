@@ -1,15 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   AppState,
   Alert,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Switch,
   View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
 } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { Picker } from '@expo/ui/community/picker';
@@ -38,6 +35,7 @@ import {
 } from 'lucide-react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { CenteredWheelPicker } from '@/components/centered-wheel-picker';
 import { ScreenHeading } from '@/components/screen-heading';
 import { TabScreenShell } from '@/components/tab-screen-shell';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -329,13 +327,16 @@ export default function SettingsScreen() {
             selectedAccentName={settings.accentColorName}
             onSelect={setAccentColorName}
           />
-          <GoalDurationFormatPicker
-            selectedValue={settings.goalDurationFormat}
-            onSelect={setGoalDurationFormat}
-          />
         </SettingsSection>
 
         <SettingsSection title="Goals">
+          <GoalDurationFormatPicker
+            selectedValue={settings.goalDurationFormat}
+            onSelect={(goalDurationFormat) => {
+              setGoalDurationFormat(goalDurationFormat);
+              refreshFastSnapshots();
+            }}
+          />
           <SettingsActionRow
             icon={Target}
             title="Manage fasting goals"
@@ -607,43 +608,7 @@ function AccentPicker({
   onSelect: (accentColorName: AccentColorName) => void;
 }) {
   const theme = useTheme();
-  const scrollRef = useRef<ScrollView>(null);
-  const scrollStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [viewportWidth, setViewportWidth] = useState(0);
   const selectedIndex = accentOptions.indexOf(selectedAccentName);
-  const sideInset = Math.max(0, (viewportWidth - accentItemWidth) / 2);
-
-  useEffect(() => {
-    if (viewportWidth === 0) return;
-
-    scrollRef.current?.scrollTo({ x: selectedIndex * accentItemWidth, animated: false });
-  }, [selectedIndex, viewportWidth]);
-
-  useEffect(
-    () => () => {
-      if (scrollStopTimerRef.current !== null) clearTimeout(scrollStopTimerRef.current);
-    },
-    [],
-  );
-
-  const selectStoppedAccent = (offsetX: number): void => {
-    const index = Math.max(
-      0,
-      Math.min(accentOptions.length - 1, Math.round(offsetX / accentItemWidth)),
-    );
-
-    onSelect(accentOptions[index]);
-  };
-  const scheduleStoppedAccent = (event: NativeSyntheticEvent<NativeScrollEvent>): void => {
-    if (scrollStopTimerRef.current !== null) clearTimeout(scrollStopTimerRef.current);
-
-    const offsetX = event.nativeEvent.contentOffset.x;
-    scrollStopTimerRef.current = setTimeout(() => selectStoppedAccent(offsetX), 120);
-  };
-  const finishAccentScroll = (event: NativeSyntheticEvent<NativeScrollEvent>): void => {
-    if (scrollStopTimerRef.current !== null) clearTimeout(scrollStopTimerRef.current);
-    selectStoppedAccent(event.nativeEvent.contentOffset.x);
-  };
 
   return (
     <View style={styles.accentControl}>
@@ -653,49 +618,43 @@ function AccentPicker({
           {accentColorLabels[selectedAccentName]}
         </ThemedText>
       </View>
-      <View
-        onLayout={(event) => setViewportWidth(event.nativeEvent.layout.width)}
-        style={styles.accentViewport}>
-        <ScrollView
-          ref={scrollRef}
-          horizontal
-          accessibilityRole="adjustable"
-          accessibilityLabel="Accent color"
-          showsHorizontalScrollIndicator={false}
-          decelerationRate="fast"
-          snapToInterval={accentItemWidth}
-          snapToAlignment="start"
-          scrollEventThrottle={16}
-          onScroll={scheduleStoppedAccent}
-          onMomentumScrollEnd={finishAccentScroll}
-          contentContainerStyle={{ paddingHorizontal: sideInset }}>
-          {accentOptions.map((accentName) => (
-            <View key={accentName} style={styles.accentItem}>
-              <View
-                style={[
-                  styles.accentSwatch,
-                  { backgroundColor: accentColorValues[accentName] },
-                ]}
-              />
-              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-                {accentColorLabels[accentName]}
-              </ThemedText>
-            </View>
-          ))}
-        </ScrollView>
-        <View
-          pointerEvents="none"
-          style={[
-            styles.accentSelection,
-            {
-              left: sideInset,
-              transform: [{ translateX: (accentItemWidth - 48) / 2 }],
-              borderColor: theme.accent,
-              boxShadow: `0 0 0 4px ${theme.accentBackground}`,
-            },
-          ]}
-        />
-      </View>
+      <CenteredWheelPicker
+        accessibilityLabel="Accent color"
+        itemWidth={accentItemWidth}
+        items={accentOptions}
+        keyExtractor={(accentName) => accentName}
+        getItemAccessibilityLabel={(accentName) => `${accentColorLabels[accentName]} accent color`}
+        selectedIndex={selectedIndex}
+        viewportStyle={styles.accentViewport}
+        onSelectIndex={(index) => {
+          const accentName = accentOptions[index];
+          if (accentName !== undefined) onSelect(accentName);
+        }}
+        renderItem={(accentName) => (
+          <View style={styles.accentItem}>
+            <View
+              style={[styles.accentSwatch, { backgroundColor: accentColorValues[accentName] }]}
+            />
+            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+              {accentColorLabels[accentName]}
+            </ThemedText>
+          </View>
+        )}
+        renderOverlay={({ sideInset }) => (
+          <View
+            pointerEvents="none"
+            style={[
+              styles.accentSelection,
+              {
+                left: sideInset,
+                transform: [{ translateX: (accentItemWidth - 48) / 2 }],
+                borderColor: theme.accent,
+                boxShadow: `0 0 0 4px ${theme.accentBackground}`,
+              },
+            ]}
+          />
+        )}
+      />
     </View>
   );
 }
@@ -712,7 +671,7 @@ function GoalDurationFormatPicker({
   return (
     <View style={[styles.goalFormatControl, { borderTopColor: theme.backgroundSelected }]}>
       <View style={styles.goalFormatHeading}>
-        <ThemedText type="smallBold">Goal time display</ThemedText>
+        <ThemedText type="smallBold">Display format</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           Used across Fast, Goals, History, and widgets.
         </ThemedText>

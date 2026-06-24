@@ -48,7 +48,7 @@ The active state shows a compact progress timer, start/end times, local reminder
 
 ### Settings
 
-- **Appearance** — System/Light/Dark, settled-scroll accent selection, and the app-wide goal time display format.
+- **Appearance** — System/Light/Dark and settled-scroll accent selection.
 - **Goals** — opens Goals.
 - **Notifications** — fast-end reminder and daily reminder with a minimal Hours/Minutes wheel that follows the active theme without a nested card or redundant label.
 - **Data** — non-destructive JSON/CSV import, JSON export, CSV export, and Clear data.
@@ -57,7 +57,7 @@ The active state shows a compact progress timer, start/end times, local reminder
 
 ### Supporting Stack Screens
 
-- **Goals** — standard and custom goals can be enabled/disabled and reordered with a persisted drag handle; custom goals also expose chevron edit and swipe-to-delete. A floating plus opens the add-goal editor. At least one goal remains enabled.
+- **Goals** — app-wide goal time display format, standard and custom goals that can be enabled/disabled and reordered with a persisted drag handle, and custom goal edit/swipe-to-delete. A floating plus opens the add-goal editor. At least one goal remains enabled.
 - **Edit Fast** — reuses the Fast screen’s active goal selector, Custom/Open-ended actions, and Note control; Start and End use theme-aware native date/time controls. End time is required. Save and Delete are the only bottom actions.
 - **FAQ** — offline local help.
 - **Privacy Policy** — offline local copy.
@@ -89,7 +89,7 @@ The fallback `src/widgets/fasting-widget.tsx` must keep the same `.tsx` extensio
 
 Notifications are local only through `expo-notifications`.
 
-On first launch, a small onboarding screen explains reminders and offers **Allow Notifications** or **Not Now**. Granting notification permission enables fast-end reminders while daily reminders remain opt-in. Skipping or denying notifications keeps reminders off and shows an **Enable Notifications** action in Settings.
+On first launch, onboarding starts with a welcome screen that explains the privacy-first, offline-first app behavior and requires explicit agreement to the Terms of Use and Privacy Policy. It then shows the reminder screen with **Allow Notifications** or **Not Now**. Granting notification permission enables fast-end reminders while daily reminders remain opt-in. Skipping or denying notifications keeps reminders off and shows an **Enable Notifications** action in Settings.
 
 - fast-end notification for a planned fast;
 - optional daily reminder;
@@ -103,7 +103,7 @@ There is no push-notification server.
 MMKV stores:
 
 - `metadata`;
-- `settings` — preferences, goal duration display format, goals, reminder preferences, `onboardingCompleted`, and `notificationPromptShown`;
+- `settings` — preferences, goal duration display format, goals, reminder preferences, `legalConsentAccepted`, `onboardingCompleted`, and `notificationPromptShown`;
 - `activeFast`;
 - `history`.
 - `diagnostics` — at most 50 recent privacy-filtered local app errors.
@@ -111,6 +111,8 @@ MMKV stores:
 The app does not store a `notificationsEnabled` value. Notification availability is always derived from `expo-notifications` permission state because users can change it in iOS or Android settings outside the app.
 
 History is the source of truth for statistics and charts, which are derived in memory rather than persisted in a separate cache. Users can import JSON or CSV exports without overwriting existing or time-overlapping sessions; the result reports saved and skipped counts. Users can also export through the native share sheet, bulk-delete selected history entries, and clear all local data with confirmation.
+
+The active timer derives elapsed time from the saved `startedAt` timestamp and the device clock. The Fast screen avoids JS interval ticks for the active counter/progress ring and resynchronizes on foreground; widgets use their platform timer APIs where available.
 
 Core fasting writes complete before optional notification cleanup or rescheduling. If the platform notification service fails, local fasting state remains usable and startup does not enter a blocking recovery screen.
 
@@ -120,15 +122,15 @@ Storage initialization, reminder restoration, and render errors can be recorded 
 
 Startup prioritizes reaching the timer quickly. Native splash is hidden as soon as synchronous local storage initialization succeeds or fails. The app does not run an additional branded splash animation; it shows either onboarding or the home tabs immediately after startup is ready.
 
-The onboarding state stores only `onboardingCompleted` and `notificationPromptShown` in MMKV. The notification permission itself is never stored.
+The onboarding state stores `legalConsentAccepted`, `onboardingCompleted`, and `notificationPromptShown` in MMKV. The notification permission itself is never stored.
 
 ## Reporting and diagnostics
 
 The app has no analytics SDK, event tracking, telemetry backend, installation UUID, advertising identifier usage, or anonymous profile. V1 relies on Apple App Store Connect and Google Play Console Android Vitals for native platform crash and release-health reporting where the user, platform, and store settings allow it.
 
-Local diagnostics are stored only on-device and leave the app only when the user chooses **Report bug → Share diagnostics** and selects a destination from the native share sheet. Do not add PostHog, Sentry, or another reporting SDK for V1–V3 without an explicit product/privacy decision and updated legal documentation.
+Local diagnostics are stored only on-device and leave the app only when the user chooses **Report bug → Share diagnostics** and selects a destination from the native share sheet. Do not add PostHog, Sentry, or another reporting SDK in V1 without an explicit product/privacy decision and updated legal documentation.
 
-Before the first public release, breaking local schema changes are acceptable. After release, persisted changes require explicit migrations and backward compatibility.
+Until the project is explicitly declared production/public, app work is V1 pre-release work. Breaking local schema changes and local data resets are acceptable when approved and useful for correctness or simplicity. Think about future migrations, but do not build migration or compatibility layers now unless explicitly requested.
 
 ## Technical Stack
 
@@ -195,7 +197,7 @@ Static exports verify bundling but do not replace simulator/device testing for n
 
 ## Testing and CI
 
-- Jest unit tests cover calculations, statistics/charts, goal selection, reminders, validation/migrations, exports, and widget view models.
+- Jest unit tests cover calculations, statistics/charts, goal selection, reminders, validation, exports, and widget view models.
 - Storage integration tests exercise start/end/cancel/edit/delete/reconcile flows against the MMKV adapter and verify notification/widget coordination.
 - React Native Testing Library checks shared-document rendering and interaction semantics.
 - Maestro flows in `.maestro` cover the primary user paths. `.eas/workflows/e2e.yml` runs them against both iOS simulator and Android APK builds.

@@ -1,17 +1,12 @@
+import { type ReactNode } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { router } from 'expo-router';
 import { ChevronRight, GripVertical, Plus, Trash2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
 
 import { AppSurface } from '@/components/app-surface';
+import { DraggableListRow } from '@/components/draggable-list-row';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -23,6 +18,8 @@ import {
   useSettings,
 } from '@/storage/settings-storage';
 import { formatGoalDuration } from '@/utils/fast-goals';
+
+const goalRowHeight = 84;
 
 export default function GoalsScreen() {
   const settings = useSettings();
@@ -111,33 +108,20 @@ function GoalRow({
 }) {
   const theme = useTheme();
   const settings = useSettings();
-  const translateY = useSharedValue(0);
-  const dragGesture = Gesture.Pan()
-    .activateAfterLongPress(120)
-    .onUpdate(({ translationY }) => {
-      translateY.value = translationY;
-    })
-    .onEnd(({ translationY }) => {
-      const rowOffset = Math.round(translationY / 84);
-      if (rowOffset !== 0) runOnJS(onMove)(index + rowOffset);
-      translateY.value = withSpring(0, { damping: 18, stiffness: 220 });
-    });
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-    zIndex: translateY.value === 0 ? 0 : 2,
-  }));
   const isCustom = goal.type === FastingGoalType.Custom;
-  const content = (
+  const dragHandle = (
+    <View
+      accessible
+      accessibilityRole="adjustable"
+      accessibilityLabel={`Reorder ${goal.name}`}
+      style={styles.dragHandle}>
+      <GripVertical size={20} color={theme.textSecondary} />
+    </View>
+  );
+  const renderContent = (wrappedDragHandle: ReactNode) => (
     <AppSurface style={styles.goalCard}>
       <View style={styles.goalHeader}>
-        <GestureDetector gesture={dragGesture}>
-          <Animated.View
-            accessibilityRole="adjustable"
-            accessibilityLabel={`Reorder ${goal.name}`}
-            style={styles.dragHandle}>
-            <GripVertical size={20} color={theme.textSecondary} />
-          </Animated.View>
-        </GestureDetector>
+        {wrappedDragHandle}
         <Pressable
           accessibilityRole={isCustom ? 'button' : undefined}
           accessibilityLabel={isCustom ? `Edit ${goal.name}` : undefined}
@@ -174,31 +158,37 @@ function GoalRow({
   );
 
   return (
-    <Animated.View style={animatedStyle}>
-      {isCustom ? (
-        <ReanimatedSwipeable
-          containerStyle={styles.swipeable}
-          childrenContainerStyle={styles.swipeableChildren}
-          friction={2}
-          overshootRight={false}
-          renderRightActions={() => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Delete ${goal.name}`}
-              onPress={onDelete}
-              style={[styles.deleteAction, { backgroundColor: theme.danger }]}>
-              <Trash2 size={20} color={theme.dangerForeground} />
-              <ThemedText type="smallBold" style={{ color: theme.dangerForeground }}>
-                Delete
-              </ThemedText>
-            </Pressable>
-          )}>
-          {content}
-        </ReanimatedSwipeable>
-      ) : (
-        content
+    <DraggableListRow
+      dragHandle={dragHandle}
+      index={index}
+      rowHeight={goalRowHeight}
+      onMove={onMove}>
+      {(wrappedDragHandle) => (
+        isCustom ? (
+          <ReanimatedSwipeable
+            containerStyle={styles.swipeable}
+            childrenContainerStyle={styles.swipeableChildren}
+            friction={2}
+            overshootRight={false}
+            renderRightActions={() => (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Delete ${goal.name}`}
+                onPress={onDelete}
+                style={[styles.deleteAction, { backgroundColor: theme.danger }]}>
+                <Trash2 size={20} color={theme.dangerForeground} />
+                <ThemedText type="smallBold" style={{ color: theme.dangerForeground }}>
+                  Delete
+                </ThemedText>
+              </Pressable>
+            )}>
+            {renderContent(wrappedDragHandle)}
+          </ReanimatedSwipeable>
+        ) : (
+          renderContent(wrappedDragHandle)
+        )
       )}
-    </Animated.View>
+    </DraggableListRow>
   );
 }
 

@@ -246,16 +246,16 @@
         ]
       },
       {
-        "id": "future-accounts-paid-features-and-integrations",
-        "title": "13. Future accounts, paid features, and integrations",
+        "id": "new-functionality",
+        "title": "13. New functionality",
         "blocks": [
           {
             "type": "paragraph",
-            "text": "We may add optional accounts, synchronization, paid features, health integrations, or other functionality in a future release. Those features are not part of the current app."
+            "text": "The current app is Version 1 and does not include accounts, synchronization, paid features, health integrations, analytics SDKs, or a Simple Fasting backend."
           },
           {
             "type": "paragraph",
-            "text": "Before a new feature begins collecting or transmitting information in a materially different way, we will update this policy, describe the relevant data and purposes, and request permission or consent where required. A future free tier will not be treated as permission for advertising tracking or sale of personal information. Paid functionality may require separate payment-provider and account disclosures."
+            "text": "Before any new feature begins collecting or transmitting information in a materially different way, we will update this policy, describe the relevant data and purposes, and request permission or consent where required."
           },
           {
             "type": "paragraph",
@@ -420,16 +420,16 @@
         ]
       },
       {
-        "id": "future-accounts-paid-features-and-separate-terms",
-        "title": "9. Future accounts, paid features, and separate terms",
+        "id": "new-functionality-and-separate-terms",
+        "title": "9. New functionality and separate terms",
         "blocks": [
           {
             "type": "paragraph",
-            "text": "We may offer optional accounts, synchronization, integrations, subscriptions, purchases, or other paid functionality in the future. They are not included in the current service."
+            "text": "The current Version 1 service does not include accounts, synchronization, integrations, subscriptions, purchases, or other paid functionality."
           },
           {
             "type": "paragraph",
-            "text": "New functionality may require additional terms, privacy disclosures, permissions, eligibility rules, prices, billing terms, or third-party agreements presented before use or purchase. We may choose not to launch, or may later modify or discontinue, planned features."
+            "text": "If new functionality is added later, it may require additional terms, privacy disclosures, permissions, eligibility rules, prices, billing terms, or third-party agreements presented before use."
           }
         ]
       },
@@ -785,16 +785,16 @@
         ]
       },
       {
-        "id": "will-accounts-or-paid-features-be-added",
-        "title": "Will accounts or paid features be added?",
+        "id": "does-version-1-include-accounts-or-paid-features",
+        "title": "Does Version 1 include accounts or paid features?",
         "blocks": [
           {
             "type": "paragraph",
-            "text": "Optional accounts, synchronization, integrations, subscriptions, or paid features may be considered in the future, but they are not part of the current app."
+            "text": "No. Version 1 does not include accounts, synchronization, integrations, subscriptions, purchases, or paid features."
           },
           {
             "type": "paragraph",
-            "text": "Before launching functionality that materially changes data handling, we will update the Privacy Policy and relevant terms and request permission or consent where required. A future free tier will not itself be permission for advertising tracking or sale of personal information."
+            "text": "Before launching functionality that materially changes data handling, we will update the Privacy Policy and relevant terms and request permission or consent where required."
           }
         ]
       },

@@ -15,9 +15,11 @@ import {
   TimerViewPreference,
   type ActiveFastState,
 } from '@/storage/app-storage';
+import { accentColorValues } from '@/storage/settings-storage';
 import { createFastingWidgetModel } from '@/widgets/fasting-widget-model';
 
 type FastingWidgetProps = {
+  accentColor: string;
   goalDurationHours: number;
   goalEndsAt: number;
   goalLabel: string;
@@ -38,7 +40,7 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
   const backgroundColor = isDark ? '#15171C' : '#F7F8FC';
   const primaryColor = isDark ? '#F5F7FF' : '#17191F';
   const secondaryColor = isDark ? '#A9AFBD' : '#626979';
-  const accentColor = isDark ? '#8EA5FF' : '#526FE8';
+  const accentColor = props.accentColor || (isDark ? '#8EA5FF' : '#526FE8');
 
   if (props.status !== 'active') {
     return (
@@ -84,12 +86,12 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
       <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(accentColor)]}>
         SIMPLE FASTING
       </Text>
-      <Text modifiers={[font({ size: 14, weight: 'semibold' }), foregroundStyle(primaryColor)]}>
+      <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(primaryColor)]}>
         {props.goalLabel}
       </Text>
       <Spacer />
-      <Text modifiers={[font({ size: 11, weight: 'medium' }), foregroundStyle(secondaryColor)]}>
-        {props.timerView === 'remaining' && hasGoal ? 'REMAINING' : 'ELAPSED'}
+      <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(accentColor)]}>
+        {props.timerView === 'remaining' && hasGoal ? '↓ REMAINING' : '↑ ELAPSED'}
       </Text>
       <Text
         timerInterval={{
@@ -99,7 +101,7 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
         countsDown={hasGoal && props.timerView === 'remaining'}
         modifiers={[
           font({ size: 27, weight: 'bold', design: 'rounded' }),
-          foregroundStyle(primaryColor),
+          foregroundStyle(accentColor),
         ]}
       />
       {hasGoal ? (
@@ -116,6 +118,10 @@ const fastingWidget = createWidget<FastingWidgetProps>('FastingWidget', FastingW
 
 export const updateFastingWidget = (state: ActiveFastState): void => {
   const settings = appStorage.get(StorageKey.Settings);
+  const accentColor =
+    settings?.accentColorName === undefined
+      ? '#526FE8'
+      : accentColorValues[settings.accentColorName];
   const goalName = settings?.goals.find(
     (goal) => goal.targetDurationHours === state.session?.goalDurationHours,
   )?.name;
@@ -128,6 +134,7 @@ export const updateFastingWidget = (state: ActiveFastState): void => {
   const props: FastingWidgetProps =
     model.status === 'inactive'
       ? {
+          accentColor,
           goalDurationHours: 0,
           goalEndsAt: 0,
           goalLabel: '',
@@ -137,6 +144,7 @@ export const updateFastingWidget = (state: ActiveFastState): void => {
           timerView: TimerViewPreference.Elapsed,
         }
       : {
+          accentColor,
           goalDurationHours: model.goalDurationHours,
           goalEndsAt: model.goalEndsAt,
           goalLabel: model.headline,

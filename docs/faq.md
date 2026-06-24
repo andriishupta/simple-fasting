@@ -98,11 +98,11 @@ No guarantee is made that the app is available or lawful everywhere. App-store a
 
 Restrictions can apply to particular persons and organizations regardless of country and can change over time.
 
-## Will accounts or paid features be added?
+## Does Version 1 include accounts or paid features?
 
-Optional accounts, synchronization, integrations, subscriptions, or paid features may be considered in the future, but they are not part of the current app.
+No. Version 1 does not include accounts, synchronization, integrations, subscriptions, purchases, or paid features.
 
-Before launching functionality that materially changes data handling, we will update the Privacy Policy and relevant terms and request permission or consent where required. A future free tier will not itself be permission for advertising tracking or sale of personal information.
+Before launching functionality that materially changes data handling, we will update the Privacy Policy and relevant terms and request permission or consent where required.
 
 ## Can the Privacy Policy, Terms, or FAQ change?
 

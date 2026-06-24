@@ -15,6 +15,7 @@ import {
 } from '@/storage/app-storage';
 import {
   SettingsExportFormat,
+  acceptLegalConsent,
   createExportContent,
   createExportFilename,
   createFastingGoal,
@@ -40,7 +41,6 @@ import {
   updateNotificationSettings,
 } from '@/storage/settings-storage';
 import * as notificationStorage from '@/storage/notification-storage';
-import { updateFastingWidget } from '@/widgets/fasting-widget';
 import { createSession } from '../../test/fixtures';
 
 jest.mock('@/storage/notification-storage', () => ({
@@ -55,9 +55,6 @@ jest.mock('@/storage/notification-storage', () => ({
   scheduleDailyReminderNotification: jest.fn(),
 }));
 
-jest.mock('@/widgets/fasting-widget', () => ({
-  updateFastingWidget: jest.fn(),
-}));
 
 const timestamp = '2026-06-21T12:00:00.000Z';
 const mockCancelScheduledNotification = jest.mocked(
@@ -72,7 +69,6 @@ const mockGetLocalNotificationPermissionState = jest.mocked(
 const mockRequestLocalNotificationPermission = jest.mocked(
   notificationStorage.requestLocalNotificationPermission,
 );
-const mockUpdateFastingWidget = jest.mocked(updateFastingWidget);
 
 describe('settings storage integration', () => {
   const initialPlatform = Platform.OS;
@@ -90,7 +86,6 @@ describe('settings storage integration', () => {
     );
     mockRequestLocalNotificationPermission.mockClear();
     mockRequestLocalNotificationPermission.mockResolvedValue(true);
-    mockUpdateFastingWidget.mockClear();
   });
 
   afterEach(() => {
@@ -111,7 +106,6 @@ describe('settings storage integration', () => {
       goalDurationFormat: GoalDurationFormat.Days,
       dataViewPreference: DataViewPreference.History,
     });
-    expect(mockUpdateFastingWidget).toHaveBeenCalledTimes(1);
     expect(appStorage.get(StorageKey.Settings)).toEqual(getSettings());
     expect(getEffectiveColorScheme({ themePreference: ThemePreference.System, systemColorScheme: 'light' })).toBe('light');
     expect(getEffectiveColorScheme({ themePreference: ThemePreference.System, systemColorScheme: 'dark' })).toBe('dark');
@@ -148,6 +142,24 @@ describe('settings storage integration', () => {
     expect(appStorage.get(StorageKey.Settings)?.goals[3].id).toBe(firstGoalId);
   });
 
+  test('keeps goal ordering stable for invalid moves and appends new goals', () => {
+    const originalOrder = getSettings().goals.map((goal) => goal.id);
+
+    moveFastingGoal('missing-goal', 1);
+    moveFastingGoal(originalOrder[0], Number.NaN);
+    moveFastingGoal(originalOrder[0], Number.POSITIVE_INFINITY);
+    expect(getSettings().goals.map((goal) => goal.id)).toEqual(originalOrder);
+
+    const customGoal = createFastingGoal({ name: 'Late shift', targetDurationHours: 20 });
+    expect(getSettings().goals.at(-1)?.id).toBe(customGoal.id);
+
+    moveFastingGoal(customGoal.id, -100);
+    expect(getSettings().goals[0].id).toBe(customGoal.id);
+
+    moveFastingGoal(customGoal.id, 10_000);
+    expect(getSettings().goals.at(-1)?.id).toBe(customGoal.id);
+  });
+
   test('reconciles daily reminders and suppresses them during an active fast', async () => {
     updateNotificationSettings((notifications) => ({
       ...notifications,
@@ -170,6 +182,10 @@ describe('settings storage integration', () => {
   });
 
   test('completes notification onboarding and enables only fast-end reminders when allowed', () => {
+    expect(getSettings().legalConsentAccepted).toBe(false);
+    acceptLegalConsent();
+    expect(getSettings().legalConsentAccepted).toBe(true);
+
     completeNotificationOnboarding({ notificationsAllowed: true });
 
     expect(getSettings().notifications).toMatchObject({

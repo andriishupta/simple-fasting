@@ -65,11 +65,11 @@ The Privacy Policy explains current data practices, including no analytics SDK, 
 
 You are responsible for information you choose to place in notes, emails, exports, diagnostic-report destinations, and other third-party destinations. Review files before sharing and do not submit content you lack the right to use or disclose.
 
-## 9. Future accounts, paid features, and separate terms
+## 9. New functionality and separate terms
 
-We may offer optional accounts, synchronization, integrations, subscriptions, purchases, or other paid functionality in the future. They are not included in the current service.
+The current Version 1 service does not include accounts, synchronization, integrations, subscriptions, purchases, or other paid functionality.
 
-New functionality may require additional terms, privacy disclosures, permissions, eligibility rules, prices, billing terms, or third-party agreements presented before use or purchase. We may choose not to launch, or may later modify or discontinue, planned features.
+If new functionality is added later, it may require additional terms, privacy disclosures, permissions, eligibility rules, prices, billing terms, or third-party agreements presented before use.
 
 ## 10. Third-party services and store rules
 

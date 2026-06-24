@@ -12,6 +12,7 @@ import {
   StorageKey,
   type ActiveFastState,
 } from '@/storage/app-storage';
+import { accentColorValues } from '@/storage/settings-storage';
 import {
   createFastingWidgetModel,
   type FastingWidgetModel,
@@ -74,18 +75,18 @@ function AndroidFastingWidget({
           <TextWidget
             text={model.headline}
             maxLines={1}
-            style={{ color: theme.primary, fontSize: 14, fontWeight: '600' }}
+            style={{ color: theme.primary, fontSize: 14, fontWeight: '700' }}
           />
           <TextWidget
-            text={model.subtitle.toUpperCase()}
+            text={`${model.timerView === 'remaining' ? '↓' : '↑'} ${model.subtitle.toUpperCase()}`}
             maxLines={1}
-            style={{ color: theme.secondary, fontSize: 10, fontWeight: '500' }}
+            style={{ color: theme.accent, fontSize: 10, fontWeight: '700' }}
           />
           <TextWidget
             text={model.displayTime}
             maxLines={1}
             style={{
-              color: theme.primary,
+              color: theme.accent,
               fontSize: 27,
               fontWeight: '700',
               adjustsFontSizeToFit: true,
@@ -130,6 +131,10 @@ function AndroidFastingWidget({
 
 const renderFastingWidget = (state: ActiveFastState): WidgetRepresentation => {
   const settings = appStorage.get(StorageKey.Settings);
+  const accentColor =
+    settings?.accentColorName === undefined
+      ? undefined
+      : (accentColorValues[settings.accentColorName] as `#${string}`);
   const goalName = settings?.goals.find(
     (goal) => goal.targetDurationHours === state.session?.goalDurationHours,
   )?.name;
@@ -141,8 +146,8 @@ const renderFastingWidget = (state: ActiveFastState): WidgetRepresentation => {
   );
 
   return {
-    light: <AndroidFastingWidget model={model} theme={lightTheme} />,
-    dark: <AndroidFastingWidget model={model} theme={darkTheme} />,
+    light: <AndroidFastingWidget model={model} theme={{ ...lightTheme, accent: accentColor ?? lightTheme.accent }} />,
+    dark: <AndroidFastingWidget model={model} theme={{ ...darkTheme, accent: accentColor ?? darkTheme.accent }} />,
   };
 };
 

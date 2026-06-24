@@ -31,3 +31,17 @@ export const formatDuration = (totalSeconds: number): string => {
     seconds,
   ).padStart(2, '0')}`;
 };
+
+export const formatDurationWorklet = (totalSeconds: number): string => {
+  'worklet';
+
+  const wholeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(wholeSeconds / 3600);
+  const minutes = Math.floor((wholeSeconds % 3600) / 60);
+  const seconds = wholeSeconds % 60;
+  const paddedHours = hours < 10 ? `0${hours}` : `${hours}`;
+  const paddedMinutes = minutes < 10 ? `0${minutes}` : `${minutes}`;
+  const paddedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
+
+  return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
+};
