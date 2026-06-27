@@ -47,7 +47,7 @@ For widgets, install a newly generated native build rather than Expo Go or a Jav
 
 ## Automated CI and E2E
 
-`.github/workflows/ci.yml` runs on pull requests and pushes to `main`, using Node 24-compatible versions of the checkout, Node setup, and pnpm setup actions. It gates the faster app and website quality checks first: app TypeScript, lint, unit tests, and website shared-content/build verification. After those pass, it runs app integration tests, Jest coverage, and shared-content integration with the Astro post-build verifier. Independent iOS/Android Expo bundle exports run last after the deeper checks pass.
+`.github/workflows/ci.yml` runs on pull requests and pushes to `main`, using Node 24-compatible versions of the checkout, Node setup, and pnpm setup actions. It gates the faster app and website quality checks first: app shared-content verification, TypeScript, lint, unit tests, and website shared-content/build verification. After those pass, it runs app integration tests and Jest coverage. Independent iOS/Android Expo bundle exports run last after the deeper app checks and website quality check pass.
 
 `app/.eas/workflows/e2e.yml` is schema-validated against Expo's current workflow schema. For app-related pull requests it creates credential-free iOS simulator and Android APK builds, then runs every flow in `app/.maestro` on both platforms. These flows cover planned and open-ended fasting, save/cancel behavior, history/edit navigation, custom goals, Settings, and offline legal/FAQ content. EAS project access and build quota are operational prerequisites.
 
