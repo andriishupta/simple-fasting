@@ -13,38 +13,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  shared-content-integration:
-    name: Shared content integration
+  app-quality:
+    name: App quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
         with:
           version: 11.7.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.14.0
-          cache: pnpm
-          cache-dependency-path: www/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
-        working-directory: www
-      - name: Verify generated shared documents from source
-        run: |
-          rm -f ../app/src/content/generated/shared-documents.json src/content/generated/shared-documents.json
-          pnpm content:sync
-          pnpm content:check
-          pnpm run build
-        working-directory: www
-
-  app-typecheck:
-    name: App typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.7.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22.14.0
           cache: pnpm
@@ -53,58 +30,69 @@ jobs:
         working-directory: app
       - run: pnpm content:sync
         working-directory: app
-      - run: pnpm exec tsc --noEmit
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit
+        working-directory: app
+      - name: Lint
+        run: pnpm lint
+        working-directory: app
+      - name: Unit tests
+        run: pnpm test:unit
         working-directory: app
 
-  app-lint:
-    name: App lint
+  www-quality:
+    name: Website quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
         with:
           version: 11.7.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22.14.0
+          cache: pnpm
+          cache-dependency-path: www/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: www
+      - name: Content check
+        run: |
+          pnpm content:sync
+          pnpm content:check
+        working-directory: www
+      - name: Build
+        run: pnpm run build
+        working-directory: www
+
+  app-integration:
+    name: App integration tests
+    runs-on: ubuntu-latest
+    needs: app-quality
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v5
         with:
           node-version: 22.14.0
           cache: pnpm
           cache-dependency-path: app/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
         working-directory: app
-      - run: pnpm lint
-        working-directory: app
-
-  app-tests:
-    name: App ${{ matrix.suite }} tests
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        suite: [unit, integration]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.7.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.14.0
-          cache: pnpm
-          cache-dependency-path: app/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
-        working-directory: app
-      - run: pnpm test:${{ matrix.suite }}
+      - run: pnpm test:integration
         working-directory: app
 
   app-coverage:
     name: App coverage
     runs-on: ubuntu-latest
+    needs: app-quality
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
         with:
           version: 11.7.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22.14.0
           cache: pnpm
@@ -120,19 +108,44 @@ jobs:
           path: app/coverage
           if-no-files-found: ignore
 
+  shared-content-integration:
+    name: Shared content integration
+    runs-on: ubuntu-latest
+    needs: [app-quality, www-quality]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22.14.0
+          cache: pnpm
+          cache-dependency-path: www/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: www
+      - name: Verify generated shared documents from source
+        run: |
+          rm -f ../app/src/content/generated/shared-documents.json src/content/generated/shared-documents.json
+          pnpm content:sync
+          pnpm content:check
+          pnpm run build
+        working-directory: www
+
   platform-bundle:
     name: ${{ matrix.platform }} bundle
     runs-on: ubuntu-latest
+    needs: [app-integration, app-coverage, shared-content-integration]
     strategy:
       fail-fast: false
       matrix:
         platform: [ios, android]
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
         with:
           version: 11.7.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22.14.0
           cache: pnpm
