@@ -29,10 +29,10 @@ The canonical production origin is configured in `astro.config.mjs`.
 
 ## Shared legal and FAQ content
 
-Privacy Policy, Terms of Use, and FAQ copy is authored in `../docs`. `pnpm content:sync` regenerates `src/content/generated/shared-documents.json` for both the website and app. Never edit generated JSON directly.
+Privacy Policy, Terms of Use, and FAQ copy is authored in `../docs/content`. `pnpm content:sync` regenerates `src/content/generated/shared-documents.json` for both the website and app. Never edit generated JSON directly.
 
 The website itself does not install analytics. The shared Privacy Policy and FAQ disclose that the mobile app has no analytics SDK, no installation identifier, user-shared local diagnostics, and native Apple/Google platform crash reporting where available; changing that reporting model requires updating the canonical documents before release.
 
-`dev`, `build`, and `preview` synchronize automatically. The `prebuild` lifecycle hook is mandatory and must remain attached to `pnpm build`. Use `pnpm content:check` in CI to fail when generated content is stale, and commit canonical Markdown plus both generated JSON files together.
+`dev`, `build`, and `preview` synchronize automatically. The `prebuild` lifecycle hook is mandatory and must remain attached to `pnpm build`. CI runs `content:sync` and `content:check` before build so Astro uses current generated JSON. `postbuild` verifies rendered content and routes. Commit canonical Markdown only; generated app and website JSON files are ignored.
 
-`pnpm test` first rejects stale generated content, then performs a production build. The post-build verifier requires all five routes, compares the full rendered Privacy Policy, Terms, and FAQ with the generated shared source, checks homepage FAQ headings, and rejects broken internal page links.
+`pnpm test` regenerates shared content, checks it, then performs a production build. The post-build verifier requires all five routes, compares the full rendered Privacy Policy, Terms, and FAQ with the generated shared source, checks homepage FAQ headings, and rejects broken internal page links.

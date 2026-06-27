@@ -313,13 +313,13 @@ Assume website source is public.
 Future marketing and product content should align with:
 
 ```text
-/docs/plan/01-product-specification.md
-/docs/plan/04-future-roadmap.md
+/docs/dev/plan/01-product-specification.md
+/docs/dev/plan/04-future-roadmap.md
 ```
 
-Privacy Policy, Terms of Use, and FAQ content comes from `/docs`. Do not edit generated content under `src/content/generated`; edit the Markdown source and run `pnpm content:sync`.
+Privacy Policy, Terms of Use, and FAQ content comes from `/docs/content`. Do not edit generated content under `src/content/generated`; edit the Markdown source and run `pnpm content:sync`.
 
-The shared-content generator in the `prebuild` lifecycle hook is mandatory. Keep automatic synchronization for `dev`, `build`, and `preview`, use `content:check` for CI drift detection, and commit canonical Markdown with both generated app/website JSON files.
+The shared-content generator in the `prebuild` lifecycle hook is mandatory. Keep automatic synchronization for `dev`, `build`, and `preview`, keep pre-build `content:sync` plus `content:check` in CI, keep post-build rendered-content verification, and commit canonical Markdown only. Generated app/website JSON files are ignored.
 
 Keep `pnpm test` as the production-build gate. Its post-build verifier must continue to require every public route, compare rendered legal/FAQ content with the generated shared source, verify homepage FAQ coverage, and reject broken internal page links. Prefer this static deterministic check over browser E2E unless real client-side behavior is introduced.
 

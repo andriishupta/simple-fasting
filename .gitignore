@@ -1,1 +1,5 @@
 .pnpm-store/
+
+# Generated from docs/content by scripts/sync-shared-content.mjs.
+app/src/content/generated/shared-documents.json
+www/src/content/generated/shared-documents.json

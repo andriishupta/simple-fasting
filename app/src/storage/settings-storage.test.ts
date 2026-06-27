@@ -94,7 +94,7 @@ describe('settings storage integration', () => {
     jest.restoreAllMocks();
   });
 
-  test('persists appearance and data-view choices', () => {
+  test('updates appearance and data-view choices immediately', () => {
     setThemePreference(ThemePreference.Dark);
     setAccentColorName(AccentColorName.Teal);
     setGoalDurationFormat(GoalDurationFormat.Days);
@@ -134,7 +134,7 @@ describe('settings storage integration', () => {
     expect(setFastingGoalEnabled(onlyEnabled!.id, false)).toBe(false);
   });
 
-  test('persists goal ordering in settings', () => {
+  test('updates and persists goal ordering immediately', () => {
     const firstGoalId = getSettings().goals[0].id;
     moveFastingGoal(firstGoalId, 3);
 
@@ -169,6 +169,7 @@ describe('settings storage integration', () => {
     }));
 
     await setDailyReminderTimeAndSchedule('21:15');
+    expect(getSettings().notifications.dailyReminderTime).toBe('21:15');
     expect(mockCancelScheduledNotification).toHaveBeenCalledWith('old');
     expect(mockScheduleDailyReminderNotification).toHaveBeenCalledWith('21:15');
     expect(getSettings().notifications.dailyReminderNotificationId).toBe('daily-1');

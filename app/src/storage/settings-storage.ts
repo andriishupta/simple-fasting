@@ -187,43 +187,65 @@ export const saveSettings = (settings: AppSettings): void => {
   settingsSnapshot = settings;
 };
 
-export const updateSettings = (update: (settings: AppSettings) => AppSettings): AppSettings => {
-  const updatedSettings = update(getSettings());
+export const updateSettings = (
+  update: (settings: AppSettings) => AppSettings,
+): AppSettings => {
+  const currentSettings = getSettings();
+  const updatedSettings = update(currentSettings);
 
+  if (updatedSettings === currentSettings) {
+    return currentSettings;
+  }
   saveSettings(updatedSettings);
 
   return updatedSettings;
 };
 
 export const setThemePreference = (themePreference: ThemePreferenceType): AppSettings =>
-  updateSettings((settings) => ({
-    ...settings,
-    themePreference,
-    updatedAt: now(),
-  }));
+  updateSettings((settings) =>
+    settings.themePreference === themePreference
+      ? settings
+      : {
+          ...settings,
+          themePreference,
+          updatedAt: now(),
+        },
+  );
 
 export const setAccentColorName = (accentColorName: AccentColorNameType): AppSettings =>
-  updateSettings((settings) => ({
-    ...settings,
-    accentColorName,
-    updatedAt: now(),
-  }));
+  updateSettings((settings) =>
+    settings.accentColorName === accentColorName
+      ? settings
+      : {
+          ...settings,
+          accentColorName,
+          updatedAt: now(),
+        },
+  );
 
 export const setLastUsedGoalDurationHours = (lastUsedGoalDurationHours: number): AppSettings =>
-  updateSettings((settings) => ({
-    ...settings,
-    lastUsedGoalDurationHours,
-    updatedAt: now(),
-  }));
+  updateSettings((settings) =>
+    settings.lastUsedGoalDurationHours === lastUsedGoalDurationHours
+      ? settings
+      : {
+          ...settings,
+          lastUsedGoalDurationHours,
+          updatedAt: now(),
+        },
+  );
 
 export const setGoalDurationFormat = (
   goalDurationFormat: GoalDurationFormatType,
 ): AppSettings =>
-  updateSettings((currentSettings) => ({
-    ...currentSettings,
-    goalDurationFormat,
-    updatedAt: now(),
-  }));
+  updateSettings((currentSettings) =>
+    currentSettings.goalDurationFormat === goalDurationFormat
+      ? currentSettings
+      : {
+          ...currentSettings,
+          goalDurationFormat,
+          updatedAt: now(),
+        },
+  );
 
 const createGoalId = (): string =>
   `goal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -385,11 +407,26 @@ export const setFastingGoalEnabled = (goalId: string, isEnabled: boolean): boole
 };
 
 export const setDataViewPreference = (dataViewPreference: DataViewPreferenceType): AppSettings =>
-  updateSettings((settings) => ({
-    ...settings,
-    dataViewPreference,
-    updatedAt: now(),
-  }));
+  updateSettings((settings) =>
+    settings.dataViewPreference === dataViewPreference
+      ? settings
+      : {
+          ...settings,
+          dataViewPreference,
+          updatedAt: now(),
+        },
+  );
+
+export const setLiveActivitiesEnabled = (liveActivitiesEnabled: boolean): AppSettings =>
+  updateSettings((settings) =>
+    settings.liveActivitiesEnabled === liveActivitiesEnabled
+      ? settings
+      : {
+          ...settings,
+          liveActivitiesEnabled,
+          updatedAt: now(),
+        },
+  );
 
 export const completeNotificationOnboarding = ({
   notificationsAllowed,
@@ -533,16 +570,28 @@ export const getEffectiveColorScheme = ({
   return systemColorScheme === 'dark' ? 'dark' : 'light';
 };
 
-const subscribeToSettings = (onStoreChange: () => void): (() => void) =>
-  appStorage.subscribe((key) => {
+const subscribeToSettings = (onStoreChange: () => void): (() => void) => {
+  const unsubscribeStorage = appStorage.subscribe((key) => {
     if (key === StorageKey.Settings) {
       settingsSnapshot = readSettings();
       onStoreChange();
     }
   });
 
+  return () => {
+    unsubscribeStorage();
+  };
+};
+
 export const useSettings = (): AppSettings =>
   useSyncExternalStore(subscribeToSettings, getSettings, getSettings);
+
+export const useSettingsSelector = <Value,>(select: (settings: AppSettings) => Value): Value =>
+  useSyncExternalStore(
+    subscribeToSettings,
+    () => select(getSettings()),
+    () => select(getSettings()),
+  );
 
 export const createExportFilename = (format: SettingsExportFormat): string =>
   `simple-fasting-export-${new Date().toISOString().slice(0, 10)}.${format}`;

@@ -75,7 +75,7 @@ Separate repository and selector layers are intentionally not planned while dire
 - [ ] Medium widget
 - [ ] Large widget
 - [ ] iOS lock-screen widgets
-- [ ] iOS Live Activities and Dynamic Island
+- [x] iOS Live Activities and Dynamic Island
 - [ ] Android ongoing notification
 - [ ] User-facing widget/platform settings when the corresponding features exist
 

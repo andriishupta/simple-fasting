@@ -5,10 +5,10 @@ This document is the practical starting point for a new developer joining the Si
 For product intent and scope decisions, also read:
 
 - `AGENTS.md`
-- `docs/plan/01-product-specification.md`
-- `docs/plan/02-execution-plan.md`
-- `docs/plan/03-release-deployment-guide.md`
-- `docs/plan/04-future-roadmap.md`
+- `docs/dev/plan/01-product-specification.md`
+- `docs/dev/plan/02-execution-plan.md`
+- `docs/dev/plan/03-release-deployment-guide.md`
+- `docs/dev/plan/04-future-roadmap.md`
 
 ## Repository Shape
 
@@ -18,7 +18,9 @@ There is no root `package.json`. The repository is split into two package direct
 /
 ├── app/       # Expo React Native mobile application
 ├── www/       # Astro static website
-├── docs/      # Product docs, shared legal docs, FAQ, plans
+├── docs/
+│   ├── content/ # Shared legal docs and FAQ
+│   └── dev/     # Developer manual, plans, and release documentation
 ├── scripts/   # Shared content sync and website verification scripts
 └── .github/   # GitHub CI workflows
 ```
@@ -42,12 +44,12 @@ pnpm dev
 Legal documents and FAQ are authored once in `docs`:
 
 ```text
-docs/legal/privacy-policy.md
-docs/legal/terms-of-use.md
-docs/faq.md
+docs/content/legal/privacy-policy.md
+docs/content/legal/terms-of-use.md
+docs/content/faq.md
 ```
 
-Generated copies are committed for both the app and website:
+Generated copies are ignored but must exist locally for app and website builds:
 
 ```text
 app/src/content/generated/shared-documents.json
@@ -65,7 +67,7 @@ Both packages also wire this into lifecycle scripts:
 - `app`: `prebuild`, `prestart`, `preios`, `preandroid`, `preweb`, `lint`, `test`, `eas-build-pre-install`
 - `www`: `predev`, `prebuild`, `prepreview`, `test`
 
-Use this direct check when debugging content drift:
+Use this direct check after synchronization when debugging content drift:
 
 ```bash
 node scripts/sync-shared-content.mjs --check
@@ -340,14 +342,16 @@ app/src/widgets/fasting-widget-model.ts
 app/src/widgets/fasting-widget.ios.tsx
 app/src/widgets/fasting-widget.android.tsx
 app/src/widgets/fasting-widget.tsx
+app/src/widgets/fasting-live-activity.ios.tsx
+app/src/widgets/fasting-live-activity.tsx
 ```
 
-Widget model code is shared and tested. Platform files render the native widget.
+Widget model code is shared and tested. Platform files render native widgets and the optional iOS Live Activity.
 
 iOS uses:
 
 - `expo-widgets`
-- SwiftUI-style widget views through Expo UI
+- SwiftUI-style widget and Live Activity views through Expo UI
 
 Android uses:
 
@@ -359,9 +363,9 @@ Widget rules:
 - inactive widget opens the app
 - active widget shows app identity, goal, elapsed/remaining timer, and progress
 - no started/ended timestamps because small widgets have limited space
-- widget updates must never block local fasting writes
+- widget and Live Activity updates must never block local fasting writes
 
-Widgets require native builds. Expo Go cannot verify widgets.
+Widgets and Live Activities require native builds. Expo Go cannot verify them.
 
 After widget, plugin, bundle identifier, or app-group changes:
 
@@ -590,21 +594,23 @@ CI runs on pull requests and pushes to `main`.
 
 Jobs:
 
-### App quality and coverage
+### App quality, tests, and coverage
 
 From `app/`:
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm content:check
+pnpm content:sync
 pnpm exec tsc --noEmit
 pnpm lint
+pnpm test:unit
+pnpm test:integration
 pnpm test:coverage
 ```
 
 Coverage is uploaded as an artifact but should not be committed.
 
-### Website build and shared docs
+### Shared content integration
 
 From `www/`:
 
@@ -613,7 +619,7 @@ pnpm install --frozen-lockfile
 pnpm test
 ```
 
-This checks shared content freshness, builds Astro, and runs post-build route/content verification.
+This regenerates ignored shared content, checks it before build, builds Astro, then runs post-build route/content verification.
 
 ### Platform bundle
 
@@ -678,7 +684,7 @@ www/src/styles/global.css
 www/src/content/generated/shared-documents.json
 ```
 
-The website renders shared FAQ/legal content from generated JSON. The source remains `docs`.
+The website renders shared FAQ/legal content from generated JSON. The source remains `docs/content`.
 
 ## Website Commands
 
@@ -714,7 +720,7 @@ Test:
 pnpm test
 ```
 
-`pnpm test` runs content drift check, production build, and post-build verification through:
+`pnpm test` regenerates and checks shared content before the production build. The build then runs post-build route/content verification through:
 
 ```text
 scripts/verify-www-build.mjs
@@ -731,9 +737,9 @@ The verifier checks:
 
 ### Change legal or FAQ text
 
-1. Edit Markdown in `docs/legal` or `docs/faq.md`.
+1. Edit Markdown in `docs/content/legal` or `docs/content/faq.md`.
 2. Run `node scripts/sync-shared-content.mjs`.
-3. Verify generated app and website JSON changed.
+3. Run `node scripts/sync-shared-content.mjs --check`.
 4. Run app and website checks if the change is meaningful.
 
 ### Change app behavior
@@ -768,6 +774,7 @@ Then update platform renderers:
 ```text
 app/src/widgets/fasting-widget.ios.tsx
 app/src/widgets/fasting-widget.android.tsx
+app/src/widgets/fasting-live-activity.ios.tsx
 ```
 
 Run tests, then verify in a native build.
@@ -820,10 +827,11 @@ Radius.pill
 
 If the app does not behave as expected:
 
-1. Confirm generated shared content is current:
+1. Regenerate and confirm shared content is current:
 
    ```bash
    cd app
+   pnpm content:sync
    pnpm content:check
    ```
 
@@ -878,4 +886,3 @@ Also confirm:
 - widgets were considered for active fast/history/settings changes
 - notification permission behavior still derives from the OS
 - UI remains usable with larger text settings
-

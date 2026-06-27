@@ -1,6 +1,6 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, AppState, StyleSheet } from 'react-native';
+import { Alert, AppState, StatusBar, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
@@ -144,6 +144,7 @@ function RootLayoutContent({
     if (startupState.status !== 'ready') return;
 
     void (async () => {
+      refreshFastSnapshots();
       await configureLocalNotificationBehavior();
       await syncNotificationPermissionState();
       await Promise.all([
@@ -165,6 +166,7 @@ function RootLayoutContent({
     const subscription = AppState.addEventListener('change', (state) => {
       if (state !== 'active') return;
 
+      refreshFastSnapshots();
       void syncNotificationPermissionState()
         .then(() =>
           Promise.all([
@@ -201,6 +203,11 @@ function RootLayoutContent({
 
   return (
     <ThemeProvider value={navigationTheme}>
+      <StatusBar
+        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
       {startupState.status === 'ready' && !settings.legalConsentAccepted ? (
         <WelcomeOnboardingScreen
           onAccept={acceptOnboardingLegalConsent}
@@ -221,6 +228,10 @@ function RootLayoutContent({
               options={{
                 title: 'Edit Fast',
                 headerShown: true,
+                headerLargeTitle: false,
+                headerTransparent: true,
+                headerShadowVisible: false,
+                headerBlurEffect: 'none',
                 headerBackButtonDisplayMode: 'minimal',
               }}
             />
@@ -229,7 +240,7 @@ function RootLayoutContent({
               options={{
                 title: 'Goals',
                 headerShown: true,
-                headerLargeTitle: true,
+                headerLargeTitle: false,
                 headerTransparent: true,
                 headerShadowVisible: false,
                 headerBlurEffect: 'none',
@@ -241,6 +252,10 @@ function RootLayoutContent({
               options={{
                 title: 'New Goal',
                 headerShown: true,
+                headerLargeTitle: false,
+                headerTransparent: true,
+                headerShadowVisible: false,
+                headerBlurEffect: 'none',
                 headerBackButtonDisplayMode: 'minimal',
               }}
             />
@@ -249,18 +264,34 @@ function RootLayoutContent({
               options={{
                 title: 'Edit Goal',
                 headerShown: true,
+                headerLargeTitle: false,
+                headerTransparent: true,
+                headerShadowVisible: false,
+                headerBlurEffect: 'none',
                 headerBackButtonDisplayMode: 'minimal',
               }}
             />
             <Stack.Screen
               name="faq"
-              options={{ title: 'FAQ', headerShown: true, headerBackButtonDisplayMode: 'minimal' }}
+              options={{
+                title: 'FAQ',
+                headerShown: true,
+                headerLargeTitle: false,
+                headerTransparent: true,
+                headerShadowVisible: false,
+                headerBlurEffect: 'none',
+                headerBackButtonDisplayMode: 'minimal',
+              }}
             />
             <Stack.Screen
               name="privacy"
               options={{
                 title: 'Privacy Policy',
                 headerShown: true,
+                headerLargeTitle: false,
+                headerTransparent: true,
+                headerShadowVisible: false,
+                headerBlurEffect: 'none',
                 headerBackButtonDisplayMode: 'minimal',
               }}
             />
@@ -269,6 +300,10 @@ function RootLayoutContent({
               options={{
                 title: 'Terms of Use',
                 headerShown: true,
+                headerLargeTitle: false,
+                headerTransparent: true,
+                headerShadowVisible: false,
+                headerBlurEffect: 'none',
                 headerBackButtonDisplayMode: 'minimal',
               }}
             />

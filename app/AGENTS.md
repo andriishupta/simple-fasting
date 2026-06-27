@@ -508,7 +508,7 @@ Assume repository is public.
 Future roadmap exists in:
 
 ```text
-/docs/plan/04-future-roadmap.md
+/docs/dev/plan/04-future-roadmap.md
 ```
 
 Do not implement future roadmap items unless requested.
@@ -522,8 +522,8 @@ Canonical Privacy Policy, Terms of Use, and FAQ Markdown lives under `/docs`, ou
 - Never edit generated JSON directly.
 - Run `pnpm content:sync` after canonical Markdown changes.
 - Keep synchronization in the app `prebuild` command and EAS `eas-build-pre-install` hook; these are mandatory build invariants.
-- Keep `content:check` in lint/test or CI so stale generated content fails validation.
-- Commit source Markdown and generated app/website JSON together.
+- Keep shared-content validation in CI so stale generated content fails after synchronization.
+- Commit source Markdown only. Generated app/website JSON is ignored and must stay out of commits.
 
 ## Automated Testing
 
@@ -531,7 +531,7 @@ Canonical Privacy Policy, Terms of Use, and FAQ Markdown lives under `/docs`, ou
 - Use storage-level integration tests for complete local workflows and side-effect coordination.
 - Use React Native Testing Library for component interaction or native-render integration where it adds evidence.
 - Keep `.maestro` flows accessibility-label based and platform-neutral; the EAS workflow must run the same flow list on iOS and Android.
-- `pnpm test:coverage`, TypeScript, lint, shared-content checks, and both native bundle exports must remain CI gates.
+- `pnpm test:coverage`, TypeScript, lint, unit tests, integration tests, shared-content integration, and both native bundle exports must remain CI gates.
 - Never commit `coverage/`; CI may upload it as an artifact.
 - Native widget correctness still requires a rebuilt dev/EAS binary and runtime validation; bundle or unit success alone is not proof of launcher installation.
 

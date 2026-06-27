@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { router } from 'expo-router';
 import { ChevronRight, GripVertical, Plus, Trash2 } from 'lucide-react-native';
@@ -25,6 +25,7 @@ export default function GoalsScreen() {
   const settings = useSettings();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const [draggingGoalId, setDraggingGoalId] = useState<string | null>(null);
 
   const confirmDelete = (goal: FastingGoal): void => {
     if (goal.type === FastingGoalType.Standard) return;
@@ -59,23 +60,27 @@ export default function GoalsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.screen}>
         <View style={styles.content}>
-        <ThemedText type="small" themeColor="textSecondary">
-          Drag to reorder. Swipe left to delete custom goals.
-        </ThemedText>
-        <View style={styles.goalList}>
-          {settings.goals.map((goal, index) => (
-            <GoalRow
-              key={goal.id}
-              goal={goal}
-              index={index}
-              onDelete={() => confirmDelete(goal)}
-              onEdit={() => {
-                router.push({ pathname: '/goals/[id]', params: { id: goal.id } });
-              }}
-              onMove={(destinationIndex) => moveFastingGoal(goal.id, destinationIndex)}
-            />
-          ))}
-        </View>
+          <ThemedText type="small" themeColor="textSecondary">
+            Drag to reorder. Swipe left to delete custom goals.
+          </ThemedText>
+          <View style={styles.goalList}>
+            {settings.goals.map((goal, index) => (
+              <GoalRow
+                key={goal.id}
+                goal={goal}
+                index={index}
+                itemCount={settings.goals.length}
+                isDragging={draggingGoalId === goal.id}
+                onDelete={() => confirmDelete(goal)}
+                onDragEnd={() => setDraggingGoalId(null)}
+                onDragStart={() => setDraggingGoalId(goal.id)}
+                onEdit={() => {
+                  router.push({ pathname: '/goals/[id]', params: { id: goal.id } });
+                }}
+                onMove={(destinationIndex) => moveFastingGoal(goal.id, destinationIndex)}
+              />
+            ))}
+          </View>
         </View>
       </ScrollView>
       <Pressable
@@ -96,13 +101,21 @@ export default function GoalsScreen() {
 function GoalRow({
   goal,
   index,
+  itemCount,
+  isDragging,
   onDelete,
+  onDragEnd,
+  onDragStart,
   onEdit,
   onMove,
 }: {
   goal: FastingGoal;
   index: number;
+  itemCount: number;
+  isDragging: boolean;
   onDelete: () => void;
+  onDragEnd: () => void;
+  onDragStart: () => void;
   onEdit: () => void;
   onMove: (destinationIndex: number) => void;
 }) {
@@ -119,7 +132,7 @@ function GoalRow({
     </View>
   );
   const renderContent = (wrappedDragHandle: ReactNode) => (
-    <AppSurface style={styles.goalCard}>
+    <AppSurface style={[styles.goalCard, isDragging && styles.goalCardDragging]}>
       <View style={styles.goalHeader}>
         {wrappedDragHandle}
         <Pressable
@@ -161,7 +174,10 @@ function GoalRow({
     <DraggableListRow
       dragHandle={dragHandle}
       index={index}
+      itemCount={itemCount}
       rowHeight={goalRowHeight}
+      onDragEnd={onDragEnd}
+      onDragStart={onDragStart}
       onMove={onMove}>
       {(wrappedDragHandle) => (
         isCustom ? (
@@ -210,6 +226,10 @@ const styles = StyleSheet.create({
   },
   goalCard: {
     padding: 12,
+  },
+  goalCardDragging: {
+    borderWidth: 2,
+    boxShadow: '0 8px 18px rgba(0, 0, 0, 0.16)',
   },
   goalHeader: {
     flexDirection: 'row',

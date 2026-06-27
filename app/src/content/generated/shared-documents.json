@@ -34,7 +34,7 @@
             "items": [
               "Active and completed fasting sessions, including dates, start and end times, and durations.",
               "Fasting goals and optional notes you enter.",
-              "Reminder, appearance, accent, and widget preferences.",
+              "Reminder, appearance, accent, widget, and Live Activity preferences.",
               "Statistics, charts, streaks, and heatmaps derived locally from fasting history.",
               "Local storage metadata needed to validate and maintain app data.",
               "A limited local diagnostic log when storage initialization, reminder restoration, or app rendering fails."
@@ -42,7 +42,7 @@
           },
           {
             "type": "paragraph",
-            "text": "This information is used on your device to operate the timer, history, statistics, local notifications, supported widgets, settings, and exports. We do not intentionally receive this local app information."
+            "text": "This information is used on your device to operate the timer, history, statistics, local notifications, supported widgets, optional iOS Live Activities, settings, and exports. We do not intentionally receive this local app information."
           },
           {
             "type": "paragraph",
@@ -117,12 +117,12 @@
         ]
       },
       {
-        "id": "permissions-notifications-widgets-exports-and-diagnostics",
-        "title": "6. Permissions, notifications, widgets, exports, and diagnostics",
+        "id": "permissions-notifications-widgets-live-activities-exports-and-diagnostics",
+        "title": "6. Permissions, notifications, widgets, Live Activities, exports, and diagnostics",
         "blocks": [
           {
             "type": "paragraph",
-            "text": "Notification permission is requested only when you choose **Allow Notifications** in onboarding or enable reminders from Settings. If you allow it, the fast-end reminder is enabled by default while the optional daily reminder remains off until you enable it. If you choose **Not Now** or deny permission, reminder controls remain unavailable unless you later allow notifications in system settings. Notifications are scheduled locally through the operating system. Supported widgets receive the limited local fasting state needed to display them."
+            "text": "Notification permission is requested only when you choose **Allow Notifications** in onboarding or enable reminders from Settings. If you allow it, the fast-end reminder is enabled by default while the optional daily reminder remains off until you enable it. If you choose **Not Now** or deny permission, reminder controls remain unavailable unless you later allow notifications in system settings. Notifications are scheduled locally through the operating system. Supported widgets and optional iOS Live Activities receive the limited local fasting state needed to display them on your device, including on the Lock Screen or Dynamic Island where available."
           },
           {
             "type": "paragraph",
@@ -152,7 +152,7 @@
           },
           {
             "type": "paragraph",
-            "text": "We do not claim that local fasting information is anonymous merely because it stays on a device. It may be sensitive to you, and anyone with access to your unlocked device, backups, widgets, notifications, or exports may be able to see it."
+            "text": "We do not claim that local fasting information is anonymous merely because it stays on a device. It may be sensitive to you, and anyone with access to your unlocked device, backups, widgets, Live Activities, notifications, or exports may be able to see it."
           }
         ]
       },
@@ -171,7 +171,7 @@
               "Export app data in JSON or CSV format.",
               "Clear local app data from Settings.",
               "Remove app data by uninstalling the app, subject to operating-system backups and retention behavior.",
-              "Disable notifications or remove widgets through app or device settings.",
+              "Disable notifications or Live Activities, or remove widgets through app or device settings.",
               "Review and explicitly share a local diagnostic report; clearing app data also clears local diagnostics."
             ]
           },
@@ -325,7 +325,7 @@
         "blocks": [
           {
             "type": "paragraph",
-            "text": "Simple Fasting is a general wellness tracking tool. It does not provide medical advice, diagnosis, treatment, nutrition advice, medical monitoring, or emergency services. Timers, goals, reminders, statistics, widgets, and notifications are informational tools and do not determine whether fasting is safe or appropriate for you."
+            "text": "Simple Fasting is a general wellness tracking tool. It does not provide medical advice, diagnosis, treatment, nutrition advice, medical monitoring, or emergency services. Timers, goals, reminders, statistics, widgets, Live Activities, and notifications are informational tools and do not determine whether fasting is safe or appropriate for you."
           },
           {
             "type": "paragraph",
@@ -401,7 +401,7 @@
           },
           {
             "type": "paragraph",
-            "text": "Notifications, widgets, clocks, background execution, and device backups depend on the operating system and may be delayed, suppressed, inaccurate, removed, or unavailable. Clearing data, uninstalling, device loss, storage failure, operating-system behavior, or failed backups may cause irreversible data loss. We cannot recover information that was never transmitted to us."
+            "text": "Notifications, widgets, Live Activities, clocks, background execution, and device backups depend on the operating system and may be delayed, suppressed, inaccurate, removed, or unavailable. Clearing data, uninstalling, device loss, storage failure, operating-system behavior, or failed backups may cause irreversible data loss. We cannot recover information that was never transmitted to us."
           }
         ]
       },
@@ -411,7 +411,7 @@
         "blocks": [
           {
             "type": "paragraph",
-            "text": "The Privacy Policy explains current data practices, including no analytics SDK, no installation identifier, native Apple App Store Connect and Google Play Console crash reporting where available through the platforms, and local diagnostic events stored after certain app errors. The current app has no free or paid account, advertising SDK, cross-app tracking, behavioral profiling, or Simple Fasting backend. Local-first does not mean that your unlocked device, notifications, widgets, device backups, platform crash reports, emails, diagnostic reports, or exported files cannot expose information to others."
+            "text": "The Privacy Policy explains current data practices, including no analytics SDK, no installation identifier, native Apple App Store Connect and Google Play Console crash reporting where available through the platforms, and local diagnostic events stored after certain app errors. The current app has no free or paid account, advertising SDK, cross-app tracking, behavioral profiling, or Simple Fasting backend. Local-first does not mean that your unlocked device, notifications, widgets, Live Activities, device backups, platform crash reports, emails, diagnostic reports, or exported files cannot expose information to others."
           },
           {
             "type": "paragraph",
@@ -578,7 +578,7 @@
         "blocks": [
           {
             "type": "paragraph",
-            "text": "No. The current app has no free or paid accounts, registration, or login. Core fasting, history, statistics, reminders, widgets, and settings work locally."
+            "text": "No. The current app has no free or paid accounts, registration, or login. Core fasting, history, statistics, reminders, widgets, Live Activities, and settings work locally."
           },
           {
             "type": "paragraph",
@@ -610,7 +610,7 @@
         "blocks": [
           {
             "type": "paragraph",
-            "text": "Yes. Timing, history, statistics, reminders, supported widgets, and settings work without a network connection. Internet access is only needed for optional website, legal, support, and email actions."
+            "text": "Yes. Timing, history, statistics, reminders, supported widgets, optional iOS Live Activities, and settings work without a network connection. Internet access is only needed for optional website, legal, support, and email actions."
           }
         ]
       },
@@ -634,7 +634,7 @@
         "blocks": [
           {
             "type": "paragraph",
-            "text": "Anyone with access to your unlocked device may be able to see the app. Notifications, widgets, operating-system backups, screenshots, shared exports, and notes can also expose information depending on your choices and device settings."
+            "text": "Anyone with access to your unlocked device may be able to see the app. Notifications, widgets, Live Activities, operating-system backups, screenshots, shared exports, and notes can also expose information depending on your choices and device settings."
           },
           {
             "type": "paragraph",
@@ -721,12 +721,12 @@
         ]
       },
       {
-        "id": "why-did-a-reminder-or-widget-not-update",
-        "title": "Why did a reminder or widget not update?",
+        "id": "why-did-a-reminder-widget-or-live-activity-not-update",
+        "title": "Why did a reminder, widget, or Live Activity not update?",
         "blocks": [
           {
             "type": "paragraph",
-            "text": "Notifications, widgets, clocks, and background work depend on operating-system permissions, scheduling, battery controls, and device behavior. They can be delayed, suppressed, inaccurate, or unavailable."
+            "text": "Notifications, widgets, Live Activities, clocks, and background work depend on operating-system permissions, scheduling, battery controls, and device behavior. They can be delayed, suppressed, inaccurate, or unavailable."
           },
           {
             "type": "paragraph",

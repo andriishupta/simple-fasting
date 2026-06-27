@@ -4,6 +4,9 @@ dist/
 # generated types
 .astro/
 
+# Generated from ../docs/content by ../scripts/sync-shared-content.mjs.
+src/content/generated/shared-documents.json
+
 # dependencies
 node_modules/
 

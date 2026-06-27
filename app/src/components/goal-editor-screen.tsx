@@ -3,7 +3,7 @@ import { Alert, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { router, Stack } from 'expo-router';
 
 import { AppButton } from '@/components/app-button';
-import { AppSurface } from '@/components/app-surface';
+import { DurationPicker, maxCustomDurationHours } from '@/components/fast-setup-controls';
 import { FeedbackState } from '@/components/feedback-state';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -17,29 +17,26 @@ import {
 
 type GoalDraft = {
   name: string;
-  targetDurationHours: string;
+  targetDurationHours: number;
 };
-
-const maxGoalDurationHours = 40 * 24;
 
 const createEmptyDraft = (goals: readonly FastingGoal[]): GoalDraft => ({
   name: '',
-  targetDurationHours: `${
+  targetDurationHours:
     [16, 18, 20, 24, 12, 14].find(
       (duration) => !goals.some((goal) => goal.targetDurationHours === duration),
     ) ??
     (goals.length === 0
       ? 16
       : Math.min(
-          maxGoalDurationHours,
+          maxCustomDurationHours,
           Math.max(...goals.map((goal) => goal.targetDurationHours)) + 1,
-        ))
-  }`,
+        )),
 });
 
 const createGoalDraft = (goal: FastingGoal): GoalDraft => ({
   name: goal.name,
-  targetDurationHours: `${goal.targetDurationHours}`,
+  targetDurationHours: Math.min(maxCustomDurationHours, Math.max(1, goal.targetDurationHours)),
 });
 
 export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
@@ -56,10 +53,20 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
   );
   const [validationError, setValidationError] = useState<string | null>(null);
   const isEditing = goalId !== null;
+  const initialDraft = useMemo(
+    () =>
+      existingGoal === null || existingGoal === undefined
+        ? createEmptyDraft(settings.goals)
+        : createGoalDraft(existingGoal),
+    [existingGoal, settings.goals],
+  );
+  const isDirty =
+    draft.name !== initialDraft.name ||
+    draft.targetDurationHours !== initialDraft.targetDurationHours;
 
   const saveDraft = (): void => {
     const name = draft.name.trim();
-    const targetDurationHours = Number(draft.targetDurationHours);
+    const targetDurationHours = draft.targetDurationHours;
 
     if (name.length === 0) {
       setValidationError('Enter a name for this goal.');
@@ -74,9 +81,9 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
     if (
       !Number.isInteger(targetDurationHours) ||
       targetDurationHours < 1 ||
-      targetDurationHours > maxGoalDurationHours
+      targetDurationHours > maxCustomDurationHours
     ) {
-      setValidationError('Choose a whole number from 1 hour to 40 days.');
+      setValidationError('Choose a duration from 1 hour to 7 days.');
       return;
     }
 
@@ -147,14 +154,7 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
     <>
       <Stack.Screen options={{ title: isEditing ? 'Edit Goal' : 'New Goal' }} />
       <GoalEditorShell>
-        <AppSurface style={styles.editor}>
-          <View style={styles.heading}>
-            <ThemedText type="subtitle">{isEditing ? 'Edit goal' : 'New goal'}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              Custom goals appear on the Fast screen.
-            </ThemedText>
-          </View>
-
+        <View style={styles.editor}>
           {validationError !== null ? (
             <FeedbackState
               kind="error"
@@ -165,7 +165,9 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
           ) : null}
 
           <View style={styles.field}>
-            <ThemedText type="smallBold">Name</ThemedText>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
+              Name
+            </ThemedText>
             <TextInput
               accessibilityLabel="Goal name"
               autoCapitalize="sentences"
@@ -186,38 +188,24 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
           </View>
 
           <View style={styles.field}>
-            <ThemedText type="smallBold">Duration in hours</ThemedText>
-            <TextInput
-              accessibilityLabel="Goal duration in hours"
-              keyboardType="number-pad"
-              maxLength={3}
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
+              Duration
+            </ThemedText>
+            <DurationPicker
               value={draft.targetDurationHours}
-              onChangeText={(targetDurationHours) =>
-                setDraft((current) => ({
-                  ...current,
-                  targetDurationHours: targetDurationHours.replaceAll(/\D/g, ''),
-                }))
+              onChange={(targetDurationHours) =>
+                setDraft((current) => ({ ...current, targetDurationHours }))
               }
-              placeholder="16"
-              placeholderTextColor={theme.textSecondary}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.background,
-                  borderColor: theme.backgroundSelected,
-                  color: theme.text,
-                },
-              ]}
             />
           </View>
 
           <View style={styles.actions}>
             <AppButton
               label="Cancel"
-              variant="ghost"
+              variant="dangerGhost"
               fullWidth
               onPress={() => {
-                if (draft.name.trim().length > 0 || draft.targetDurationHours.trim().length > 0) {
+                if (isDirty) {
                   Alert.alert('Discard changes?', 'This goal will not be saved.', [
                     { text: 'Keep Editing', style: 'cancel' },
                     { text: 'Discard', style: 'destructive', onPress: () => router.back() },
@@ -230,7 +218,7 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
             />
             <AppButton label="Save goal" fullWidth onPress={saveDraft} />
           </View>
-        </AppSurface>
+        </View>
       </GoalEditorShell>
     </>
   );
@@ -264,12 +252,10 @@ const styles = StyleSheet.create({
   editor: {
     gap: Spacing.three,
   },
-  heading: {
-    gap: Spacing.one,
-  },
   field: {
     gap: Spacing.one,
   },
+  sectionLabel: { paddingHorizontal: Spacing.two, textTransform: 'uppercase' },
   input: {
     minHeight: 44,
     borderWidth: 1,

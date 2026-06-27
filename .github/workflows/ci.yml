@@ -13,38 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  app-quality:
-    name: App quality and coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.7.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.14.0
-          cache: pnpm
-          cache-dependency-path: app/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
-        working-directory: app
-      - run: pnpm content:check
-        working-directory: app
-      - run: pnpm exec tsc --noEmit
-        working-directory: app
-      - run: pnpm lint
-        working-directory: app
-      - run: pnpm test:coverage
-        working-directory: app
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: app-coverage
-          path: app/coverage
-          if-no-files-found: ignore
-
-  website:
-    name: Website build and shared docs
+  shared-content-integration:
+    name: Shared content integration
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,8 +28,97 @@ jobs:
           cache-dependency-path: www/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
         working-directory: www
-      - run: pnpm test
+      - name: Verify generated shared documents from source
+        run: |
+          rm -f ../app/src/content/generated/shared-documents.json src/content/generated/shared-documents.json
+          pnpm content:sync
+          pnpm content:check
+          pnpm run build
         working-directory: www
+
+  app-typecheck:
+    name: App typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: app
+      - run: pnpm content:sync
+        working-directory: app
+      - run: pnpm exec tsc --noEmit
+        working-directory: app
+
+  app-lint:
+    name: App lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: app
+      - run: pnpm lint
+        working-directory: app
+
+  app-tests:
+    name: App ${{ matrix.suite }} tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [unit, integration]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: app
+      - run: pnpm test:${{ matrix.suite }}
+        working-directory: app
+
+  app-coverage:
+    name: App coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: app
+      - run: pnpm test:coverage
+        working-directory: app
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: app-coverage
+          path: app/coverage
+          if-no-files-found: ignore
 
   platform-bundle:
     name: ${{ matrix.platform }} bundle
@@ -79,6 +138,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: app/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+        working-directory: app
+      - run: pnpm content:sync
         working-directory: app
       - name: Export ${{ matrix.platform }} bundle
         run: pnpm exec expo export --platform ${{ matrix.platform }} --output-dir /tmp/simple-fasting-${{ matrix.platform }}

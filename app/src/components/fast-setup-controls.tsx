@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Switch,
   TextInput,
+  unstable_batchedUpdates,
   View,
 } from 'react-native';
 import Animated, { FadeInDown, FadeOutUp, LinearTransition } from 'react-native-reanimated';
@@ -20,7 +21,7 @@ import { CenteredWheelPicker } from '@/components/centered-wheel-picker';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { useSettings } from '@/storage/settings-storage';
+import { useSettingsSelector } from '@/storage/settings-storage';
 import {
   customGoalId,
   formatGoalDuration,
@@ -65,7 +66,7 @@ export function FastGoalSelector({
   onCustomDurationExpandedChange: (expanded: boolean) => void;
 }) {
   const theme = useTheme();
-  const { goalDurationFormat } = useSettings();
+  const goalDurationFormat = useSettingsSelector((settings) => settings.goalDurationFormat);
   const selectedGoal = goals.find((goal) => goal.id === selectedGoalId);
   const selectedGoalIndex = goals.findIndex((goal) => goal.id === selectedGoalId);
   const selectedDuration =
@@ -76,9 +77,9 @@ export function FastGoalSelector({
         : (selectedGoal?.targetDurationHours ?? customDurationHours);
   const selectedGoalName =
     selectedGoalId === unlimitedGoalId
-      ? 'Open-ended Fast'
+      ? 'Open-ended'
       : selectedGoalId === customGoalId
-        ? 'This Time'
+        ? 'Custom'
         : (selectedGoal?.name ?? 'Fasting Goal');
 
   return (
@@ -109,6 +110,7 @@ export function FastGoalSelector({
         getItemAccessibilityLabel={(goal) =>
           `${goal.name}, ${formatGoalDuration(goal.targetDurationHours, goalDurationFormat)}`
         }
+        selectOnScroll={false}
         selectedIndex={selectedGoalIndex}
         onSelectIndex={(index) => {
           const goal = goals[index];
@@ -122,6 +124,9 @@ export function FastGoalSelector({
           />
         )}
       />
+      <ThemedText type="small" themeColor="textSecondary" style={styles.goalPickerHint}>
+        Create reusable goals in Settings.
+      </ThemedText>
 
       <View
         style={[
@@ -140,10 +145,7 @@ export function FastGoalSelector({
             style={({ pressed }) => [styles.optionPrimary, pressed && styles.pressed]}>
             <OptionIcon icon="custom" />
             <View style={styles.optionLabel}>
-              <ThemedText>This time</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Create reusable goals in Settings.
-              </ThemedText>
+              <ThemedText>Custom</ThemedText>
             </View>
             {selectedGoalId === customGoalId ? (
               <Check size={16} color={theme.accent} strokeWidth={2.5} />
@@ -154,8 +156,10 @@ export function FastGoalSelector({
             accessibilityLabel={`Edit custom duration, currently ${formatGoalDuration(customDurationHours, goalDurationFormat)}`}
             accessibilityHint="Shows or hides the custom duration picker"
             onPress={() => {
-              onSelectGoal(customGoalId);
-              onCustomDurationExpandedChange(!customDurationExpanded);
+              unstable_batchedUpdates(() => {
+                onSelectGoal(customGoalId);
+                onCustomDurationExpandedChange(!customDurationExpanded);
+              });
             }}
             hitSlop={8}
             style={({ pressed }) => [styles.optionEdit, pressed && styles.pressed]}>
@@ -167,12 +171,9 @@ export function FastGoalSelector({
         </View>
 
         {customDurationExpanded ? (
-          <Animated.View
-            entering={FadeInDown.duration(180)}
-            exiting={FadeOutUp.duration(140)}
-            layout={LinearTransition.duration(180)}>
+          <View>
             <DurationPicker value={customDurationHours} onChange={onCustomDurationChange} />
-          </Animated.View>
+          </View>
         ) : null}
 
         <Pressable
@@ -183,10 +184,12 @@ export function FastGoalSelector({
           onPress={() => onSelectGoal(unlimitedGoalId)}
           style={({ pressed }) => [styles.optionRow, pressed && styles.pressed]}>
           <OptionIcon icon="unlimited" />
-          <ThemedText style={styles.optionLabel}>Open-ended fast</ThemedText>
-          {selectedGoalId === unlimitedGoalId ? (
-            <Check size={16} color={theme.accent} strokeWidth={2.5} />
-          ) : null}
+          <ThemedText style={styles.optionLabel}>Open-ended</ThemedText>
+          <View style={styles.optionCheck}>
+            {selectedGoalId === unlimitedGoalId ? (
+              <Check size={16} color={theme.accent} strokeWidth={2.5} />
+            ) : null}
+          </View>
         </Pressable>
       </View>
     </View>
@@ -277,6 +280,8 @@ export function FastNoteEditor({
             placeholderTextColor={theme.textSecondary}
             returnKeyType="done"
             multiline
+            scrollEnabled
+            textAlignVertical="top"
             style={[
               styles.input,
               {
@@ -302,7 +307,13 @@ function OptionIcon({ icon }: { icon: 'custom' | 'unlimited' | 'note' }) {
   );
 }
 
-function DurationPicker({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+export function DurationPicker({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+}) {
   const theme = useTheme();
   const days = Math.floor(value / 24);
   const hours = value % 24;
@@ -384,8 +395,8 @@ const styles = StyleSheet.create({
   goalHeroName: {
     textAlign: 'center',
     maxWidth: '100%',
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 30,
+    lineHeight: 36,
     fontWeight: '700',
   },
   goalHeroDuration: {
@@ -409,6 +420,11 @@ const styles = StyleSheet.create({
   },
   goalCardName: { fontSize: 16, textAlign: 'center', maxWidth: '100%' },
   goalCardDuration: { textAlign: 'center', fontVariant: ['tabular-nums'] },
+  goalPickerHint: {
+    marginTop: -Spacing.two,
+    paddingHorizontal: Spacing.four,
+    textAlign: 'center',
+  },
   options: {
     overflow: 'hidden',
     borderWidth: 1,
@@ -432,10 +448,16 @@ const styles = StyleSheet.create({
   },
   optionEdit: {
     minHeight: 48,
+    width: 112,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: Spacing.one,
     paddingLeft: Spacing.two,
+  },
+  optionCheck: {
+    width: 16,
+    alignItems: 'center',
   },
   optionIcon: {
     width: 32,
@@ -470,7 +492,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.four,
   },
   input: {
-    minHeight: 72,
+    height: 112,
     borderWidth: 1,
     borderRadius: Radius.control,
     borderCurve: 'continuous',

@@ -21,7 +21,7 @@ Fasting may be inappropriate for minors. Anyone under the age of legal majority 
 
 ## 3. Health and emergency disclaimer
 
-Simple Fasting is a general wellness tracking tool. It does not provide medical advice, diagnosis, treatment, nutrition advice, medical monitoring, or emergency services. Timers, goals, reminders, statistics, widgets, and notifications are informational tools and do not determine whether fasting is safe or appropriate for you.
+Simple Fasting is a general wellness tracking tool. It does not provide medical advice, diagnosis, treatment, nutrition advice, medical monitoring, or emergency services. Timers, goals, reminders, statistics, widgets, Live Activities, and notifications are informational tools and do not determine whether fasting is safe or appropriate for you.
 
 Consult a qualified healthcare professional before fasting, particularly if you are pregnant or breastfeeding, under 18, have diabetes or another medical condition, take medication, have nutritional concerns, or have a history of an eating disorder. Do not change medication or treatment based on the app.
 
@@ -57,11 +57,11 @@ You must not:
 
 The current app stores fasting information and preferences locally. You are responsible for controlling access to your device, checking timer and reminder accuracy, maintaining exports or backups you wish to keep, and choosing safe export destinations.
 
-Notifications, widgets, clocks, background execution, and device backups depend on the operating system and may be delayed, suppressed, inaccurate, removed, or unavailable. Clearing data, uninstalling, device loss, storage failure, operating-system behavior, or failed backups may cause irreversible data loss. We cannot recover information that was never transmitted to us.
+Notifications, widgets, Live Activities, clocks, background execution, and device backups depend on the operating system and may be delayed, suppressed, inaccurate, removed, or unavailable. Clearing data, uninstalling, device loss, storage failure, operating-system behavior, or failed backups may cause irreversible data loss. We cannot recover information that was never transmitted to us.
 
 ## 8. Privacy
 
-The Privacy Policy explains current data practices, including no analytics SDK, no installation identifier, native Apple App Store Connect and Google Play Console crash reporting where available through the platforms, and local diagnostic events stored after certain app errors. The current app has no free or paid account, advertising SDK, cross-app tracking, behavioral profiling, or Simple Fasting backend. Local-first does not mean that your unlocked device, notifications, widgets, device backups, platform crash reports, emails, diagnostic reports, or exported files cannot expose information to others.
+The Privacy Policy explains current data practices, including no analytics SDK, no installation identifier, native Apple App Store Connect and Google Play Console crash reporting where available through the platforms, and local diagnostic events stored after certain app errors. The current app has no free or paid account, advertising SDK, cross-app tracking, behavioral profiling, or Simple Fasting backend. Local-first does not mean that your unlocked device, notifications, widgets, Live Activities, device backups, platform crash reports, emails, diagnostic reports, or exported files cannot expose information to others.
 
 You are responsible for information you choose to place in notes, emails, exports, diagnostic-report destinations, and other third-party destinations. Review files before sharing and do not submit content you lack the right to use or disclose.
 

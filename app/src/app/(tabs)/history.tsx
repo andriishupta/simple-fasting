@@ -1,7 +1,6 @@
 import { memo, useMemo, useState } from 'react';
 import {
   Alert,
-  InteractionManager,
   Pressable,
   StyleSheet,
   View,
@@ -11,7 +10,7 @@ import { router } from 'expo-router';
 import { SegmentedControl as ExpoSegmentedControl } from '@expo/ui/community/segmented-control';
 import { Check, ChevronRight, Trash2 } from 'lucide-react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, { FadeIn, FadeInUp, FadingTransition } from 'react-native-reanimated';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { AppSurface } from '@/components/app-surface';
 import {
@@ -39,7 +38,10 @@ import {
   type HistoryState,
 } from '@/storage/app-storage';
 import { useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
-import { setDataViewPreference, useSettings } from '@/storage/settings-storage';
+import {
+  setDataViewPreference,
+  useSettingsSelector,
+} from '@/storage/settings-storage';
 import { getChartData, getFastingStats, type ChartData } from '@/utils/fasting-analytics';
 import { formatGoalDuration } from '@/utils/fast-goals';
 import { getLocalDayKey } from '@/utils/fasting-statistics';
@@ -56,41 +58,38 @@ const formatLocaleDateTime = (timestamp: string): string =>
     timeStyle: 'short',
   }).format(new Date(timestamp));
 
-let chartDataCache: { key: string; value: ChartData } | null = null;
-
-const getChartDataCacheKey = (history: HistoryState, locale?: string): string =>
-  [
-    history.updatedAt,
-    history.sessions.length,
-    history.sessions[0]?.id ?? 'none',
-    history.sessions[0]?.updatedAt ?? 'none',
-    getLocalDayKey(new Date()),
-    locale ?? 'default',
-  ].join(':');
+let chartDataCache: {
+  dayKey: string;
+  history: HistoryState;
+  locale?: string;
+  value: ChartData;
+} | null = null;
 
 const getCachedChartData = (history: HistoryState, locale?: string): ChartData => {
-  const key = getChartDataCacheKey(history, locale);
-  if (chartDataCache?.key === key) return chartDataCache.value;
+  const dayKey = getLocalDayKey(new Date());
+  if (
+    chartDataCache?.history === history &&
+    chartDataCache.dayKey === dayKey &&
+    chartDataCache.locale === locale
+  ) {
+    return chartDataCache.value;
+  }
 
   const value = getChartData(history, new Date(), locale);
-  chartDataCache = { key, value };
+  chartDataCache = { dayKey, history, locale, value };
   return value;
 };
 
 export default function DataScreen() {
   const { height } = useWindowDimensions();
-  const settings = useSettings();
-  const [selectedView, setSelectedView] = useState<DataView>(settings.dataViewPreference);
-  const [chartsMounted, setChartsMounted] = useState(
-    () => settings.dataViewPreference === DataViewPreference.Charts,
-  );
+  const dataViewPreference = useSettingsSelector((settings) => settings.dataViewPreference);
+  const [selectedView, setSelectedView] = useState<DataView>(dataViewPreference);
   const shouldScroll = selectedView !== DataViewPreference.Stats || height < 700;
   const selectDataView = (view: DataView): void => {
     setSelectedView(view);
-    if (view === DataViewPreference.Charts) setChartsMounted(true);
 
-    if (view !== settings.dataViewPreference) {
-      InteractionManager.runAfterInteractions(() => setDataViewPreference(view));
+    if (view !== dataViewPreference) {
+      setDataViewPreference(view);
     }
   };
 
@@ -100,7 +99,6 @@ export default function DataScreen() {
       maxWidth={Math.min(MaxContentWidth, 640)}>
       <ScreenHeading>Data</ScreenHeading>
       <DataPanel
-        chartsMounted={chartsMounted}
         selectedView={selectedView}
         onSelectView={selectDataView}
       />
@@ -109,11 +107,9 @@ export default function DataScreen() {
 }
 
 function DataPanel({
-  chartsMounted,
   selectedView,
   onSelectView,
 }: {
-  chartsMounted: boolean;
   selectedView: DataView;
   onSelectView: (view: DataView) => void;
 }) {
@@ -132,13 +128,7 @@ function DataPanel({
             <HistoryList sessions={historyState.sessions} />
           )}
           {selectedView === DataViewPreference.Stats && <StatsPanel history={historyState} />}
-          {chartsMounted ? (
-            <View
-              pointerEvents={selectedView === DataViewPreference.Charts ? 'auto' : 'none'}
-              style={selectedView === DataViewPreference.Charts ? undefined : styles.hiddenPanel}>
-              <ChartsPanel history={historyState} />
-            </View>
-          ) : null}
+          {selectedView === DataViewPreference.Charts ? <ChartsPanel history={historyState} /> : null}
         </>
       ) : (
         <View style={styles.emptyState}>
@@ -386,7 +376,7 @@ function HistorySummary({
   endedLabel: string;
 }) {
   const theme = useTheme();
-  const settings = useSettings();
+  const goalDurationFormat = useSettingsSelector((settings) => settings.goalDurationFormat);
   const progress =
     session.goalDurationHours > 0
       ? durationSeconds / (session.goalDurationHours * 3600)
@@ -404,7 +394,7 @@ function HistorySummary({
             <ThemedText type="smallBold" themeColor="accent">
               {session.goalDurationHours <= 0
                 ? 'Open-ended'
-                : formatGoalDuration(session.goalDurationHours, settings.goalDurationFormat)}
+                : formatGoalDuration(session.goalDurationHours, goalDurationFormat)}
             </ThemedText>
           </View>
           {showChevron ? <ChevronRight size={18} color={theme.textSecondary} /> : null}
@@ -455,86 +445,95 @@ function StatsPanel({ history }: { history: HistoryState }) {
 
   return (
     <View style={styles.statGrid}>
-      <StatTile label="Current streak" value={`${stats.currentStreakDays} days`} />
-      <StatTile label="Total hours" value={`${formatHours(stats.totalHours)} h`} />
-      <StatTile label="Longest streak" value={`${stats.longestStreakDays} days`} />
-      <StatTile label="Longest fast" value={`${formatHours(stats.longestFastHours)} h`} />
-      <StatTile label="Average duration" value={`${formatHours(stats.averageDurationHours)} h`} />
-      <StatTile label="Total fasts" value={`${stats.totalFasts}`} />
-      <StatTile label="Completion rate" value={formatPercent(stats.completionRate)} />
+      <StatTile index={0} label="Current streak" value={`${stats.currentStreakDays} days`} />
+      <StatTile index={1} label="Total hours" value={`${formatHours(stats.totalHours)} h`} />
+      <StatTile index={2} label="Longest streak" value={`${stats.longestStreakDays} days`} />
+      <StatTile index={3} label="Longest fast" value={`${formatHours(stats.longestFastHours)} h`} />
+      <StatTile index={4} label="Average duration" value={`${formatHours(stats.averageDurationHours)} h`} />
+      <StatTile index={5} label="Total fasts" value={`${stats.totalFasts}`} />
+      <StatTile index={6} label="Completion rate" value={formatPercent(stats.completionRate)} />
     </View>
   );
 }
 
-function StatTile({ label, value }: {
+function StatTile({ index, label, value }: {
+  index: number;
   label: string;
   value: string;
 }) {
   return (
-    <AppSurface style={styles.statTile}>
-      <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
-      <ThemedText selectable style={styles.statValue}>
-        {value}
-      </ThemedText>
-    </AppSurface>
+    <Animated.View
+      entering={FadeInUp.delay(Math.min(index, 5) * 35).duration(180)}
+      style={styles.statTileWrap}>
+      <AppSurface style={styles.statTile}>
+        <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
+        <ThemedText selectable style={styles.statValue}>
+          {value}
+        </ThemedText>
+      </AppSurface>
+    </Animated.View>
   );
 }
 
 const ChartsPanel = memo(function ChartsPanel({ history }: { history: HistoryState }) {
-  const chartData = useMemo(() => getCachedChartData(history), [history]);
+  const chartData = getCachedChartData(history);
 
   return (
-    <Animated.View entering={FadeIn.duration(180)} layout={FadingTransition} style={styles.content}>
-      <ChartSection title="Recent fast duration" description="Your last seven completed fasts">
+    <View style={styles.content}>
+      <ChartSection index={0} title="Recent fast duration" description="Your last seven completed fasts">
         <FastingLineChart data={chartData.recentDurations} formatValue={formatChartHours} />
       </ChartSection>
 
-      <ChartSection title="Monthly fasting hours" description="Total hours over the last six months">
+      <ChartSection index={1} title="Monthly fasting hours" description="Total hours over the last six months">
         <FastingBarChart data={chartData.monthlyHours} formatValue={formatChartHours} />
       </ChartSection>
 
-      <ChartSection title="Goal completion" description="Average progress across planned fasts">
+      <ChartSection index={2} title="Goal completion" description="Average progress across planned fasts">
         <CompletionDonut value={chartData.completionRate} />
       </ChartSection>
 
-      <ChartSection title="This week">
+      <ChartSection index={3} title="This week">
         <HeatmapGrid cells={chartData.weeklyHeatmap} columns={7} />
       </ChartSection>
 
-      <ChartSection title="Last 30 days">
+      <ChartSection index={4} title="Last 30 days">
         <HeatmapGrid cells={chartData.monthlyHeatmap} columns={10} />
       </ChartSection>
 
-      <ChartSection title="Last year">
+      <ChartSection index={5} title="Last year">
         <HeatmapGrid cells={chartData.yearlyHeatmap} columns={26} compact />
       </ChartSection>
 
-      <ChartSection title="Duration mix" description="Completed fasts grouped by length">
+      <ChartSection index={6} title="Duration mix" description="Completed fasts grouped by length">
         <FastingBarChart data={chartData.durationDistribution} formatValue={(value) => `${value}`} />
       </ChartSection>
-    </Animated.View>
+    </View>
   );
 }, (previous, next) => previous.history.updatedAt === next.history.updatedAt);
 
 function ChartSection({
+  index,
   title,
   description,
   children,
 }: {
+  index: number;
   title: string;
   description?: string;
   children: React.ReactNode;
 }) {
   return (
-    <AppSurface style={styles.section}>
-      <View style={styles.sectionHeading}>
-        <ThemedText type="smallBold">{title}</ThemedText>
-        {description !== undefined ? (
-          <ThemedText type="small" themeColor="textSecondary">{description}</ThemedText>
-        ) : null}
-      </View>
-      {children}
-    </AppSurface>
+    <Animated.View entering={FadeInUp.delay(Math.min(index, 5) * 35).duration(180)}>
+      <AppSurface style={styles.section}>
+        <View style={styles.sectionHeading}>
+          <ThemedText type="smallBold">{title}</ThemedText>
+          {description !== undefined ? (
+            <ThemedText type="small" themeColor="textSecondary">{description}</ThemedText>
+          ) : null}
+        </View>
+        {children}
+      </AppSurface>
+    </Animated.View>
   );
 }
 
@@ -544,9 +543,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  hiddenPanel: {
-    display: 'none',
-  },
   viewPicker: {
     minHeight: 36,
   },
@@ -618,10 +614,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.two,
   },
-  statTile: {
+  statTileWrap: {
     width: '48%',
-    minHeight: 82,
     flexGrow: 1,
+  },
+  statTile: {
+    minHeight: 82,
+    flex: 1,
     justifyContent: 'space-between',
     gap: Spacing.two,
   },

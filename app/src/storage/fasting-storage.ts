@@ -23,6 +23,7 @@ import {
 } from '@/storage/notification-storage';
 import { formatGoalDuration } from '@/utils/fast-goals';
 import { updateFastingWidget } from '@/widgets/fasting-widget';
+import { syncFastingLiveActivity as syncFastingLiveActivityState } from '@/widgets/fasting-live-activity';
 
 const now = (): string => new Date().toISOString();
 
@@ -34,6 +35,7 @@ const readHistoryState = (): HistoryState =>
 
 let activeFastSnapshot = createEmptyActiveFastState(now());
 let historySnapshot = createEmptyHistoryState(now());
+const activeFastSubscribers = new Set<() => void>();
 
 const createSessionId = (): string =>
   `fast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -42,6 +44,7 @@ const saveActiveFastState = (activeFastState: ActiveFastState): ActiveFastState 
   activeFastSnapshot = activeFastState;
   appStorage.insert(StorageKey.ActiveFast, activeFastState);
   updateFastingWidget(activeFastState);
+  void syncFastingLiveActivityState(activeFastState);
 
   return activeFastState;
 };
@@ -57,6 +60,11 @@ export const refreshFastSnapshots = (): void => {
   activeFastSnapshot = readActiveFastState();
   historySnapshot = readHistoryState();
   updateFastingWidget(activeFastSnapshot);
+};
+
+export const syncActiveFastingLiveActivity = async (): Promise<void> => {
+  if (activeFastSnapshot.session === null) return;
+  await syncFastingLiveActivityState(activeFastSnapshot);
 };
 
 export const getActiveFastState = (): ActiveFastState => activeFastSnapshot;
@@ -186,17 +194,55 @@ export const deleteFastSessions = (sessionIds: readonly string[]): HistoryState 
 };
 
 export type ImportMergeResult = { saved: number; skipped: number };
+export type ActiveFastStartUpdateResult =
+  | { status: 'updated'; activeFastState: ActiveFastState }
+  | { status: 'inactive' }
+  | { status: 'future' }
+  | { status: 'overlap'; session: FastSession };
 
-const sessionsOverlap = (first: FastSession, second: FastSession): boolean => {
+export const sessionsOverlap = (first: FastSession, second: FastSession): boolean => {
   if (first.id === second.id) return true;
   if (first.endedAt === null || second.endedAt === null) return false;
 
   return first.startedAt < second.endedAt && second.startedAt < first.endedAt;
 };
 
+export const getOverlappingFastSession = ({
+  excludedSessionId,
+  session,
+}: {
+  excludedSessionId?: string;
+  session: FastSession;
+}): FastSession | undefined =>
+  getHistoryState().sessions.find(
+    (candidate) =>
+      candidate.id !== excludedSessionId &&
+      candidate.id !== session.id &&
+      sessionsOverlap(candidate, session),
+  );
+
+const getOverlappingActiveFastStartSession = ({
+  session,
+  nowTimestamp,
+}: {
+  session: FastSession;
+  nowTimestamp: string;
+}): FastSession | undefined =>
+  getOverlappingFastSession({
+    excludedSessionId: session.id,
+    session: {
+      ...session,
+      endedAt: nowTimestamp,
+    },
+  });
+
 export const mergeImportedFastSessions = (
   sessions: readonly FastSession[],
 ): ImportMergeResult => {
+  if (getActiveFastState().session !== null) {
+    return { saved: 0, skipped: sessions.length };
+  }
+
   const historyState = getHistoryState();
   const additions: FastSession[] = [];
   let skipped = 0;
@@ -242,6 +288,10 @@ export const updateFastSession = ({
     updatedAt: timestamp,
   };
 
+  if (getOverlappingFastSession({ excludedSessionId: sessionId, session: updatedSession })) {
+    return undefined;
+  }
+
   saveHistoryState({
     ...historyState,
     sessions: historyState.sessions
@@ -251,6 +301,58 @@ export const updateFastSession = ({
   });
 
   return updatedSession;
+};
+
+export const updateActiveFastStart = async (
+  startedAt: string,
+): Promise<ActiveFastStartUpdateResult> => {
+  const activeFastState = getActiveFastState();
+
+  if (activeFastState.session === null) {
+    return { status: 'inactive' };
+  }
+
+  const timestamp = now();
+  const startedAtTime = new Date(startedAt).getTime();
+
+  if (!Number.isFinite(startedAtTime) || startedAtTime > new Date(timestamp).getTime()) {
+    return { status: 'future' };
+  }
+
+  const updatedSession: FastSession = {
+    ...activeFastState.session,
+    startedAt,
+    updatedAt: timestamp,
+  };
+  const overlappingSession = getOverlappingActiveFastStartSession({
+    session: updatedSession,
+    nowTimestamp: timestamp,
+  });
+
+  if (overlappingSession !== undefined) {
+    return { status: 'overlap', session: overlappingSession };
+  }
+
+  await cancelScheduledNotification(activeFastState.fastEndNotificationId);
+
+  const fastEndNotificationId = await scheduleFastEndNotification({
+    session: updatedSession,
+    enabled: activeFastState.fastEndReminderEnabled,
+    goalDurationLabel: formatGoalDuration(
+      updatedSession.goalDurationHours,
+      getSettings().goalDurationFormat,
+    ),
+  });
+
+  return {
+    status: 'updated',
+    activeFastState: saveActiveFastState({
+      ...activeFastState,
+      session: updatedSession,
+      fastEndNotificationId,
+      updatedAt: timestamp,
+    }),
+  };
 };
 
 export const reconcileActiveFastEndNotification = async (): Promise<ActiveFastState> => {
@@ -322,20 +424,35 @@ export const setActiveFastEndReminderEnabled = async (
 
 export const setActiveFastTimerView = (
   timerViewPreference: TimerViewPreference,
-): ActiveFastState =>
-  saveActiveFastState({
-    ...getActiveFastState(),
+): ActiveFastState => {
+  const activeFastState = getActiveFastState();
+
+  if (activeFastState.timerViewPreference === timerViewPreference) {
+    return activeFastState;
+  }
+
+  return saveActiveFastState({
+    ...activeFastState,
     timerViewPreference,
     updatedAt: now(),
   });
+};
 
 const subscribeToActiveFast = (onStoreChange: () => void): (() => void) =>
-  appStorage.subscribe((key) => {
+  {
+    activeFastSubscribers.add(onStoreChange);
+    const unsubscribeStorage = appStorage.subscribe((key) => {
     if (key === StorageKey.ActiveFast) {
       activeFastSnapshot = readActiveFastState();
       onStoreChange();
     }
   });
+
+    return () => {
+      activeFastSubscribers.delete(onStoreChange);
+      unsubscribeStorage();
+    };
+  };
 
 const subscribeToHistory = (onStoreChange: () => void): (() => void) =>
   appStorage.subscribe((key) => {

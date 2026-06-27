@@ -22,7 +22,9 @@ Goals:
 /
 ├── app/           # Expo React Native application
 ├── www/           # Astro website
-├── docs/          # Shared content and project documentation
+├── docs/
+│   ├── content/  # Shared legal and FAQ content
+│   └── dev/      # Developer manual, plans, and release documentation
 ├── AGENTS.md
 └── README.md
 ```
@@ -36,7 +38,7 @@ Before implementing features, review relevant documentation.
 Planning location:
 
 ```text
-docs/plan/
+docs/dev/plan/
 ```
 
 Current planning documents:
@@ -59,18 +61,19 @@ Use this reference table to choose the right document before starting work:
 
 When unsure, start with `plan/01-product-specification.md`, then consult the more specific document if the work is about execution order, deployment, or future evolution.
 
-Shared user-facing content lives in `docs/legal/*.md` and `docs/faq.md`. These Markdown files are the source of truth for both `app` and `www`. Run `node scripts/sync-shared-content.mjs` after editing them; never edit generated `shared-documents.json` files directly. Legal documents require explicit `version` and `effectiveDate` metadata.
+Shared user-facing content lives in `docs/content/legal/*.md` and `docs/content/faq.md`. These Markdown files are the source of truth for both `app` and `www`. Run `node scripts/sync-shared-content.mjs` after editing them; never edit generated `shared-documents.json` files directly. Legal documents require explicit `version` and `effectiveDate` metadata.
 
 Shared-content synchronization is a mandatory build invariant:
 
 - `www` must keep the shared-content generator in its `prebuild` lifecycle script;
 - `app` must synchronize in its Expo `prebuild` command and EAS `eas-build-pre-install` hook;
-- CI should run `node scripts/sync-shared-content.mjs --check` to detect stale generated files;
+- generated `shared-documents.json` files are ignored and must not be committed;
+- CI should run a shared-content integration check that regenerates files, runs `node scripts/sync-shared-content.mjs --check` before the website build, builds the website, and verifies rendered output;
 - changes to the Markdown schema, generator, targets, or lifecycle hooks must be reflected in the root, app, and website README and AGENTS files.
 
 Automated verification is also a repository invariant:
 
-- keep GitHub CI checks for app type/lint/coverage, the website shared-doc production verifier, and both iOS/Android bundle exports;
+- keep GitHub CI checks for app type/lint/unit/integration/coverage, the website shared-doc production verifier, and both iOS/Android bundle exports;
 - keep native E2E flows platform-neutral and run the same Maestro set on iOS and Android through the validated EAS workflow;
 - do not commit generated coverage output;
 - when behavior changes, update the narrowest useful unit or integration test and the relevant primary E2E flow.
@@ -379,7 +382,7 @@ Every dependency increases maintenance cost.
 Future roadmap items are documented in:
 
 ```text
-docs/plan/04-future-roadmap.md
+docs/dev/plan/04-future-roadmap.md
 ```
 
 Do not implement roadmap items unless requested.

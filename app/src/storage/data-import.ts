@@ -68,6 +68,33 @@ const parseCsvSessions = (content: string): readonly unknown[] => {
   }));
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const assertImportTimesArePossible = (source: readonly unknown[]): void => {
+  const currentTime = Date.now();
+  const hasImpossibleTime = source.some((value) => {
+    if (!isRecord(value) || value.status !== FastStatus.Completed || typeof value.startedAt !== 'string') {
+      return false;
+    }
+
+    const startedAt = Date.parse(value.startedAt);
+    const endedAt = typeof value.endedAt === 'string' ? Date.parse(value.endedAt) : Number.NaN;
+
+    return (
+      !Number.isFinite(startedAt) ||
+      !Number.isFinite(endedAt) ||
+      startedAt > currentTime ||
+      endedAt > currentTime ||
+      endedAt <= startedAt
+    );
+  });
+
+  if (hasImpossibleTime) {
+    throw new Error('Imported fasts cannot be in the future or end before they start.');
+  }
+};
+
 export const parseImportSessions = ({
   content,
   filename,
@@ -87,6 +114,7 @@ export const parseImportSessions = ({
   }
 
   if (!Array.isArray(source)) throw new Error('The file does not contain a session list.');
+  assertImportTimesArePossible(source);
   const repaired = repairHistory({ sessions: source }, new Date().toISOString()).value?.sessions ?? [];
   const sessions = repaired.filter(
     (session) => session.status === FastStatus.Completed && session.endedAt !== null,

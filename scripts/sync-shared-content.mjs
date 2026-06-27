@@ -5,9 +5,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sources = {
-  privacy: 'docs/legal/privacy-policy.md',
-  terms: 'docs/legal/terms-of-use.md',
-  faq: 'docs/faq.md',
+  privacy: 'docs/content/legal/privacy-policy.md',
+  terms: 'docs/content/legal/terms-of-use.md',
+  faq: 'docs/content/faq.md',
 };
 const targets = [
   'app/src/content/generated/shared-documents.json',

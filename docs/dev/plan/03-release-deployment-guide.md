@@ -47,7 +47,7 @@ For widgets, install a newly generated native build rather than Expo Go or a Jav
 
 ## Automated CI and E2E
 
-`.github/workflows/ci.yml` runs app content drift, TypeScript, lint, Jest coverage, the Astro shared-document build verifier, and independent iOS/Android Expo bundle exports on pull requests and pushes to `main`.
+`.github/workflows/ci.yml` runs app TypeScript, lint, unit tests, integration tests, Jest coverage, shared-content integration with the Astro post-build verifier, and independent iOS/Android Expo bundle exports on pull requests and pushes to `main`.
 
 `app/.eas/workflows/e2e.yml` is schema-validated against Expo's current workflow schema. For app-related pull requests it creates credential-free iOS simulator and Android APK builds, then runs every flow in `app/.maestro` on both platforms. These flows cover planned and open-ended fasting, save/cancel behavior, history/edit navigation, custom goals, Settings, and offline legal/FAQ content. EAS project access and build quota are operational prerequisites.
 
@@ -121,7 +121,7 @@ Required before submission:
 - honest privacy/data-safety declarations reflecting no analytics SDK, no installation identifier, native Apple/Google platform crash reporting, user-shared local diagnostics, and no accounts, backend, advertising, cross-app tracking, or health-data transmission;
 - release notes and version number.
 
-Do not advertise medium/large widgets, Live Activities, Dynamic Island, bulk history actions, sync, or payments until they exist and have been tested.
+Do not advertise medium/large widgets, iOS lock-screen widgets, Android ongoing notifications, bulk history actions, sync, or payments until they exist and have been tested.
 
 ## Release Sequence
 
@@ -141,7 +141,7 @@ Do not advertise medium/large widgets, Live Activities, Dynamic Island, bulk his
 - Active fast survives restart and backgrounding.
 - History remains the statistics source of truth.
 - Local notifications reconcile reliably.
-- Small widgets reflect active/inactive state.
+- Small widgets and iOS Live Activities reflect active/inactive state.
 - Export and clear-data flows work.
 - No account, advertising, cross-app tracking, analytics SDK, telemetry backend, installation identifier, or backend dependency is introduced; native platform crash/vitals reporting and optional user-shared diagnostics never block core features.
 - Store copy matches the actual shipped feature set.

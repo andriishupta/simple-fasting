@@ -37,7 +37,7 @@ These retain the local-first architecture and can be considered when they become
 - medium widget with active fast and recent summary;
 - iOS lock-screen widgets;
 - Android ongoing fasting notification;
-- iOS Live Activities and Dynamic Island;
+- advanced Live Activity controls beyond the active-fast display;
 - network-aware external-link state;
 - accessibility polish;
 - more native runtime verification on real devices;

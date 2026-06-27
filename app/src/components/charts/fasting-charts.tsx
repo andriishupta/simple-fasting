@@ -95,8 +95,6 @@ export function FastingBarChart({
         yAxisTextStyle={{ color: theme.textSecondary, fontSize: 11 }}
         xAxisLabelTextStyle={{ color: theme.textSecondary, fontSize: 11 }}
         formatYLabel={(label) => formatValue(Number(label))}
-        isAnimated
-        animationDuration={260}
       />
     </View>
   );
@@ -145,8 +143,6 @@ export function FastingLineChart({
         formatYLabel={(label) => formatValue(Number(label))}
         initialSpacing={12}
         endSpacing={12}
-        isAnimated
-        animationDuration={260}
       />
     </View>
   );
@@ -172,8 +168,6 @@ export function CompletionDonut({ value }: { value: number }) {
             <ThemedText type="small" themeColor="textSecondary">completed</ThemedText>
           </View>
         )}
-        isAnimated
-        animationDuration={260}
       />
     </View>
   );

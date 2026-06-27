@@ -3,8 +3,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
   type StyleProp,
   View,
   type ViewStyle,
@@ -19,6 +17,7 @@ type CenteredWheelPickerProps<Item> = {
   keyExtractor?: (item: Item, index: number) => string;
   renderItem: (item: Item, state: { index: number; selected: boolean }) => ReactNode;
   renderOverlay?: (state: { sideInset: number }) => ReactNode;
+  selectOnScroll?: boolean;
   selectedIndex: number;
   viewportStyle?: StyleProp<ViewStyle>;
   onSelectIndex: (index: number) => void;
@@ -33,16 +32,17 @@ export function CenteredWheelPicker<Item>({
   keyExtractor,
   renderItem,
   renderOverlay,
+  selectOnScroll = true,
   selectedIndex,
   viewportStyle,
   onSelectIndex,
 }: CenteredWheelPickerProps<Item>) {
   const scrollRef = useRef<ScrollView>(null);
-  const scrollStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pressSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasAlignedRef = useRef(false);
-  const isPressScrollingRef = useRef(false);
-  const ignoreSettleUntilRef = useRef(0);
+  const internallySelectedIndexRef = useRef<number | null>(null);
+  const selectedIndexRef = useRef(selectedIndex);
   const [viewportWidth, setViewportWidth] = useState(0);
   const snapWidth = itemWidth + itemGap;
   const sideInset = Math.max(0, (viewportWidth - itemWidth) / 2);
@@ -55,62 +55,73 @@ export function CenteredWheelPicker<Item>({
 
     scrollRef.current?.scrollTo({ x: index * snapWidth, animated });
   }, [items.length, snapWidth]);
-  const selectIndex = useCallback((index: number, animated: boolean): void => {
+  const selectIndex = useCallback((index: number): void => {
     if (index < 0 || index >= items.length) return;
 
-    if (scrollStopTimerRef.current !== null) clearTimeout(scrollStopTimerRef.current);
-    if (pressSettleTimerRef.current !== null) clearTimeout(pressSettleTimerRef.current);
-    isPressScrollingRef.current = false;
+    if (selectedIndexRef.current === index) return;
+    selectedIndexRef.current = index;
+    internallySelectedIndexRef.current = index;
     onSelectIndex(index);
-    scrollToIndex(index, animated);
-  }, [items.length, onSelectIndex, scrollToIndex]);
+  }, [items.length, onSelectIndex]);
   const pressIndex = useCallback((index: number): void => {
     if (index < 0 || index >= items.length) return;
 
-    if (scrollStopTimerRef.current !== null) clearTimeout(scrollStopTimerRef.current);
     if (pressSettleTimerRef.current !== null) clearTimeout(pressSettleTimerRef.current);
+    if (dragSettleTimerRef.current !== null) clearTimeout(dragSettleTimerRef.current);
 
-    isPressScrollingRef.current = true;
     scrollToIndex(index, true);
+    if (!selectOnScroll) {
+      selectIndex(index);
+      return;
+    }
+
     pressSettleTimerRef.current = setTimeout(() => {
-      isPressScrollingRef.current = false;
-      onSelectIndex(index);
+      selectIndex(index);
     }, 320);
-  }, [items.length, onSelectIndex, scrollToIndex]);
+  }, [items.length, scrollToIndex, selectIndex, selectOnScroll]);
   const getNearestIndex = useCallback(
     (offsetX: number): number =>
       Math.max(0, Math.min(items.length - 1, Math.round(offsetX / snapWidth))),
     [items.length, snapWidth],
   );
   const settleScroll = useCallback((offsetX: number): void => {
-    selectIndex(getNearestIndex(offsetX), true);
-  }, [getNearestIndex, selectIndex]);
-  const scheduleSettleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>): void => {
-    if (Date.now() < ignoreSettleUntilRef.current) return;
-    if (isPressScrollingRef.current) return;
-    if (scrollStopTimerRef.current !== null) clearTimeout(scrollStopTimerRef.current);
+    if (!selectOnScroll) return;
 
-    const offsetX = event.nativeEvent.contentOffset.x;
-    scrollStopTimerRef.current = setTimeout(() => settleScroll(offsetX), 110);
-  }, [settleScroll]);
-  const finishScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>): void => {
-    if (scrollStopTimerRef.current !== null) clearTimeout(scrollStopTimerRef.current);
     if (pressSettleTimerRef.current !== null) clearTimeout(pressSettleTimerRef.current);
-    isPressScrollingRef.current = false;
-    if (Date.now() < ignoreSettleUntilRef.current) return;
-    settleScroll(event.nativeEvent.contentOffset.x);
+    if (dragSettleTimerRef.current !== null) clearTimeout(dragSettleTimerRef.current);
+
+    selectIndex(getNearestIndex(offsetX));
+  }, [getNearestIndex, selectIndex, selectOnScroll]);
+  const scheduleDragSettle = useCallback((offsetX: number): void => {
+    if (dragSettleTimerRef.current !== null) clearTimeout(dragSettleTimerRef.current);
+    dragSettleTimerRef.current = setTimeout(() => {
+      dragSettleTimerRef.current = null;
+      settleScroll(offsetX);
+    }, 120);
   }, [settleScroll]);
+  const cancelDragSettle = useCallback((): void => {
+    if (dragSettleTimerRef.current !== null) clearTimeout(dragSettleTimerRef.current);
+    dragSettleTimerRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    selectedIndexRef.current = selectedIndex;
+  }, [selectedIndex]);
 
   useEffect(() => {
     if (!hasSelectedItem) {
-      if (scrollStopTimerRef.current !== null) clearTimeout(scrollStopTimerRef.current);
       if (pressSettleTimerRef.current !== null) clearTimeout(pressSettleTimerRef.current);
-      isPressScrollingRef.current = false;
-      ignoreSettleUntilRef.current = Date.now() + 350;
+      if (dragSettleTimerRef.current !== null) clearTimeout(dragSettleTimerRef.current);
       return;
     }
 
     if (viewportWidth === 0 || items.length === 0) return;
+
+    if (internallySelectedIndexRef.current === boundedSelectedIndex) {
+      internallySelectedIndexRef.current = null;
+      hasAlignedRef.current = true;
+      return;
+    }
 
     scrollToIndex(boundedSelectedIndex, hasAlignedRef.current);
     hasAlignedRef.current = true;
@@ -118,9 +129,8 @@ export function CenteredWheelPicker<Item>({
 
   useEffect(
     () => () => {
-      if (scrollStopTimerRef.current !== null) clearTimeout(scrollStopTimerRef.current);
       if (pressSettleTimerRef.current !== null) clearTimeout(pressSettleTimerRef.current);
-      isPressScrollingRef.current = false;
+      if (dragSettleTimerRef.current !== null) clearTimeout(dragSettleTimerRef.current);
     },
     [],
   );
@@ -139,8 +149,15 @@ export function CenteredWheelPicker<Item>({
         snapToInterval={snapWidth}
         snapToAlignment="start"
         scrollEventThrottle={16}
-        onScroll={scheduleSettleScroll}
-        onMomentumScrollEnd={finishScroll}
+        onScrollEndDrag={
+          selectOnScroll
+            ? (event) => scheduleDragSettle(event.nativeEvent.contentOffset.x)
+            : undefined
+        }
+        onMomentumScrollBegin={selectOnScroll ? cancelDragSettle : undefined}
+        onMomentumScrollEnd={
+          selectOnScroll ? (event) => settleScroll(event.nativeEvent.contentOffset.x) : undefined
+        }
         contentContainerStyle={{ gap: itemGap, paddingHorizontal: sideInset }}>
         {items.map((item, index) => (
           <Pressable

@@ -6,17 +6,22 @@ import {
   StyleSheet,
   Switch,
   TextInput,
+  unstable_batchedUpdates,
   View,
   useWindowDimensions,
 } from 'react-native';
 import { router } from 'expo-router';
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { ArrowDown, ArrowUp, CheckCircle2, ChevronRight } from 'lucide-react-native';
 import Animated, {
   cancelAnimation,
   Easing,
   FadeIn,
   FadeInUp,
-  FadingTransition,
+  FadeOutDown,
+  LinearTransition,
   useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
@@ -25,7 +30,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { AppButton } from '@/components/app-button';
-import { FeedbackState } from '@/components/feedback-state';
 import { useFastSavedNotice } from '@/components/fast-saved-notice-context';
 import { ScreenHeading } from '@/components/screen-heading';
 import { TabScreenShell } from '@/components/tab-screen-shell';
@@ -47,12 +51,13 @@ import {
   setActiveFastEndReminderEnabled,
   setActiveFastTimerView,
   startFast,
+  updateActiveFastStart,
   useActiveFastState,
 } from '@/storage/fasting-storage';
 import { TimerViewPreference, type GoalDurationFormat } from '@/storage/app-storage';
 import {
   setLastUsedGoalDurationHours,
-  useSettings,
+  useSettingsSelector,
 } from '@/storage/settings-storage';
 import { formatDuration, formatDurationWorklet } from '@/utils/fasting-duration';
 
@@ -148,29 +153,33 @@ const useElapsedSecondsValue = (startedAt: string): SharedValue<number> => {
 
 export default function HomeScreen() {
   const { height } = useWindowDimensions();
-  const settings = useSettings();
+  const goals = useSettingsSelector((settings) => settings.goals);
+  const lastUsedGoalDurationHours = useSettingsSelector(
+    (settings) => settings.lastUsedGoalDurationHours,
+  );
+  const goalDurationFormat = useSettingsSelector((settings) => settings.goalDurationFormat);
   const activeFastState = useActiveFastState();
   const {
     notice: savedFastNotice,
     remainingSeconds: savedNoticeSeconds,
     dismiss: dismissSavedFastNotice,
   } = useFastSavedNotice();
-  const enabledGoals = settings.goals.filter((goal) => goal.isEnabled);
+  const enabledGoals = goals.filter((goal) => goal.isEnabled);
   const storedGoal =
     enabledGoals.find(
-      (goal) => goal.targetDurationHours === settings.lastUsedGoalDurationHours,
+      (goal) => goal.targetDurationHours === lastUsedGoalDurationHours,
     ) ??
     enabledGoals.find((goal) => goal.id === 'goal-16-hours') ??
     enabledGoals[0] ??
-    settings.goals[0];
+    goals[0];
   const [selectedGoalId, setSelectedGoalId] = useState(() =>
     getInitialGoalId(
-      settings.goals.filter((goal) => goal.isEnabled),
-      settings.lastUsedGoalDurationHours,
+      goals.filter((goal) => goal.isEnabled),
+      lastUsedGoalDurationHours,
     ),
   );
   const [customDurationHours, setCustomDurationHours] = useState(() =>
-    Math.max(1, settings.lastUsedGoalDurationHours || 24),
+    Math.max(1, lastUsedGoalDurationHours || 24),
   );
   const [reason, setReason] = useState('');
   const [noteVisible, setNoteVisible] = useState(false);
@@ -179,15 +188,15 @@ export default function HomeScreen() {
   const activeSession = activeFastState.session;
   const shouldScroll =
     height < (activeSession === null ? 700 : 760) ||
-    operationError !== null ||
     noteVisible ||
-    customDurationExpanded;
+    customDurationExpanded ||
+    savedFastNotice !== null;
   const effectiveSelectedGoalId =
     selectedGoalId === customGoalId ||
     selectedGoalId === unlimitedGoalId ||
     enabledGoals.some((goal) => goal.id === selectedGoalId)
       ? selectedGoalId
-      : getInitialGoalId(enabledGoals, settings.lastUsedGoalDurationHours);
+      : getInitialGoalId(enabledGoals, lastUsedGoalDurationHours);
 
   const selectedGoal =
     enabledGoals.find((goal) => goal.id === effectiveSelectedGoalId) ?? storedGoal;
@@ -205,14 +214,29 @@ export default function HomeScreen() {
           ? customDurationHours
           : (enabledGoals.find((goal) => goal.id === goalId)?.targetDurationHours ?? 16);
 
-    setSelectedGoalId(goalId);
-    if (goalId !== customGoalId) setCustomDurationExpanded(false);
+    unstable_batchedUpdates(() => {
+      setSelectedGoalId((current) => (current === goalId ? current : goalId));
+      if (goalId !== customGoalId) {
+        setCustomDurationExpanded((current) => (current ? false : current));
+      }
+    });
     setLastUsedGoalDurationHours(durationHours);
   };
   const updateCustomDuration = (hours: number): void => {
-    setCustomDurationHours(hours);
+    setCustomDurationHours((current) => (current === hours ? current : hours));
     setLastUsedGoalDurationHours(hours);
   };
+
+  useEffect(() => {
+    if (operationError === null) return;
+
+    Alert.alert(
+      'Fast action failed',
+      operationError,
+      [{ text: 'OK', onPress: () => setOperationError(null) }],
+      { cancelable: true, onDismiss: () => setOperationError(null) },
+    );
+  }, [operationError]);
 
   const startSelectedFast = async (): Promise<void> => {
     try {
@@ -253,6 +277,34 @@ export default function HomeScreen() {
       },
     ]);
   };
+  const updateActiveFastStartedAt = async (startedAt: Date): Promise<boolean> => {
+    try {
+      const result = await updateActiveFastStart(startedAt.toISOString());
+
+      if (result.status === 'updated') {
+        setOperationError(null);
+        return true;
+      }
+
+      if (result.status === 'future') {
+        setOperationError('A fast cannot start in the future.');
+        return false;
+      }
+
+      if (result.status === 'overlap') {
+        setOperationError(
+          'Fasts cannot overlap. Save this one, delete the previous overlapping fast, then edit again.',
+        );
+        return false;
+      }
+
+      setOperationError('There is no active fast to update.');
+      return false;
+    } catch {
+      setOperationError('The fast start time could not be updated. Your active fast is still saved.');
+      return false;
+    }
+  };
 
   return (
     <TabScreenShell
@@ -261,15 +313,7 @@ export default function HomeScreen() {
       maxWidth={Math.min(MaxContentWidth, 560)}
       contentStyle={styles.homeContent}>
         <ScreenHeading align="center">Simple Fasting</ScreenHeading>
-        {operationError !== null ? (
-          <FeedbackState
-            kind="error"
-            title="Fast action failed"
-            description={operationError}
-            action={{ label: 'Dismiss', onPress: () => setOperationError(null) }}
-          />
-        ) : null}
-        <Animated.View layout={FadingTransition.duration(180)} style={styles.stateContent}>
+        <View style={styles.stateContent}>
           {activeSession === null ? (
             <ReadyToFast
               goals={enabledGoals}
@@ -291,11 +335,11 @@ export default function HomeScreen() {
             <ActiveFast
               goalDurationHours={activeSession.goalDurationHours}
               goalName={
-                settings.goals.find(
+                goals.find(
                   (goal) => goal.targetDurationHours === activeSession.goalDurationHours,
                 )?.name ?? (activeSession.goalDurationHours > 0 ? 'This Time' : 'Open-ended fast')
               }
-              goalDurationFormat={settings.goalDurationFormat}
+              goalDurationFormat={goalDurationFormat}
               startedAt={activeSession.startedAt}
               reason={activeSession.reason}
               goalSeconds={
@@ -304,6 +348,7 @@ export default function HomeScreen() {
               reminderEnabled={activeFastState.fastEndReminderEnabled}
               timerView={activeFastState.timerViewPreference}
               onTimerViewChange={setActiveFastTimerView}
+              onStartedAtChange={updateActiveFastStartedAt}
               onReminderChange={(enabled) => {
                 void setActiveFastEndReminderEnabled(enabled).catch(() =>
                   setOperationError('The fast reminder could not be updated.'),
@@ -315,7 +360,7 @@ export default function HomeScreen() {
               onCancel={cancelActiveFast}
             />
           )}
-        </Animated.View>
+        </View>
     </TabScreenShell>
   );
 }
@@ -374,34 +419,37 @@ function ReadyToFast({
         onChangeText={onReasonChange}
       />
 
-      <View style={styles.readyFooter}>
+      <Animated.View layout={LinearTransition.duration(180)} style={styles.readyFooter}>
         <AppButton label="Start fast" onPress={onStart} style={styles.primaryAction} />
-      </View>
-      {savedSessionId !== null ? (
-        <Animated.View entering={FadeInUp.duration(200)}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Fast saved. View fast. Closing in ${savedNoticeSeconds} seconds.`}
-            onPress={() => router.push(`/history/${savedSessionId}`)}
-            style={({ pressed }) => [
-              styles.savedNotice,
-              {
-                backgroundColor: theme.accentBackground,
-                borderColor: theme.accentBorder,
-              },
-              pressed && styles.pressed,
-            ]}>
-            <CheckCircle2 size={21} color={theme.accent} />
-            <View style={styles.savedNoticeText}>
-              <ThemedText type="smallBold">Fast saved</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                View fast · closes in {savedNoticeSeconds}s
-              </ThemedText>
-            </View>
-            <ChevronRight size={18} color={theme.accent} />
-          </Pressable>
-        </Animated.View>
-      ) : null}
+        {savedSessionId !== null ? (
+          <Animated.View
+            entering={FadeInUp.duration(200)}
+            exiting={FadeOutDown.duration(160)}
+            style={styles.savedNoticeWrap}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Fast saved. View fast. Closing in ${savedNoticeSeconds} seconds.`}
+              onPress={() => router.push(`/history/${savedSessionId}`)}
+              style={({ pressed }) => [
+                styles.savedNotice,
+                {
+                  backgroundColor: theme.accentBackground,
+                  borderColor: theme.accentBorder,
+                },
+                pressed && styles.pressed,
+              ]}>
+              <CheckCircle2 size={21} color={theme.accent} />
+              <View style={styles.savedNoticeText}>
+                <ThemedText type="smallBold">Fast saved</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  View fast · closes in {savedNoticeSeconds}s
+                </ThemedText>
+              </View>
+              <ChevronRight size={18} color={theme.accent} />
+            </Pressable>
+          </Animated.View>
+        ) : null}
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -416,6 +464,7 @@ function ActiveFast({
   reminderEnabled,
   timerView,
   onTimerViewChange,
+  onStartedAtChange,
   onReminderChange,
   onEnd,
   onCancel,
@@ -429,6 +478,7 @@ function ActiveFast({
   reminderEnabled: boolean;
   timerView: TimerViewPreference;
   onTimerViewChange: (timerView: TimerViewPreference) => void;
+  onStartedAtChange: (startedAt: Date) => Promise<boolean>;
   onReminderChange: (enabled: boolean) => void;
   onEnd: () => void;
   onCancel: () => void;
@@ -441,6 +491,7 @@ function ActiveFast({
     goalDurationHours > 0 ? formatGoalDuration(goalDurationHours, goalDurationFormat) : 'No time limit';
   const initialElapsedSeconds = getElapsedSecondsFromStart(startedDate.getTime());
   const elapsedSeconds = useElapsedSecondsValue(startedAt);
+  const [editingStartedAt, setEditingStartedAt] = useState(false);
 
   return (
     <Animated.View entering={FadeIn.duration(180)} style={styles.active}>
@@ -509,7 +560,12 @@ function ActiveFast({
           trackColor={theme.backgroundSelected}
         />
         <View style={styles.activeFastTimes}>
-          <Metric label="Started" value={formatDateTime(startedDate)} />
+          <EditableStartedMetric
+            value={startedDate}
+            editing={editingStartedAt}
+            onEditingChange={setEditingStartedAt}
+            onSave={onStartedAtChange}
+          />
           <View style={[styles.metricDivider, { backgroundColor: theme.backgroundSelected }]} />
           <Metric label="Ends" value={endDate === null ? 'No planned end' : formatDateTime(endDate)} />
         </View>
@@ -680,6 +736,98 @@ function LiveTimerText({
   );
 }
 
+function EditableStartedMetric({
+  value,
+  editing,
+  onEditingChange,
+  onSave,
+}: {
+  value: Date;
+  editing: boolean;
+  onEditingChange: (editing: boolean) => void;
+  onSave: (value: Date) => Promise<boolean>;
+}) {
+  const theme = useTheme();
+  const [draft, setDraft] = useState(value);
+
+  const updateDate = (_event: DateTimePickerEvent, selectedDate?: Date): void => {
+    if (selectedDate === undefined) return;
+    setDraft((current) => {
+      const next = new Date(current);
+      next.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+      return next;
+    });
+  };
+
+  const updateTime = (_event: DateTimePickerEvent, selectedDate?: Date): void => {
+    if (selectedDate === undefined) return;
+    setDraft((current) => {
+      const next = new Date(current);
+      next.setHours(selectedDate.getHours(), selectedDate.getMinutes(), 0, 0);
+      return next;
+    });
+  };
+
+  if (!editing) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Started ${formatDateTime(value)}. Edit start time.`}
+        onPress={() => {
+          setDraft(value);
+          onEditingChange(true);
+        }}
+        style={({ pressed }) => [styles.metricButton, pressed && styles.pressed]}>
+        <ThemedText themeColor="textSecondary">Started</ThemedText>
+        <ThemedText type="smallBold" selectable style={styles.centeredText}>
+          {formatDateTime(value)}
+        </ThemedText>
+        <ThemedText type="small" themeColor="accent">
+          Edit
+        </ThemedText>
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={styles.startedEditor}>
+      <ThemedText themeColor="textSecondary">Started</ThemedText>
+      <DateTimePicker
+        value={draft}
+        mode="date"
+        maximumDate={new Date()}
+        onChange={updateDate}
+        accentColor={theme.accent}
+      />
+      <DateTimePicker
+        value={draft}
+        mode="time"
+        maximumDate={new Date()}
+        onChange={updateTime}
+        accentColor={theme.accent}
+      />
+      <View style={styles.startedEditorActions}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => onEditingChange(false)}
+          style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
+          <ThemedText type="smallBold" themeColor="textSecondary">Cancel</ThemedText>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            void onSave(draft).then((saved) => {
+              if (saved) onEditingChange(false);
+            });
+          }}
+          style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
+          <ThemedText type="smallBold" themeColor="accent">Save</ThemedText>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.metric}>
@@ -693,7 +841,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   homeContent: {
-    justifyContent: 'center',
+    flex: 1,
   },
   stateContent: {
     width: '100%',
@@ -711,10 +859,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
+  savedNoticeWrap: { width: '100%' },
   savedNoticeText: { flex: 1, gap: Spacing.half },
   ready: { width: '100%', gap: Spacing.three },
   centeredText: { textAlign: 'center' },
-  readyFooter: { minHeight: 56 },
+  readyFooter: { gap: Spacing.two, minHeight: 56 },
   primaryAction: {
     width: '100%',
     minHeight: 56,
@@ -791,6 +940,28 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.one,
   },
   metric: { flex: 1, alignItems: 'center', gap: Spacing.one, paddingHorizontal: Spacing.two },
+  metricButton: {
+    flex: 1,
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.two,
+  },
+  startedEditor: {
+    flex: 1,
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.one,
+  },
+  startedEditorActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.two,
+  },
+  textAction: {
+    minHeight: 32,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.one,
+  },
   metricDivider: { width: 1 },
   reminderRow: {
     width: '100%',

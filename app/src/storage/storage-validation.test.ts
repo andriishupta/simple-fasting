@@ -33,6 +33,7 @@ describe('storage validation', () => {
         accentColorName: AccentColorName.Green,
         dataViewPreference: 'graphs',
         goalDurationFormat: 'invalid',
+        liveActivitiesEnabled: true,
         legalConsentAccepted: true,
         lastUsedGoalDurationHours: -1,
         notifications: {
@@ -58,6 +59,7 @@ describe('storage validation', () => {
       accentColorName: AccentColorName.Green,
       dataViewPreference: DataViewPreference.Charts,
       goalDurationFormat: GoalDurationFormat.Hours,
+      liveActivitiesEnabled: true,
       legalConsentAccepted: true,
       lastUsedGoalDurationHours: 16,
       notifications: {

@@ -8,7 +8,7 @@ intro: Practical answers about the current Simple Fasting app. Features describe
 
 ## Does Simple Fasting need an account?
 
-No. The current app has no free or paid accounts, registration, or login. Core fasting, history, statistics, reminders, widgets, and settings work locally.
+No. The current app has no free or paid accounts, registration, or login. Core fasting, history, statistics, reminders, widgets, Live Activities, and settings work locally.
 
 If optional accounts are introduced later, we will explain what information they use and update the Privacy Policy before materially different collection begins.
 
@@ -22,7 +22,7 @@ App stores, operating systems, website hosting, email, backups, and destinations
 
 ## Does it work offline?
 
-Yes. Timing, history, statistics, reminders, supported widgets, and settings work without a network connection. Internet access is only needed for optional website, legal, support, and email actions.
+Yes. Timing, history, statistics, reminders, supported widgets, optional iOS Live Activities, and settings work without a network connection. Internet access is only needed for optional website, legal, support, and email actions.
 
 ## Where is my data stored?
 
@@ -32,7 +32,7 @@ Your operating system may include app data in a device backup depending on your 
 
 ## Can anyone else see local data?
 
-Anyone with access to your unlocked device may be able to see the app. Notifications, widgets, operating-system backups, screenshots, shared exports, and notes can also expose information depending on your choices and device settings.
+Anyone with access to your unlocked device may be able to see the app. Notifications, widgets, Live Activities, operating-system backups, screenshots, shared exports, and notes can also expose information depending on your choices and device settings.
 
 Use device access controls, review notification and widget visibility, and store exports securely.
 
@@ -70,9 +70,9 @@ No. Simple Fasting has no cloud copy or account recovery for local app informati
 
 Create and safely store an export before clearing data or uninstalling if you need a copy.
 
-## Why did a reminder or widget not update?
+## Why did a reminder, widget, or Live Activity not update?
 
-Notifications, widgets, clocks, and background work depend on operating-system permissions, scheduling, battery controls, and device behavior. They can be delayed, suppressed, inaccurate, or unavailable.
+Notifications, widgets, Live Activities, clocks, and background work depend on operating-system permissions, scheduling, battery controls, and device behavior. They can be delayed, suppressed, inaccurate, or unavailable.
 
 On first launch, onboarding explains notifications and lets you choose **Allow Notifications** or **Not Now**. If allowed, fast-end reminders start enabled and daily reminders remain off until you opt in. If skipped or denied, reminder settings show **Enable Notifications** until notifications are allowed in the device's system settings.
 

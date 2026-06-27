@@ -2,7 +2,7 @@
 
 Expo React Native application for a private, offline-first fasting tracker. The app runs on iOS and Android, stores all user data locally in MMKV, and does not require an account or backend.
 
-The code in this directory is the source of truth for current application behavior. Product intent, remaining work, release steps, and future ideas are documented in `../docs/plan`.
+The code in this directory is the source of truth for current application behavior. Product intent, remaining work, release steps, and future ideas are documented in `../docs/dev/plan`.
 
 ## Product Flow
 
@@ -74,7 +74,7 @@ Small home-screen widgets are implemented on both platforms.
 - Tap: opens `simple-fasting://`.
 - Refresh: requested whenever active fasting state changes.
 
-iOS uses `expo-widgets`; Android uses `react-native-android-widget`. Medium/large widgets, lock-screen widgets, Live Activities, Dynamic Island, and Android ongoing notifications are not implemented.
+iOS uses `expo-widgets` for small home-screen widgets and the optional active-fast Live Activity on the Lock Screen/Dynamic Island. Android uses `react-native-android-widget`. Medium/large widgets, iOS lock-screen widgets, and Android ongoing notifications are not implemented.
 The local `with-widget-version` config plugin keeps the generated iOS extension version aligned with the containing app, working around the widget generator's fixed Xcode marketing version.
 
 ### Widget installation checks
@@ -103,7 +103,7 @@ There is no push-notification server.
 MMKV stores:
 
 - `metadata`;
-- `settings` — preferences, goal duration display format, goals, reminder preferences, `legalConsentAccepted`, `onboardingCompleted`, and `notificationPromptShown`;
+- `settings` — preferences, goal duration display format, goals, reminder and Live Activity preferences, `legalConsentAccepted`, `onboardingCompleted`, and `notificationPromptShown`;
 - `activeFast`;
 - `history`.
 - `diagnostics` — at most 50 recent privacy-filtered local app errors.
@@ -112,7 +112,7 @@ The app does not store a `notificationsEnabled` value. Notification availability
 
 History is the source of truth for statistics and charts, which are derived in memory rather than persisted in a separate cache. Users can import JSON or CSV exports without overwriting existing or time-overlapping sessions; the result reports saved and skipped counts. Users can also export through the native share sheet, bulk-delete selected history entries, and clear all local data with confirmation.
 
-The active timer derives elapsed time from the saved `startedAt` timestamp and the device clock. The Fast screen avoids JS interval ticks for the active counter/progress ring and resynchronizes on foreground; widgets use their platform timer APIs where available.
+The active timer derives elapsed time from the saved `startedAt` timestamp and the device clock. The Fast screen avoids JS interval ticks for the active counter/progress ring and resynchronizes on foreground; widgets and Live Activities use their platform timer APIs where available.
 
 Core fasting writes complete before optional notification cleanup or rescheduling. If the platform notification service fails, local fasting state remains usable and startup does not enter a blocking recovery screen.
 
@@ -207,17 +207,17 @@ Coverage output is generated under `coverage/` and is not committed. Appium is i
 
 ## Shared legal and FAQ content
 
-Privacy Policy, Terms of Use, and FAQ are authored in `../docs`, not in app route files. `pnpm content:sync` regenerates `src/content/generated/shared-documents.json` for both the app and website. Never edit generated JSON directly.
+Privacy Policy, Terms of Use, and FAQ are authored in `../docs/content`, not in app route files. `pnpm content:sync` regenerates `src/content/generated/shared-documents.json` for both the app and website. Never edit generated JSON directly.
 
 Content synchronization is required before native generation and builds:
 
 - `pnpm prebuild` runs content sync, then `expo prebuild`;
 - EAS runs content sync through `eas-build-pre-install`;
 - `start`, `ios`, `android`, and `web` synchronize automatically;
-- `lint` and `test` fail if generated content is stale;
-- `pnpm content:check` performs the drift check directly.
+- `lint` and tests synchronize ignored generated files before they run;
+- `pnpm content:check` performs the drift check after synchronization.
 
-Commit canonical Markdown and both generated JSON files together.
+Commit canonical Markdown only. Generated app and website JSON files are ignored and should stay out of commits.
 
 ## Current Remaining Work
 
@@ -226,4 +226,4 @@ Commit canonical Markdown and both generated JSON files together.
 - store assets, screenshots, and metadata;
 - decide whether bulk history actions or medium widgets belong in v1.
 
-See `../docs/plan/02-execution-plan.md` and `../docs/plan/03-release-deployment-guide.md` for the authoritative remaining-work lists.
+See `../docs/dev/plan/02-execution-plan.md` and `../docs/dev/plan/03-release-deployment-guide.md` for the authoritative remaining-work lists.

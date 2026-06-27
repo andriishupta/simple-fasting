@@ -102,6 +102,7 @@ export type AppSettings = {
   lastUsedGoalDurationHours: number;
   goalDurationFormat: GoalDurationFormat;
   dataViewPreference: DataViewPreference;
+  liveActivitiesEnabled: boolean;
   legalConsentAccepted: boolean;
   onboardingCompleted: boolean;
   notificationPromptShown: boolean;
@@ -248,6 +249,7 @@ export const createDefaultAppSettings = (updatedAt: Timestamp): AppSettings => (
   lastUsedGoalDurationHours: 16,
   goalDurationFormat: GoalDurationFormat.Hours,
   dataViewPreference: DataViewPreference.Stats,
+  liveActivitiesEnabled: false,
   legalConsentAccepted: false,
   onboardingCompleted: false,
   notificationPromptShown: false,

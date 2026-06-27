@@ -33,6 +33,9 @@ yarn-error.*
 .DS_Store
 *.pem
 
+# Generated from ../docs/content by ../scripts/sync-shared-content.mjs.
+src/content/generated/shared-documents.json
+
 # local env files
 .env*.local
 

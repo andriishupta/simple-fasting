@@ -17,10 +17,12 @@ export type FastingWidgetModel =
       status: 'active';
       accessibilityLabel: string;
       displayTime: string;
+      goalDurationLabel: string;
       headline: string;
       goalDurationHours: number;
       goalEndsAt: number;
       hasGoal: boolean;
+      goalName: string;
       progress: number;
       startedAt: number;
       subtitle: string;
@@ -55,16 +57,20 @@ export const createFastingWidgetModel = (
       ? goalSeconds - elapsedSeconds
       : elapsedSeconds;
   const displayTime = formatDuration(shownSeconds);
+  const goalDurationLabel = hasGoal
+    ? formatGoalDuration(session.goalDurationHours, goalDurationFormat)
+    : 'No time limit';
+  const displayGoalName = hasGoal ? (goalName ?? 'Fasting goal') : 'Open-ended fast';
 
   return {
     status: 'active',
-    accessibilityLabel: `${goalName ?? 'Fasting'} ${displayTime}`,
+    accessibilityLabel: `${displayGoalName} ${displayTime}`,
     displayTime,
-    headline: hasGoal
-      ? `${goalName ?? 'Fasting goal'} · ${formatGoalDuration(session.goalDurationHours, goalDurationFormat)}`
-      : 'Open-ended fast',
+    goalDurationLabel,
+    headline: hasGoal ? `${displayGoalName} · ${goalDurationLabel}` : displayGoalName,
     goalDurationHours: session.goalDurationHours,
     goalEndsAt: startedAt + goalSeconds * 1000,
+    goalName: displayGoalName,
     hasGoal,
     progress: hasGoal ? Math.min(1, elapsedSeconds / goalSeconds) : 0,
     startedAt,

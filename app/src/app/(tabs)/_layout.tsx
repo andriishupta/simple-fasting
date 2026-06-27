@@ -1,13 +1,22 @@
+import { useMemo } from 'react';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { useTheme } from '@/hooks/use-theme';
 
 export default function TabLayout() {
   const theme = useTheme();
-  const contentStyle = { backgroundColor: theme.backgroundElement };
+  const contentStyle = useMemo(
+    () => ({ backgroundColor: theme.backgroundElement }),
+    [theme.backgroundElement],
+  );
 
   return (
-    <NativeTabs tintColor={theme.accent} minimizeBehavior="onScrollDown">
+    <NativeTabs
+      tintColor={theme.accent}
+      backgroundColor={theme.background}
+      blurEffect="systemMaterial"
+      disableTransparentOnScrollEdge
+      minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger
         name="history"
         role="history"

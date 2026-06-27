@@ -10,7 +10,11 @@ import { Appearance, useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { ThemePreference } from '@/storage/app-storage';
-import { getAccentPalette, getEffectiveColorScheme, useSettings } from '@/storage/settings-storage';
+import {
+  getAccentPalette,
+  getEffectiveColorScheme,
+  useSettingsSelector,
+} from '@/storage/settings-storage';
 
 type ResolvedTheme = Record<keyof typeof Colors.light, string>;
 type AppThemeContextValue = {
@@ -26,27 +30,28 @@ const fallbackTheme: AppThemeContextValue = {
 const AppThemeContext = createContext<AppThemeContextValue>(fallbackTheme);
 
 export function AppThemeProvider({ children }: { children: ReactNode }) {
-  const settings = useSettings();
+  const themePreference = useSettingsSelector((settings) => settings.themePreference);
+  const accentColorName = useSettingsSelector((settings) => settings.accentColorName);
   const systemColorScheme = useColorScheme();
   const colorScheme = getEffectiveColorScheme({
-    themePreference: settings.themePreference,
+    themePreference,
     systemColorScheme,
   });
   const theme = useMemo(
     () => ({
       ...Colors[colorScheme],
       ...getAccentPalette({
-        accentColorName: settings.accentColorName,
+        accentColorName,
         colorScheme,
       }),
     }),
-    [colorScheme, settings.accentColorName],
+    [accentColorName, colorScheme],
   );
   useLayoutEffect(() => {
     Appearance.setColorScheme(
-      settings.themePreference === ThemePreference.System ? 'unspecified' : colorScheme,
+      themePreference === ThemePreference.System ? 'unspecified' : colorScheme,
     );
-  }, [colorScheme, settings.themePreference]);
+  }, [colorScheme, themePreference]);
   const value = useMemo(() => ({ colorScheme, theme }), [colorScheme, theme]);
 
   return createElement(AppThemeContext.Provider, { value }, children);

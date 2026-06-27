@@ -153,15 +153,15 @@ No push-notification backend is used.
 
 ## Widgets
 
-Small home-screen widgets are implemented for iOS and Android.
+Small home-screen widgets are implemented for iOS and Android. iOS also supports an optional active-fast Live Activity for the Lock Screen and Dynamic Island.
 
 When inactive, the widget invites the user to open the app and start a fast. When active, it shows the app identity, goal name and formatted goal duration, the persisted elapsed/remaining label, one timer, and planned-goal progress without redundant timer or goal labels. Tapping opens the app through `simple-fasting://`.
 
-- iOS uses `expo-widgets` and SwiftUI-backed Expo UI.
+- iOS uses `expo-widgets` and SwiftUI-backed Expo UI for home-screen widgets and Live Activities.
 - Android uses `react-native-android-widget`.
 - fasting-state writes request widget refreshes but widget failures never block local data updates.
 
-Medium, large, lock-screen, Live Activity, Dynamic Island, and Android ongoing-notification experiences are not implemented.
+Medium, large, iOS lock-screen widgets, and Android ongoing-notification experiences are not implemented.
 
 ## Storage and State
 
@@ -170,7 +170,7 @@ MMKV keys:
 | Key | Purpose |
 | --- | --- |
 | `metadata` | Schema, app version, Expo version, initialization timestamps |
-| `settings` | Theme, accent, goal duration display format, goals, last selected duration, Data view, onboarding flags, and reminder preferences |
+| `settings` | Theme, accent, goal duration display format, goals, last selected duration, Data view, onboarding flags, reminder preferences, and Live Activity preference |
 | `activeFast` | Active session and reminder state |
 | `history` | Completed fasting sessions; source of truth |
 | `diagnostics` | Up to 50 recent privacy-filtered local error events; never uploaded automatically |
@@ -226,4 +226,4 @@ The following are not part of the implemented app:
 - advertising, cross-app tracking, behavioral profiling, session replay, analytics SDKs, event tracking, telemetry backends, or installation identifiers;
 - health-platform integrations;
 - social features or complex meal tracking;
-- advanced widgets and Live Activities.
+- advanced widget and Live Activity variants beyond the current small/active-fast surfaces.

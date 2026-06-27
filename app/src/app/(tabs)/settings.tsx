@@ -42,6 +42,7 @@ import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
   setAccentColorName,
   setGoalDurationFormat,
+  setLiveActivitiesEnabled,
   setThemePreference,
   refreshSettingsSnapshot,
   updateNotificationSettingsAndSchedule,
@@ -76,6 +77,8 @@ import {
   mergeImportedFastSessions,
   reconcileActiveFastEndNotification,
   refreshFastSnapshots,
+  syncActiveFastingLiveActivity,
+  useActiveFastState,
 } from '@/storage/fasting-storage';
 import { cancelScheduledNotification } from '@/storage/notification-storage';
 import { resetAppStorage } from '@/storage/storage-migrations';
@@ -130,6 +133,8 @@ const reminderMinutes = Array.from({ length: 60 }, (_, minute) => minute);
 
 export default function SettingsScreen() {
   const settings = useSettings();
+  const activeFastState = useActiveFastState();
+  const importDisabled = activeFastState.session !== null;
   const [notificationPermissionState, setNotificationPermissionState] =
     useState<LocalNotificationPermissionState>(LocalNotificationPermissionState.Undetermined);
   const [installedAt] = useState(
@@ -247,6 +252,14 @@ export default function SettingsScreen() {
     );
   };
   const importData = async (): Promise<void> => {
+    if (getActiveFastState().session !== null) {
+      Alert.alert(
+        'Import unavailable',
+        'End or cancel the active fast before importing history. This protects your data from overlapping sessions.',
+      );
+      return;
+    }
+
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/json', 'text/csv', 'text/comma-separated-values'],
@@ -318,23 +331,13 @@ export default function SettingsScreen() {
   return (
     <TabScreenShell maxWidth={Math.min(MaxContentWidth, 640)}>
         <ScreenHeading>Settings</ScreenHeading>
-        <SettingsSection title="Appearance">
-          <ThemePicker
-            selectedValue={settings.themePreference}
-            onSelect={setThemePreference}
-          />
-          <AccentPicker
-            selectedAccentName={settings.accentColorName}
-            onSelect={setAccentColorName}
-          />
-        </SettingsSection>
-
         <SettingsSection title="Goals">
           <GoalDurationFormatPicker
             selectedValue={settings.goalDurationFormat}
             onSelect={(goalDurationFormat) => {
               setGoalDurationFormat(goalDurationFormat);
               refreshFastSnapshots();
+              void syncActiveFastingLiveActivity();
             }}
           />
           <SettingsActionRow
@@ -348,6 +351,18 @@ export default function SettingsScreen() {
         <SettingsSection
           title="Notifications"
           description={notificationsAvailable ? undefined : 'Notifications are disabled.'}>
+          {Platform.OS === 'ios' ? (
+            <SettingsSwitch
+              icon={Timer}
+              title="Live Activity"
+              description="Show the active fast on the Lock Screen and Dynamic Island."
+              value={settings.liveActivitiesEnabled}
+              onValueChange={(liveActivitiesEnabled) => {
+                setLiveActivitiesEnabled(liveActivitiesEnabled);
+                void syncActiveFastingLiveActivity();
+              }}
+            />
+          ) : null}
           {notificationsAvailable ? (
             <>
               <SettingsSwitch
@@ -385,11 +400,27 @@ export default function SettingsScreen() {
           )}
         </SettingsSection>
 
+        <SettingsSection title="Theme & Customization">
+          <ThemePicker
+            selectedValue={settings.themePreference}
+            onSelect={setThemePreference}
+          />
+          <AccentPicker
+            selectedAccentName={settings.accentColorName}
+            onSelect={setAccentColorName}
+          />
+        </SettingsSection>
+
         <SettingsSection title="Data">
           <SettingsActionRow
             icon={FileUp}
             title="Import JSON or CSV"
-            description="Add sessions from a Simple Fasting export."
+            description={
+              importDisabled
+                ? 'End or cancel the active fast before importing.'
+                : 'Add sessions from a Simple Fasting export.'
+            }
+            disabled={importDisabled}
             onPress={() => void importData()}
           />
           <SettingsActionRow
@@ -608,14 +639,20 @@ function AccentPicker({
   onSelect: (accentColorName: AccentColorName) => void;
 }) {
   const theme = useTheme();
-  const selectedIndex = accentOptions.indexOf(selectedAccentName);
+  const [previewAccentName, setPreviewAccentName] = useState(selectedAccentName);
+  const selectedIndex = accentOptions.indexOf(previewAccentName);
+
+  const selectAccent = (accentName: AccentColorName): void => {
+    setPreviewAccentName(accentName);
+    onSelect(accentName);
+  };
 
   return (
     <View style={styles.accentControl}>
       <View style={styles.accentHeading}>
         <ThemedText type="smallBold">Accent color</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          {accentColorLabels[selectedAccentName]}
+          {accentColorLabels[previewAccentName]}
         </ThemedText>
       </View>
       <CenteredWheelPicker
@@ -628,7 +665,7 @@ function AccentPicker({
         viewportStyle={styles.accentViewport}
         onSelectIndex={(index) => {
           const accentName = accentOptions[index];
-          if (accentName !== undefined) onSelect(accentName);
+          if (accentName !== undefined) selectAccent(accentName);
         }}
         renderItem={(accentName) => (
           <View style={styles.accentItem}>
@@ -751,6 +788,7 @@ function SettingsActionRow({
   description,
   destructive = false,
   external = false,
+  disabled = false,
   onPress,
 }: {
   icon?: LucideIcon;
@@ -758,6 +796,7 @@ function SettingsActionRow({
   description?: string;
   destructive?: boolean;
   external?: boolean;
+  disabled?: boolean;
   onPress: () => void;
 }) {
   const theme = useTheme();
@@ -765,8 +804,10 @@ function SettingsActionRow({
   return (
     <Pressable
       accessibilityRole={external ? 'link' : 'button'}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => pressed && styles.pressed}>
+      style={({ pressed }) => [disabled && styles.disabledRow, pressed && styles.pressed]}>
       <SettingsRow
         icon={icon}
         title={title}
@@ -869,6 +910,7 @@ const styles = StyleSheet.create({
   },
   sectionHeading: { gap: Spacing.half },
   disabledSection: { opacity: 0.52 },
+  disabledRow: { opacity: 0.52 },
   sectionTitle: {
     textTransform: 'uppercase',
   },

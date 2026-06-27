@@ -13,6 +13,12 @@ const session = {
 };
 
 describe('data import', () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-24T12:00:00.000Z'));
+  });
+
+  afterEach(() => jest.useRealTimers());
+
   it('reads the current JSON export shape', () => {
     expect(
       parseImportSessions({ content: JSON.stringify({ metadata: {}, data: [session] }), filename: 'backup.json' }),
@@ -35,5 +41,35 @@ describe('data import', () => {
         filename: 'backup.json',
       }),
     ).toThrow('No valid completed fasting sessions');
+  });
+
+  it('rejects impossible imported session times', () => {
+    expect(() =>
+      parseImportSessions({
+        content: JSON.stringify([
+          {
+            ...session,
+            id: 'future',
+            startedAt: '2099-06-20T08:00:00.000Z',
+            endedAt: '2099-06-21T00:00:00.000Z',
+          },
+        ]),
+        filename: 'backup.json',
+      }),
+    ).toThrow('cannot be in the future');
+
+    expect(() =>
+      parseImportSessions({
+        content: JSON.stringify([
+          {
+            ...session,
+            id: 'backwards',
+            startedAt: '2026-06-21T08:00:00.000Z',
+            endedAt: '2026-06-21T08:00:00.000Z',
+          },
+        ]),
+        filename: 'backup.json',
+      }),
+    ).toThrow('end before they start');
   });
 });

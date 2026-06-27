@@ -28,6 +28,7 @@ import {
   deleteFastSession,
   formatDuration,
   getFastSession,
+  getOverlappingFastSession,
   getSessionDurationSeconds,
   updateFastSession,
   useHistoryState,
@@ -180,6 +181,23 @@ function DetailContent({ session }: { session: FastSession }) {
       return;
     }
 
+    const nextSession = {
+      ...session,
+      startedAt: startedAt.toISOString(),
+      endedAt: endedAt.toISOString(),
+    };
+    const overlappingSession = getOverlappingFastSession({
+      excludedSessionId: session.id,
+      session: nextSession,
+    });
+
+    if (overlappingSession !== undefined) {
+      setEditError(
+        'Fasts cannot overlap. Save this one, delete the previous overlapping fast, then edit again.',
+      );
+      return;
+    }
+
     const updatedSession = updateFastSession({
       sessionId: session.id,
       update: (currentSession) => ({
@@ -232,14 +250,14 @@ function DetailContent({ session }: { session: FastSession }) {
         onCustomDurationExpandedChange={setCustomDurationExpanded}
       />
 
-      <AppSurface style={styles.summary}>
-        <ThemedText type="small" themeColor="textSecondary">
+      <View style={styles.summary}>
+        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
           Duration
         </ThemedText>
-        <ThemedText type="title" selectable style={styles.duration}>
+        <ThemedText type="subtitle" selectable style={styles.duration}>
           {formatDuration(editedDurationSeconds)}
         </ThemedText>
-      </AppSurface>
+      </View>
 
       {editError !== null && (
         <FeedbackState
@@ -255,18 +273,18 @@ function DetailContent({ session }: { session: FastSession }) {
           Schedule
         </ThemedText>
         <AppSurface style={styles.timeFields}>
-        <NativeDateTimeField
-          label="Start"
-          value={editState.startedAt}
-          onChange={(startedAt) => setEditState((state) => ({ ...state, startedAt }))}
-        />
-        <View style={styles.sectionDivider} />
-        <NativeDateTimeField
-          label="End"
-          value={editState.endedAt}
-          fallbackDate={editState.startedAt ?? undefined}
-          onChange={(endedAt) => setEditState((state) => ({ ...state, endedAt }))}
-        />
+          <NativeDateTimeField
+            label="Start"
+            value={editState.startedAt}
+            onChange={(startedAt) => setEditState((state) => ({ ...state, startedAt }))}
+          />
+          <View style={styles.sectionDivider} />
+          <NativeDateTimeField
+            label="End"
+            value={editState.endedAt}
+            fallbackDate={editState.startedAt ?? undefined}
+            onChange={(endedAt) => setEditState((state) => ({ ...state, endedAt }))}
+          />
         </AppSurface>
       </View>
 
@@ -355,7 +373,7 @@ const styles = StyleSheet.create({
   },
   summary: {
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: Spacing.half,
   },
   duration: {
     textAlign: 'center',

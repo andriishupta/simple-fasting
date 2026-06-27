@@ -20,11 +20,13 @@ import {
   setActiveFastEndReminderEnabled,
   setActiveFastTimerView,
   startFast,
+  updateActiveFastStart,
   updateFastSession,
 } from '@/storage/fasting-storage';
 import * as notificationStorage from '@/storage/notification-storage';
 import { getSettings, refreshSettingsSnapshot, saveSettings } from '@/storage/settings-storage';
 import * as fastingWidget from '@/widgets/fasting-widget';
+import * as fastingLiveActivity from '@/widgets/fasting-live-activity';
 
 jest.mock('@/storage/notification-storage', () => ({
   cancelScheduledNotification: jest.fn(),
@@ -33,6 +35,7 @@ jest.mock('@/storage/notification-storage', () => ({
   scheduleFastEndNotification: jest.fn(),
 }));
 jest.mock('@/widgets/fasting-widget', () => ({ updateFastingWidget: jest.fn() }));
+jest.mock('@/widgets/fasting-live-activity', () => ({ syncFastingLiveActivity: jest.fn() }));
 
 const initialTime = new Date('2026-06-21T10:00:00.000Z');
 const mockCancelScheduledNotification = jest.mocked(
@@ -42,6 +45,7 @@ const mockScheduleFastEndNotification = jest.mocked(
   notificationStorage.scheduleFastEndNotification,
 );
 const mockUpdateFastingWidget = jest.mocked(fastingWidget.updateFastingWidget);
+const mockSyncFastingLiveActivity = jest.mocked(fastingLiveActivity.syncFastingLiveActivity);
 
 describe('fasting lifecycle integration', () => {
   beforeEach(() => {
@@ -55,6 +59,7 @@ describe('fasting lifecycle integration', () => {
     mockCancelScheduledNotification.mockResolvedValue(undefined);
     mockScheduleFastEndNotification.mockResolvedValue('fast-end-1');
     mockUpdateFastingWidget.mockClear();
+    mockSyncFastingLiveActivity.mockClear();
   });
 
   afterEach(() => jest.useRealTimers());
@@ -92,6 +97,7 @@ describe('fasting lifecycle integration', () => {
     expect(getFastSession(completed!.id)).toEqual(completed);
     expect(mockCancelScheduledNotification).toHaveBeenCalledWith('fast-end-1');
     expect(mockUpdateFastingWidget).toHaveBeenCalled();
+    expect(mockSyncFastingLiveActivity).toHaveBeenCalled();
   });
 
   test('keeps the active fast usable when notification scheduling fails', async () => {
@@ -107,7 +113,13 @@ describe('fasting lifecycle integration', () => {
     expect(setActiveFastTimerView(TimerViewPreference.Remaining).timerViewPreference).toBe(
       TimerViewPreference.Remaining,
     );
+    expect(appStorage.get(StorageKey.ActiveFast)?.timerViewPreference).toBe(
+      TimerViewPreference.Remaining,
+    );
     expect((await setActiveFastEndReminderEnabled(false)).fastEndReminderEnabled).toBe(false);
+    expect(appStorage.get(StorageKey.ActiveFast)?.timerViewPreference).toBe(
+      TimerViewPreference.Remaining,
+    );
 
     await cancelFast();
     expect(getActiveFastState().session).toBeNull();
@@ -131,6 +143,58 @@ describe('fasting lifecycle integration', () => {
     expect(getHistoryState().sessions.map(({ id }) => id)).toContain('new');
   });
 
+  test('does not import sessions while a fast is active', async () => {
+    await startFast({ goalDurationHours: 16, reason: null });
+    const active = getActiveFastState().session!;
+    const result = mergeImportedFastSessions([
+      {
+        ...active,
+        id: 'imported',
+        status: FastStatus.Completed,
+        endedAt: '2026-06-22T02:00:00.000Z',
+      },
+    ]);
+
+    expect(result).toEqual({ saved: 0, skipped: 1 });
+    expect(getHistoryState().sessions).toEqual([]);
+  });
+
+  test('updates active fast start time and reschedules reminders', async () => {
+    saveSettings({
+      ...getSettings(),
+      notifications: {
+        ...getSettings().notifications,
+        fastEndReminderEnabled: true,
+      },
+    });
+    await startFast({ goalDurationHours: 16, reason: null });
+    mockScheduleFastEndNotification.mockResolvedValueOnce('fast-end-2');
+
+    const result = await updateActiveFastStart('2026-06-21T08:00:00.000Z');
+
+    expect(result.status).toBe('updated');
+    expect(getActiveFastState().session?.startedAt).toBe('2026-06-21T08:00:00.000Z');
+    expect(getActiveFastState().fastEndNotificationId).toBe('fast-end-2');
+    expect(mockCancelScheduledNotification).toHaveBeenCalledWith('fast-end-1');
+    expect(mockScheduleFastEndNotification).toHaveBeenLastCalledWith({
+      session: expect.objectContaining({ startedAt: '2026-06-21T08:00:00.000Z' }),
+      enabled: true,
+      goalDurationLabel: '16 hours',
+    });
+  });
+
+  test('rejects future and overlapping active fast start edits', async () => {
+    await startFast({ goalDurationHours: 16, reason: null });
+    jest.setSystemTime(new Date('2026-06-21T18:00:00.000Z'));
+    await endFast();
+    jest.setSystemTime(new Date('2026-06-22T10:00:00.000Z'));
+    await startFast({ goalDurationHours: 12, reason: null });
+
+    expect((await updateActiveFastStart('2026-06-23T10:00:00.000Z')).status).toBe('future');
+    expect((await updateActiveFastStart('2026-06-21T17:00:00.000Z')).status).toBe('overlap');
+    expect(getActiveFastState().session?.startedAt).toBe('2026-06-22T10:00:00.000Z');
+  });
+
   test('edits, sorts, and deletes saved sessions', async () => {
     await startFast({ goalDurationHours: 16, reason: null });
     jest.setSystemTime(new Date('2026-06-21T20:00:00.000Z'));
@@ -144,6 +208,16 @@ describe('fasting lifecycle integration', () => {
       update: (session) => ({ ...session, reason: 'Edited' }),
     });
     expect(updated?.reason).toBe('Edited');
+    expect(
+      updateFastSession({
+        sessionId: first!.id,
+        update: (session) => ({
+          ...session,
+          startedAt: '2026-06-22T07:00:00.000Z',
+          endedAt: '2026-06-22T09:00:00.000Z',
+        }),
+      }),
+    ).toBeUndefined();
     expect(updateFastSession({ sessionId: 'missing', update: (session) => session })).toBeUndefined();
     expect(getHistoryState().sessions[0].id).toBe(second!.id);
 

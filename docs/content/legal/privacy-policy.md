@@ -19,12 +19,12 @@ The app stores the information needed to provide its features locally on your de
 
 - Active and completed fasting sessions, including dates, start and end times, and durations.
 - Fasting goals and optional notes you enter.
-- Reminder, appearance, accent, and widget preferences.
+- Reminder, appearance, accent, widget, and Live Activity preferences.
 - Statistics, charts, streaks, and heatmaps derived locally from fasting history.
 - Local storage metadata needed to validate and maintain app data.
 - A limited local diagnostic log when storage initialization, reminder restoration, or app rendering fails.
 
-This information is used on your device to operate the timer, history, statistics, local notifications, supported widgets, settings, and exports. We do not intentionally receive this local app information.
+This information is used on your device to operate the timer, history, statistics, local notifications, supported widgets, optional iOS Live Activities, settings, and exports. We do not intentionally receive this local app information.
 
 Depending on your operating-system and device-backup settings, Apple, Google, or your device provider may include app data in a device backup. We do not control those backups.
 
@@ -58,9 +58,9 @@ Email is not a secure channel for sensitive health information. Do not send fast
 
 Support messages are kept only as long as reasonably needed for the request, security, legal obligations, and legitimate recordkeeping, then deleted or de-identified where practicable. You may ask us to delete a support conversation, subject to legal and security retention requirements.
 
-## 6. Permissions, notifications, widgets, exports, and diagnostics
+## 6. Permissions, notifications, widgets, Live Activities, exports, and diagnostics
 
-Notification permission is requested only when you choose **Allow Notifications** in onboarding or enable reminders from Settings. If you allow it, the fast-end reminder is enabled by default while the optional daily reminder remains off until you enable it. If you choose **Not Now** or deny permission, reminder controls remain unavailable unless you later allow notifications in system settings. Notifications are scheduled locally through the operating system. Supported widgets receive the limited local fasting state needed to display them.
+Notification permission is requested only when you choose **Allow Notifications** in onboarding or enable reminders from Settings. If you allow it, the fast-end reminder is enabled by default while the optional daily reminder remains off until you enable it. If you choose **Not Now** or deny permission, reminder controls remain unavailable unless you later allow notifications in system settings. Notifications are scheduled locally through the operating system. Supported widgets and optional iOS Live Activities receive the limited local fasting state needed to display them on your device, including on the Lock Screen or Dynamic Island where available.
 
 The app stores whether onboarding was completed and whether the notification prompt was shown, but it does not store a separate “notifications enabled” value. Notification availability is read from the operating system because you can change it in device settings. Denying optional permissions may disable the related feature but does not prevent basic local fasting tracking.
 
@@ -74,7 +74,7 @@ The local diagnostic log is separate from Apple and Google platform crash report
 
 Where data-protection law requires a legal ground, we process website request data, support messages, optional diagnostic reports you choose to share, and available platform-native crash information to provide requested services, diagnose failures, secure and maintain the service, comply with legal obligations, and pursue legitimate interests that do not override your rights. Where consent is required, we will request it separately.
 
-We do not claim that local fasting information is anonymous merely because it stays on a device. It may be sensitive to you, and anyone with access to your unlocked device, backups, widgets, notifications, or exports may be able to see it.
+We do not claim that local fasting information is anonymous merely because it stays on a device. It may be sensitive to you, and anyone with access to your unlocked device, backups, widgets, Live Activities, notifications, or exports may be able to see it.
 
 ## 8. Retention, deletion, and your controls
 
@@ -84,7 +84,7 @@ You control information stored by the app and can:
 - Export app data in JSON or CSV format.
 - Clear local app data from Settings.
 - Remove app data by uninstalling the app, subject to operating-system backups and retention behavior.
-- Disable notifications or remove widgets through app or device settings.
+- Disable notifications or Live Activities, or remove widgets through app or device settings.
 - Review and explicitly share a local diagnostic report; clearing app data also clears local diagnostics.
 
 Clearing or uninstalling may be irreversible. Create and safely store an export first if you need a copy. We cannot restore information that was never transmitted to us.

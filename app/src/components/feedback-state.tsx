@@ -1,4 +1,5 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { X } from 'lucide-react-native';
 
 import { AppButton } from '@/components/app-button';
 import { ThemedText } from '@/components/themed-text';
@@ -29,6 +30,9 @@ export function FeedbackState({
   secondaryAction,
 }: FeedbackStateProps) {
   const theme = useTheme();
+  const dismissAction =
+    action?.label.toLowerCase() === 'dismiss' && secondaryAction === undefined ? action : undefined;
+  const primaryAction = dismissAction === undefined ? action : undefined;
 
   return (
     <View
@@ -40,18 +44,29 @@ export function FeedbackState({
           borderColor: kind === 'error' ? theme.danger : theme.backgroundSelected,
           backgroundColor: kind === 'error' ? theme.dangerBackground : theme.background,
         },
+        dismissAction !== undefined && styles.dismissible,
       ]}>
+      {dismissAction !== undefined ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          hitSlop={8}
+          onPress={dismissAction.onPress}
+          style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
+          <X size={18} color={kind === 'error' ? theme.danger : theme.textSecondary} />
+        </Pressable>
+      ) : null}
       <ThemedText type="smallBold">{title}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary" style={styles.description}>
         {description}
       </ThemedText>
-      {(action !== undefined || secondaryAction !== undefined) && (
+      {(primaryAction !== undefined || secondaryAction !== undefined) && (
         <View style={styles.actions}>
-          {action !== undefined && (
+          {primaryAction !== undefined && (
             <AppButton
-              label={action.label}
-              onPress={action.onPress}
-              variant={action.variant ?? (kind === 'error' ? 'danger' : 'primary')}
+              label={primaryAction.label}
+              onPress={primaryAction.onPress}
+              variant={primaryAction.variant ?? (kind === 'error' ? 'danger' : 'primary')}
               style={styles.action}
             />
           )}
@@ -79,6 +94,20 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     padding: Spacing.four,
   },
+  dismissible: {
+    minHeight: 0,
+    paddingRight: Spacing.five,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: Spacing.two,
+    right: Spacing.two,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+  },
   description: {
     maxWidth: 420,
   },
@@ -89,5 +118,8 @@ const styles = StyleSheet.create({
   },
   action: {
     alignSelf: 'center',
+  },
+  pressed: {
+    opacity: 0.68,
   },
 });
