@@ -99,12 +99,17 @@ export const getFastingStats = (
   };
 };
 
-const getHoursByDay = (sessions: readonly FastSession[]): Record<string, number> =>
-  sessions.reduce<Record<string, number>>((result, session) => {
+const getHoursByDay = (sessions: readonly FastSession[]): Record<string, number> => {
+  const hoursByDay: Record<string, number> = {};
+
+  sessions.forEach((session) => {
     const dayKey = getLocalDayKey(new Date(session.startedAt));
 
-    return { ...result, [dayKey]: (result[dayKey] ?? 0) + getSessionDurationHours(session) };
-  }, {});
+    hoursByDay[dayKey] = (hoursByDay[dayKey] ?? 0) + getSessionDurationHours(session);
+  });
+
+  return hoursByDay;
+};
 
 const getHeatmap = ({
   dayKeys,
@@ -119,11 +124,13 @@ const getMonthlyHours = (
   sessions: readonly FastSession[],
   referenceDate: Date,
 ): readonly ChartDatum[] => {
-  const hoursByMonth = sessions.reduce<Record<string, number>>((result, session) => {
+  const hoursByMonth: Record<string, number> = {};
+
+  sessions.forEach((session) => {
     const monthKey = getLocalMonthKey(new Date(session.startedAt));
 
-    return { ...result, [monthKey]: (result[monthKey] ?? 0) + getSessionDurationHours(session) };
-  }, {});
+    hoursByMonth[monthKey] = (hoursByMonth[monthKey] ?? 0) + getSessionDurationHours(session);
+  });
 
   return getRecentLocalMonthKeys(6, referenceDate).map((monthKey) => ({
     label: monthKey.slice(5),

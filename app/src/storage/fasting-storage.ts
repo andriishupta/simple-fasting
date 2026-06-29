@@ -35,7 +35,6 @@ const readHistoryState = (): HistoryState =>
 
 let activeFastSnapshot = createEmptyActiveFastState(now());
 let historySnapshot = createEmptyHistoryState(now());
-const activeFastSubscribers = new Set<() => void>();
 
 const createSessionId = (): string =>
   `fast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -245,14 +244,15 @@ export const mergeImportedFastSessions = (
 
   const historyState = getHistoryState();
   const additions: FastSession[] = [];
+  const acceptedSessions = [...historyState.sessions];
   let skipped = 0;
 
   sessions.forEach((session) => {
-    const acceptedSessions = [...historyState.sessions, ...additions];
     if (acceptedSessions.some((existing) => sessionsOverlap(existing, session))) {
       skipped += 1;
     } else {
       additions.push(session);
+      acceptedSessions.push(session);
     }
   });
 
@@ -438,21 +438,18 @@ export const setActiveFastTimerView = (
   });
 };
 
-const subscribeToActiveFast = (onStoreChange: () => void): (() => void) =>
-  {
-    activeFastSubscribers.add(onStoreChange);
-    const unsubscribeStorage = appStorage.subscribe((key) => {
+const subscribeToActiveFast = (onStoreChange: () => void): (() => void) => {
+  const unsubscribeStorage = appStorage.subscribe((key) => {
     if (key === StorageKey.ActiveFast) {
       activeFastSnapshot = readActiveFastState();
       onStoreChange();
     }
   });
 
-    return () => {
-      activeFastSubscribers.delete(onStoreChange);
-      unsubscribeStorage();
-    };
+  return () => {
+    unsubscribeStorage();
   };
+};
 
 const subscribeToHistory = (onStoreChange: () => void): (() => void) =>
   appStorage.subscribe((key) => {
