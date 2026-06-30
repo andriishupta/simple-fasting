@@ -1,0 +1,29 @@
+appId: app.simplefasting
+name: Edit and delete a saved fast
+---
+- launchApp:
+    clearState: true
+- tapOn: I agree to the Terms of Use and Privacy Policy
+- tapOn: Agree and Continue
+- tapOn: Not Now
+- tapOn: Start fast
+- tapOn: End fast
+- assertVisible: View fast
+- tapOn: View fast
+- assertVisible: Edit Fast
+- tapOn: Note
+- tapOn: Fast note
+- inputText: Edited after save
+- tapOn: Save
+- assertVisible: Start fast
+- tapOn: Data
+- tapOn: History
+- assertVisible: 1 completed fast
+- assertVisible: Edited after save
+- tapOn: Edited after save
+- assertVisible: Edit Fast
+- tapOn: Delete
+- assertVisible: Delete fast?
+- tapOn: Delete
+- assertVisible: Data
+- assertVisible: No completed fasts yet

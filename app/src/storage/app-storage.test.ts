@@ -27,7 +27,7 @@ describe('app storage', () => {
     ]);
     expect(createDefaultAppSettings(timestamp)).toMatchObject({
       themePreference: ThemePreference.System,
-      accentColorName: AccentColorName.Blue,
+      accentColorName: AccentColorName.Amber,
       lastUsedGoalDurationHours: 16,
       goalDurationFormat: GoalDurationFormat.Hours,
       dataViewPreference: DataViewPreference.Stats,
@@ -75,6 +75,11 @@ describe('app storage', () => {
 
     expect(appStorage.getRaw(StorageKey.Settings)).toBeUndefined();
     expect(mmkv.getString(StorageKey.Settings)).toBeUndefined();
+  });
+
+  test('ignores quarantine requests when there is no stored raw value', () => {
+    expect(() => appStorage.quarantine(StorageKey.History, 'Missing')).not.toThrow();
+    expect(appStorage.getRaw(StorageKey.History)).toBeUndefined();
   });
 
   test('clears all local values', () => {

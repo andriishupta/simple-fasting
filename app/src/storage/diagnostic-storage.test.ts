@@ -1,4 +1,5 @@
 import { Platform, Share } from 'react-native';
+import * as Sharing from 'expo-sharing';
 
 import { DiagnosticEventKind, StorageKey, appStorage } from '@/storage/app-storage';
 import {
@@ -6,8 +7,14 @@ import {
   getDiagnostics,
   recordDiagnosticError,
   shareDiagnosticReport,
+  shouldPromptForRepeatedFailures,
 } from '@/storage/diagnostic-storage';
 import { initializeAppStorage } from '@/storage/storage-migrations';
+
+jest.mock('expo-sharing', () => ({
+  isAvailableAsync: jest.fn(),
+  shareAsync: jest.fn(),
+}));
 
 describe('privacy-safe local diagnostics', () => {
   const initialPlatform = Platform.OS;
@@ -75,5 +82,115 @@ describe('privacy-safe local diagnostics', () => {
       title: 'simple-fasting-diagnostics-2026-06-21.json',
       message: expect.stringContaining('shared only after explicit user action'),
     }));
+  });
+
+  test('uses the native share sheet for diagnostic files when available', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
+    const isAvailable = jest.mocked(Sharing.isAvailableAsync).mockResolvedValue(true);
+    const shareAsync = jest.mocked(Sharing.shareAsync).mockResolvedValue(undefined);
+
+    await shareDiagnosticReport();
+
+    expect(isAvailable).toHaveBeenCalled();
+    expect(shareAsync).toHaveBeenCalledWith(
+      expect.stringContaining('simple-fasting-diagnostics-2026-06-21.json'),
+      expect.objectContaining({ mimeType: 'application/json' }),
+    );
+  });
+
+  test('prompts only after three recent app-stopping failures', () => {
+    const now = new Date('2026-06-21T12:01:00.000Z');
+
+    expect(shouldPromptForRepeatedFailures({
+      now,
+      events: [
+        {
+          id: '1',
+          kind: DiagnosticEventKind.Render,
+          occurredAt: '2026-06-21T12:00:02.000Z',
+          errorName: 'Error',
+          message: 'one',
+          context: null,
+        },
+        {
+          id: '2',
+          kind: DiagnosticEventKind.ReminderReconciliation,
+          occurredAt: '2026-06-21T12:00:30.000Z',
+          errorName: 'Error',
+          message: 'ignored',
+          context: null,
+        },
+        {
+          id: '3',
+          kind: DiagnosticEventKind.Render,
+          occurredAt: '2026-06-21T12:00:45.000Z',
+          errorName: 'Error',
+          message: 'two',
+          context: null,
+        },
+      ],
+    })).toBe(false);
+
+    expect(shouldPromptForRepeatedFailures({
+      now,
+      events: [
+        {
+          id: '1',
+          kind: DiagnosticEventKind.StorageInitialization,
+          occurredAt: '2026-06-21T12:00:05.000Z',
+          errorName: 'Error',
+          message: 'one',
+          context: null,
+        },
+        {
+          id: '2',
+          kind: DiagnosticEventKind.Render,
+          occurredAt: '2026-06-21T12:00:30.000Z',
+          errorName: 'Error',
+          message: 'two',
+          context: null,
+        },
+        {
+          id: '3',
+          kind: DiagnosticEventKind.Render,
+          occurredAt: '2026-06-21T12:00:55.000Z',
+          errorName: 'Error',
+          message: 'three',
+          context: null,
+        },
+      ],
+    })).toBe(true);
+  });
+
+  test('does not prompt for stale repeated failures', () => {
+    expect(shouldPromptForRepeatedFailures({
+      now: new Date('2026-06-21T12:03:00.000Z'),
+      events: [
+        {
+          id: '1',
+          kind: DiagnosticEventKind.Render,
+          occurredAt: '2026-06-21T12:00:01.000Z',
+          errorName: 'Error',
+          message: 'one',
+          context: null,
+        },
+        {
+          id: '2',
+          kind: DiagnosticEventKind.Render,
+          occurredAt: '2026-06-21T12:00:02.000Z',
+          errorName: 'Error',
+          message: 'two',
+          context: null,
+        },
+        {
+          id: '3',
+          kind: DiagnosticEventKind.Render,
+          occurredAt: '2026-06-21T12:00:03.000Z',
+          errorName: 'Error',
+          message: 'three',
+          context: null,
+        },
+      ],
+    })).toBe(false);
   });
 });

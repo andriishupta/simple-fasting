@@ -182,7 +182,7 @@ Statistics and charts are derived directly from History; no unused persisted cac
 
 Storage initialization failures show retry and explicit reset controls. Optional notification restoration failures do not block access to fasting data or the core timer.
 
-Storage initialization, reminder restoration, and render failures can add a limited local diagnostic event. Diagnostic exports exclude fasting history, notes, goals, settings, and device identifiers, redact common email/URL/file-path text, and are shared only through the diagnostic option inside Report bug.
+Storage initialization, reminder restoration, render failures, and React Native fatal JS errors can add a limited local diagnostic event. Diagnostic exports exclude fasting history, notes, goals, settings, and device identifiers, redact common email/URL/file-path text, and are shared only through the diagnostic option inside Report bug.
 
 The app does not add PostHog, Sentry, or another analytics/crash-reporting SDK in V1. Basic release reliability should use native Apple App Store Connect and Google Play Console crash/vitals reporting where available through the platforms. Missing platform reports never block startup or a local app operation.
 

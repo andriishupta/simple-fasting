@@ -19,7 +19,7 @@ export enum ThemePreference {
 }
 
 export enum AccentColorName {
-  Red = 'red',
+  Rose = 'rose',
   Orange = 'orange',
   Amber = 'amber',
   Green = 'green',
@@ -64,6 +64,7 @@ export enum DiagnosticEventKind {
   StorageInitialization = 'storage_initialization',
   ReminderReconciliation = 'reminder_reconciliation',
   Render = 'render',
+  FatalJs = 'fatal_js',
 }
 
 export type Timestamp = string;
@@ -244,7 +245,7 @@ export const createDefaultStorageMetadata = ({
 export const createDefaultAppSettings = (updatedAt: Timestamp): AppSettings => ({
   schemaVersion: StorageSchemaVersion.V1,
   themePreference: ThemePreference.System,
-  accentColorName: AccentColorName.Blue,
+  accentColorName: AccentColorName.Amber,
   goals: createDefaultGoals(updatedAt),
   lastUsedGoalDurationHours: 16,
   goalDurationFormat: GoalDurationFormat.Hours,

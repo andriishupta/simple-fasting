@@ -10,16 +10,18 @@ import {
 import { createLiveActivity, type LiveActivityEnvironment } from 'expo-widgets';
 
 import {
+  AccentColorName,
   appStorage,
   StorageKey,
   TimerViewPreference,
   type ActiveFastState,
 } from '@/storage/app-storage';
-import { accentColorValues } from '@/storage/settings-storage';
+import { getAccentPalette } from '@/storage/settings-storage';
 import { createFastingWidgetModel } from '@/widgets/fasting-widget-model';
 
 type FastingLiveActivityProps = {
-  accentColor: string;
+  accentColorDark: string;
+  accentColorLight: string;
   goalDurationLabel: string;
   goalDurationHours: number;
   goalEndsAt: number;
@@ -40,6 +42,9 @@ function FastingLiveActivityView(
   const backgroundColor = isDark ? '#15171C' : '#F7F8FC';
   const primaryColor = isDark ? '#F5F7FF' : '#17191F';
   const secondaryColor = isDark ? '#A9AFBD' : '#626979';
+  const accentColor = isDark
+    ? props.accentColorDark || '#D97706'
+    : props.accentColorLight || '#F59E0B';
   const islandPrimaryColor = '#F5F7FF';
   const islandSecondaryColor = '#A9AFBD';
   const distantFuture = new Date('2100-01-01T00:00:00.000Z');
@@ -60,7 +65,7 @@ function FastingLiveActivityView(
       ]}>
       <HStack spacing={8} modifiers={[frame({ maxWidth: Infinity })]}>
         <VStack alignment="leading" spacing={3}>
-          <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(props.accentColor)]}>
+          <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(accentColor)]}>
             SIMPLE FASTING
           </Text>
           <HStack spacing={4}>
@@ -70,7 +75,7 @@ function FastingLiveActivityView(
             <Text modifiers={[font({ size: 14, weight: 'semibold' }), foregroundStyle(secondaryColor)]}>
               ·
             </Text>
-            <Text modifiers={[font({ size: 16, weight: 'bold' }), foregroundStyle(props.accentColor)]}>
+            <Text modifiers={[font({ size: 16, weight: 'bold' }), foregroundStyle(accentColor)]}>
               {props.goalDurationLabel}
             </Text>
           </HStack>
@@ -78,7 +83,7 @@ function FastingLiveActivityView(
         <Spacer />
         <VStack alignment="trailing" spacing={3}>
           <HStack spacing={5}>
-            <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(props.accentColor)]}>
+            <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(accentColor)]}>
               {icon}
             </Text>
             <Text
@@ -98,7 +103,7 @@ function FastingLiveActivityView(
       {props.goalDurationHours > 0 ? (
         <ProgressView
           value={props.progress}
-          modifiers={[progressViewStyle('linear'), foregroundStyle(props.accentColor)]}
+          modifiers={[progressViewStyle('linear'), foregroundStyle(accentColor)]}
         />
       ) : null}
     </VStack>
@@ -111,7 +116,7 @@ function FastingLiveActivityView(
         <Text modifiers={[font({ size: 13, weight: 'bold' }), foregroundStyle(islandPrimaryColor)]}>
           {compactGoalLabel}
         </Text>
-        <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(props.accentColor)]}>
+        <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(accentColor)]}>
           {icon}
         </Text>
       </HStack>
@@ -130,16 +135,16 @@ function FastingLiveActivityView(
       />
     ),
     minimal: (
-      <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(props.accentColor)]}>
+      <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accentColor)]}>
         SF
       </Text>
     ),
     expandedLeading: (
       <VStack alignment="leading" spacing={4} modifiers={[padding({ all: 8 })]}>
-        <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(props.accentColor)]}>
+        <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(accentColor)]}>
           Simple
         </Text>
-        <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(props.accentColor)]}>
+        <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(accentColor)]}>
           Fasting
         </Text>
       </VStack>
@@ -147,7 +152,7 @@ function FastingLiveActivityView(
     expandedTrailing: (
       <VStack alignment="trailing" spacing={4} modifiers={[padding({ all: 8 })]}>
         <HStack spacing={5}>
-          <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(props.accentColor)]}>
+          <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accentColor)]}>
             {icon}
           </Text>
           <Text
@@ -173,14 +178,14 @@ function FastingLiveActivityView(
           <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(islandSecondaryColor)]}>
             ·
           </Text>
-          <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(props.accentColor)]}>
+          <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(accentColor)]}>
             {props.goalDurationLabel}
           </Text>
         </HStack>
         {props.goalDurationHours > 0 ? (
           <ProgressView
             value={props.progress}
-            modifiers={[progressViewStyle('linear'), foregroundStyle(props.accentColor)]}
+            modifiers={[progressViewStyle('linear'), foregroundStyle(accentColor)]}
           />
         ) : (
           <Spacer />
@@ -202,10 +207,9 @@ const createProps = (state: ActiveFastState): FastingLiveActivityProps | null =>
     return null;
   }
 
-  const accentColor =
-    settings.accentColorName === undefined
-      ? '#526FE8'
-      : accentColorValues[settings.accentColorName];
+  const accentColorName = settings.accentColorName ?? AccentColorName.Amber;
+  const accentColorDark = getAccentPalette({ accentColorName, colorScheme: 'dark' }).accent;
+  const accentColorLight = getAccentPalette({ accentColorName, colorScheme: 'light' }).accent;
   const goalName = settings.goals.find(
     (goal) => goal.targetDurationHours === state.session?.goalDurationHours,
   )?.name;
@@ -221,7 +225,8 @@ const createProps = (state: ActiveFastState): FastingLiveActivityProps | null =>
   }
 
   return {
-    accentColor,
+    accentColorDark,
+    accentColorLight,
     goalDurationLabel: model.goalDurationLabel,
     goalDurationHours: model.goalDurationHours,
     goalEndsAt: model.goalEndsAt,

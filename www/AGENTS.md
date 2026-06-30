@@ -317,11 +317,11 @@ Future marketing and product content should align with:
 /docs/dev/plan/04-future-roadmap.md
 ```
 
-Privacy Policy, Terms of Use, and FAQ content comes from `/docs/content`. Do not edit generated content under `src/content/generated`; edit the Markdown source and run `pnpm content:sync`.
+Privacy Policy, Terms of Use, FAQ, and What's New content comes from `/docs/content`. Do not edit generated content under `src/content/generated`; edit the Markdown source and run `pnpm content:sync`.
 
 The shared-content generator in the `prebuild` lifecycle hook is mandatory. Keep automatic synchronization for `dev`, `build`, and `preview`, keep pre-build `content:sync` plus `content:check` in CI, keep post-build rendered-content verification, and commit canonical Markdown only. Generated app/website JSON files are ignored.
 
-Keep `pnpm test` as the production-build gate. Its post-build verifier must continue to require every public route, compare rendered legal/FAQ content with the generated shared source, verify homepage FAQ coverage, and reject broken internal page links. Prefer this static deterministic check over browser E2E unless real client-side behavior is introduced.
+Keep `pnpm test` as the production-build gate. Its post-build verifier must continue to require every public route, compare rendered legal/FAQ/What's New content with the generated shared source, verify homepage FAQ coverage, and reject broken internal page links. Prefer this static deterministic check over browser E2E unless real client-side behavior is introduced.
 
 Do not invent product features.
 

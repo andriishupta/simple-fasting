@@ -517,7 +517,7 @@ Do not implement future roadmap items unless requested.
 
 # Shared Legal and FAQ Content
 
-Canonical Privacy Policy, Terms of Use, and FAQ Markdown lives under `/docs`, outside this package. App routes consume `src/content/generated/shared-documents.json`.
+Canonical Privacy Policy, Terms of Use, FAQ, and What's New Markdown lives under `/docs`, outside this package. App routes consume `src/content/generated/shared-documents.json`.
 
 - Never edit generated JSON directly.
 - Run `pnpm content:sync` after canonical Markdown changes.

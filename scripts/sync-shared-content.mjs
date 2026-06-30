@@ -8,6 +8,7 @@ const sources = {
   privacy: 'docs/content/legal/privacy-policy.md',
   terms: 'docs/content/legal/terms-of-use.md',
   faq: 'docs/content/faq.md',
+  whatsNew: 'docs/content/whats-new.md',
 };
 const targets = [
   'app/src/content/generated/shared-documents.json',

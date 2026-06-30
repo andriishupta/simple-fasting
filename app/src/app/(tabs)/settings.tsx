@@ -7,15 +7,11 @@ import {
   StyleSheet,
   Switch,
   View,
-  type ColorValue,
 } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { Picker } from '@expo/ui/community/picker';
-import { BlurView } from 'expo-blur';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
-import { LinearGradient } from 'expo-linear-gradient';
-import MaskedView from '@react-native-masked-view/masked-view';
 import {
   Activity,
   Bell,
@@ -23,14 +19,16 @@ import {
   ChevronRight,
   CircleHelp,
   ExternalLink,
+  FileInput,
   FileText,
-  FileUp,
   Globe,
   Info,
   Laptop,
   Mail,
   Moon,
   Shield,
+  Sparkles,
+  Star,
   Sun,
   Table2,
   Target,
@@ -63,11 +61,13 @@ import {
   accentColorValues,
   getAppVersionLabel,
   getLocalNotificationPermissionState,
+  getStoreReviewUrl,
   LocalNotificationPermissionState,
   openBugReportEmail,
   openFaq,
   openLocalNotificationSettings,
   openPrivacyPolicy,
+  openRateApp,
   openSupportEmail,
   openTerms,
   openWebsite,
@@ -84,7 +84,7 @@ import {
   ThemePreference,
   appStorage,
 } from '@/storage/app-storage';
-import { useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/hooks/use-theme';
 import {
   getActiveFastState,
   mergeImportedFastSessions,
@@ -118,7 +118,7 @@ const themeOptions = [
 ] as const;
 
 const accentOptions = [
-  AccentColorName.Red,
+  AccentColorName.Rose,
   AccentColorName.Orange,
   AccentColorName.Amber,
   AccentColorName.Green,
@@ -141,7 +141,7 @@ const goalDurationFormatOptions = [
   },
 ] as const;
 
-const accentItemWidth = 88;
+const accentItemWidth = 64;
 const reminderHours = Array.from({ length: 24 }, (_, hour) => hour);
 const reminderMinutes = Array.from({ length: 60 }, (_, minute) => minute);
 
@@ -149,6 +149,7 @@ export default function SettingsScreen() {
   const settings = useSettings();
   const activeFastState = useActiveFastState();
   const importDisabled = activeFastState.session !== null;
+  const canRateApp = getStoreReviewUrl() !== null;
   const [notificationPermissionState, setNotificationPermissionState] =
     useState<LocalNotificationPermissionState>(LocalNotificationPermissionState.Undetermined);
   const [installedAt] = useState(
@@ -257,7 +258,7 @@ export default function SettingsScreen() {
   const reportBug = (): void => {
     Alert.alert(
       'Report a bug',
-      'You can email us directly or share a local diagnostic file through Mail. Diagnostics never include fasting history or notes.',
+      'You can email bugs@simplefasting.app directly, or share a local diagnostic file with the latest app errors through Mail. Diagnostics never include fasting history or notes.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Email', onPress: () => void openExternalAction(openBugReportEmail) },
@@ -441,7 +442,7 @@ export default function SettingsScreen() {
 
         <SettingsSection index={3} title="Data">
           <SettingsActionRow
-            icon={FileUp}
+            icon={FileInput}
             title="Import JSON or CSV"
             description={
               importDisabled
@@ -502,6 +503,19 @@ export default function SettingsScreen() {
             title="Build"
             description={buildDescription}
           />
+          <SettingsActionRow
+            icon={Sparkles}
+            title="What's New"
+            description="Version history and release notes."
+            onPress={() => router.push('/whats-new' as Href)}
+          />
+          {canRateApp ? (
+            <SettingsActionRow
+              icon={Star}
+              title="Rate the app"
+              onPress={() => openExternalAction(openRateApp)}
+            />
+          ) : null}
         </SettingsSection>
 
         <SettingsSection index={5} title="Legal">
@@ -696,10 +710,8 @@ function AccentPicker({
   onSelect: (accentColorName: AccentColorName) => void;
 }) {
   const theme = useTheme();
-  const colorScheme = useAppThemeColorScheme();
   const [previewAccentName, setPreviewAccentName] = useState(selectedAccentName);
   const selectedIndex = accentOptions.indexOf(previewAccentName);
-  const blurTint = colorScheme === 'dark' ? 'systemMaterialDark' : 'systemMaterialLight';
 
   const selectAccent = (accentName: AccentColorName): void => {
     setPreviewAccentName(accentName);
@@ -735,74 +747,21 @@ function AccentPicker({
           </View>
         )}
         renderOverlay={({ sideInset }) => (
-          <>
-            <AccentEdgeFog side="left" tint={blurTint} backgroundColor={theme.background} />
-            <AccentEdgeFog side="right" tint={blurTint} backgroundColor={theme.background} />
-            <View
-              pointerEvents="none"
-              style={[
-                styles.accentSelection,
-                {
-                  left: sideInset,
-                  transform: [{ translateX: (accentItemWidth - 48) / 2 }],
-                  borderColor: theme.accent,
-                  boxShadow: `0 0 0 4px ${theme.accentBackground}`,
-                },
-              ]}
-            />
-          </>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.accentSelection,
+              {
+                left: sideInset,
+                transform: [{ translateX: (accentItemWidth - 48) / 2 }],
+                borderColor: theme.accent,
+                boxShadow: `0 0 0 4px ${theme.accentBackground}`,
+              },
+            ]}
+          />
         )}
       />
     </View>
-  );
-}
-
-function AccentEdgeFog({
-  side,
-  tint,
-  backgroundColor,
-}: {
-  side: 'left' | 'right';
-  tint: 'systemMaterialDark' | 'systemMaterialLight';
-  backgroundColor: string;
-}) {
-  const maskColors: [ColorValue, ColorValue] =
-    side === 'left'
-      ? ['#000000', 'rgba(0,0,0,0)']
-      : ['rgba(0,0,0,0)', '#000000'];
-  const fillColors: [ColorValue, ColorValue] =
-    side === 'left'
-      ? [backgroundColor, `${backgroundColor}00`]
-      : [`${backgroundColor}00`, backgroundColor];
-
-  return (
-    <MaskedView
-      pointerEvents="none"
-      style={[
-        styles.accentEdgeFog,
-        side === 'left' ? styles.accentEdgeFogLeft : styles.accentEdgeFogRight,
-      ]}
-      maskElement={
-        <LinearGradient
-          colors={maskColors}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={StyleSheet.absoluteFill}
-        />
-      }>
-      <BlurView
-        intensity={42}
-        tint={tint}
-        blurMethod="dimezisBlurViewSdk31Plus"
-        style={StyleSheet.absoluteFill}
-      />
-      <LinearGradient
-        colors={fillColors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={StyleSheet.absoluteFill}
-      />
-    </MaskedView>
   );
 }
 
@@ -1075,18 +1034,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
   },
   accentViewport: { height: 84, overflow: 'hidden' },
-  accentEdgeFog: {
-    position: 'absolute',
-    top: 0,
-    width: 42,
-    height: 84,
-  },
-  accentEdgeFogLeft: {
-    left: 0,
-  },
-  accentEdgeFogRight: {
-    right: 0,
-  },
   accentItem: {
     width: accentItemWidth,
     height: 80,

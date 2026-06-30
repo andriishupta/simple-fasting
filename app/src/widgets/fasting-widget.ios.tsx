@@ -10,16 +10,18 @@ import {
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 
 import {
+  AccentColorName,
   appStorage,
   StorageKey,
   TimerViewPreference,
   type ActiveFastState,
 } from '@/storage/app-storage';
-import { accentColorValues } from '@/storage/settings-storage';
+import { getAccentPalette } from '@/storage/settings-storage';
 import { createFastingWidgetModel } from '@/widgets/fasting-widget-model';
 
 type FastingWidgetProps = {
-  accentColor: string;
+  accentColorDark: string;
+  accentColorLight: string;
   goalDurationLabel: string;
   goalDurationHours: number;
   goalEndsAt: number;
@@ -42,7 +44,9 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
   const backgroundColor = isDark ? '#15171C' : '#F7F8FC';
   const primaryColor = isDark ? '#F5F7FF' : '#17191F';
   const secondaryColor = isDark ? '#A9AFBD' : '#626979';
-  const accentColor = props.accentColor || (isDark ? '#8EA5FF' : '#526FE8');
+  const accentColor = isDark
+    ? props.accentColorDark || '#D97706'
+    : props.accentColorLight || '#F59E0B';
 
   if (props.status !== 'active') {
     return (
@@ -133,10 +137,9 @@ const fastingWidget = createWidget<FastingWidgetProps>('FastingWidget', FastingW
 
 export const updateFastingWidget = (state: ActiveFastState): void => {
   const settings = appStorage.get(StorageKey.Settings);
-  const accentColor =
-    settings?.accentColorName === undefined
-      ? '#526FE8'
-      : accentColorValues[settings.accentColorName];
+  const accentColorName = settings?.accentColorName ?? AccentColorName.Amber;
+  const accentColorDark = getAccentPalette({ accentColorName, colorScheme: 'dark' }).accent;
+  const accentColorLight = getAccentPalette({ accentColorName, colorScheme: 'light' }).accent;
   const goalName = settings?.goals.find(
     (goal) => goal.targetDurationHours === state.session?.goalDurationHours,
   )?.name;
@@ -149,7 +152,8 @@ export const updateFastingWidget = (state: ActiveFastState): void => {
   const props: FastingWidgetProps =
     model.status === 'inactive'
       ? {
-          accentColor,
+          accentColorDark,
+          accentColorLight,
           goalDurationLabel: '',
           goalDurationHours: 0,
           goalEndsAt: 0,
@@ -161,7 +165,8 @@ export const updateFastingWidget = (state: ActiveFastState): void => {
           timerView: TimerViewPreference.Elapsed,
         }
       : {
-          accentColor,
+          accentColorDark,
+          accentColorLight,
           goalDurationLabel: model.goalDurationLabel,
           goalDurationHours: model.goalDurationHours,
           goalEndsAt: model.goalEndsAt,

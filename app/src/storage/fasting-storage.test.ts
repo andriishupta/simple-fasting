@@ -20,6 +20,7 @@ import {
   setActiveFastEndReminderEnabled,
   setActiveFastTimerView,
   startFast,
+  syncActiveFastingLiveActivity,
   updateActiveFastStart,
   updateFastSession,
 } from '@/storage/fasting-storage';
@@ -218,6 +219,12 @@ describe('fasting lifecycle integration', () => {
     });
   });
 
+  test('returns inactive when editing active fast start without an active session', async () => {
+    await expect(updateActiveFastStart('2026-06-21T08:00:00.000Z')).resolves.toEqual({
+      status: 'inactive',
+    });
+  });
+
   test('rejects future and overlapping active fast start edits', async () => {
     await startFast({ goalDurationHours: 16, reason: null });
     jest.setSystemTime(new Date('2026-06-21T18:00:00.000Z'));
@@ -270,6 +277,35 @@ describe('fasting lifecycle integration', () => {
     await cancelFast();
     const inactive = await reconcileActiveFastEndNotification();
     expect(inactive.fastEndNotificationId).toBeNull();
+  });
+
+  test('updates inactive reminder preference without scheduling a notification', async () => {
+    mockScheduleFastEndNotification.mockClear();
+    const updated = await setActiveFastEndReminderEnabled(false);
+
+    expect(updated.session).toBeNull();
+    expect(updated.fastEndReminderEnabled).toBe(false);
+    expect(updated.fastEndNotificationId).toBeNull();
+    expect(mockScheduleFastEndNotification).not.toHaveBeenCalled();
+  });
+
+  test('syncs live activity only while a fast is active', async () => {
+    await syncActiveFastingLiveActivity();
+    expect(mockSyncFastingLiveActivity).not.toHaveBeenCalled();
+
+    await startFast({ goalDurationHours: 16, reason: null });
+    mockSyncFastingLiveActivity.mockClear();
+
+    await syncActiveFastingLiveActivity();
+    expect(mockSyncFastingLiveActivity).toHaveBeenCalledWith(getActiveFastState());
+  });
+
+  test('returns current active state when timer view is unchanged', () => {
+    const before = getActiveFastState();
+    mockUpdateFastingWidget.mockClear();
+
+    expect(setActiveFastTimerView(before.timerViewPreference)).toBe(before);
+    expect(mockUpdateFastingWidget).not.toHaveBeenCalled();
   });
 
   test('returns null when ending an inactive state', async () => {

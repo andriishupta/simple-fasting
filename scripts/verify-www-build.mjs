@@ -10,11 +10,12 @@ const documents = JSON.parse(
   await readFile(path.join(websiteRoot, 'src/content/generated/shared-documents.json'), 'utf8'),
 );
 
-const routes = ['/', '/faq', '/legal', '/privacy', '/terms'];
+const routes = ['/', '/faq', '/legal', '/privacy', '/terms', '/whats-new'];
 const documentRoutes = {
   '/faq': documents.faq,
   '/privacy': documents.privacy,
   '/terms': documents.terms,
+  '/whats-new': documents.whatsNew,
 };
 
 const routeFile = (route) =>

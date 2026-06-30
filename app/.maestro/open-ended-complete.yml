@@ -1,5 +1,5 @@
 appId: app.simplefasting
-name: Cancel an open-ended fast without creating history
+name: Complete an open-ended fast and review history
 ---
 - launchApp:
     clearState: true
@@ -9,9 +9,11 @@ name: Cancel an open-ended fast without creating history
 - tapOn: Open-ended fast
 - tapOn: Start fast
 - assertVisible: Open-ended fast
-- tapOn: Cancel fast
-- assertVisible: Cancel fast?
-- tapOn: Cancel Fast
-- assertVisible: Start fast
+- tapOn: End fast
+- assertVisible: Fast saved
 - tapOn: Data
-- assertVisible: Finish at least one fast
+- tapOn: History
+- assertVisible: 1 completed fast
+- assertVisible: Open-ended
+- assertVisible: Started
+- assertVisible: Ended

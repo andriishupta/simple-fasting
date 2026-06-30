@@ -35,11 +35,20 @@ jobs:
     params:
       build_id: ${{ needs.build_android.outputs.build_id }}
       flow_path:
+        - .maestro/onboarding-skip.yml
         - .maestro/fasting-lifecycle.yml
         - .maestro/settings-and-legal.yml
         - .maestro/goals.yml
+        - .maestro/custom-goal-manage.yml
         - .maestro/open-ended-and-data.yml
+        - .maestro/open-ended-complete.yml
+        - .maestro/planned-fast-cancel.yml
         - .maestro/data-views.yml
+        - .maestro/history-edit-delete.yml
+        - .maestro/history-bulk-delete.yml
+        - .maestro/clear-data.yml
+        - .maestro/settings-preferences.yml
+        - .maestro/report-bug.yml
 
   test_ios:
     name: Test iOS flows
@@ -48,8 +57,17 @@ jobs:
     params:
       build_id: ${{ needs.build_ios.outputs.build_id }}
       flow_path:
+        - .maestro/onboarding-skip.yml
         - .maestro/fasting-lifecycle.yml
         - .maestro/settings-and-legal.yml
         - .maestro/goals.yml
+        - .maestro/custom-goal-manage.yml
         - .maestro/open-ended-and-data.yml
+        - .maestro/open-ended-complete.yml
+        - .maestro/planned-fast-cancel.yml
         - .maestro/data-views.yml
+        - .maestro/history-edit-delete.yml
+        - .maestro/history-bulk-delete.yml
+        - .maestro/clear-data.yml
+        - .maestro/settings-preferences.yml
+        - .maestro/report-bug.yml

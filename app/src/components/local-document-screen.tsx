@@ -1,8 +1,7 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { AppSurface } from '@/components/app-surface';
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
 import type { SharedDocument, SharedDocumentBlock } from '@/content/shared-documents';
 
 export function LocalDocumentScreen({
@@ -20,17 +19,19 @@ export function LocalDocumentScreen({
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.screen}>
       <View style={styles.content}>
-        <ThemedText type="smallBold" themeColor="textSecondary">
+        <ThemedText style={styles.meta}>
           {meta}
         </ThemedText>
-        <ThemedText themeColor="textSecondary">{document.intro}</ThemedText>
+        <ThemedText themeColor="textSecondary" style={styles.intro}>
+          {document.intro}
+        </ThemedText>
         {document.sections.map((section) => (
-          <AppSurface key={section.id} style={styles.section}>
-            <ThemedText type="smallBold">{section.title}</ThemedText>
+          <View key={section.id} style={styles.section}>
+            <ThemedText style={styles.sectionTitle}>{section.title}</ThemedText>
             {section.blocks.map((block, index) => (
               <DocumentBlock key={`${section.id}-${index}`} block={block} />
             ))}
-          </AppSurface>
+          </View>
         ))}
       </View>
     </ScrollView>
@@ -40,7 +41,7 @@ export function LocalDocumentScreen({
 function DocumentBlock({ block }: { block: SharedDocumentBlock }) {
   if (block.type === 'paragraph') {
     return (
-      <ThemedText themeColor="textSecondary" selectable>
+      <ThemedText themeColor="textSecondary" selectable style={styles.paragraph}>
         {block.text}
       </ThemedText>
     );
@@ -48,8 +49,10 @@ function DocumentBlock({ block }: { block: SharedDocumentBlock }) {
 
   return block.items.map((item) => (
     <View key={item} style={styles.bulletRow}>
-      <ThemedText themeColor="textSecondary">•</ThemedText>
-      <ThemedText themeColor="textSecondary" selectable style={styles.bulletText}>
+      <ThemedText themeColor="textSecondary" style={styles.bullet}>
+        •
+      </ThemedText>
+      <ThemedText themeColor="textSecondary" selectable style={[styles.paragraph, styles.bulletText]}>
         {item}
       </ThemedText>
     </View>
@@ -60,15 +63,46 @@ const styles = StyleSheet.create({
   screen: {
     flexGrow: 1,
     alignItems: 'center',
-    paddingBottom: Spacing.four,
+    paddingBottom: Spacing.five,
   },
   content: {
     width: '100%',
     maxWidth: Math.min(MaxContentWidth, 640),
-    gap: Spacing.three,
+    gap: Spacing.four,
     paddingHorizontal: Spacing.four,
   },
-  section: { gap: Spacing.two },
-  bulletRow: { flexDirection: 'row', gap: Spacing.two },
+  meta: {
+    fontFamily: Fonts.rounded,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '800',
+  },
+  intro: {
+    fontSize: 15,
+    lineHeight: 23,
+    fontWeight: '500',
+  },
+  section: {
+    gap: Spacing.two,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '700',
+  },
+  paragraph: {
+    fontSize: 15,
+    lineHeight: 23,
+    fontWeight: '500',
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  bullet: {
+    fontSize: 15,
+    lineHeight: 23,
+    fontWeight: '600',
+  },
   bulletText: { flex: 1 },
 });

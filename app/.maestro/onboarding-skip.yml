@@ -1,0 +1,13 @@
+appId: app.simplefasting
+name: Complete onboarding without notifications
+---
+- launchApp:
+    clearState: true
+- assertVisible: Welcome to Simple Fasting
+- assertVisible: No tracking
+- tapOn: I agree to the Terms of Use and Privacy Policy
+- tapOn: Agree and Continue
+- assertVisible: Stay informed about your fasts
+- tapOn: Not Now
+- assertVisible: Start fast
+

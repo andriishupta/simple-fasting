@@ -49,7 +49,42 @@ For widgets, install a newly generated native build rather than Expo Go or a Jav
 
 `.github/workflows/ci.yml` runs on pull requests and pushes to `main`, using Node 24-compatible GitHub Actions. It gates the faster app and website quality checks first: app shared-content verification, TypeScript, lint, unit tests, and website shared-content/build verification. After those pass, it runs app integration tests and Jest coverage. Independent iOS/Android Expo bundle exports run last after the deeper app checks and website quality check pass.
 
+On pushes to `main`, the website quality job also uploads the built `www/dist` output as a GitHub Actions artifact. This artifact is an auditable copy of the static site produced from `main`; it is not a production deploy by itself.
+
 `app/.eas/workflows/e2e.yml` is schema-validated against Expo's current workflow schema. For app-related pull requests it creates credential-free iOS simulator and Android APK builds, then runs every flow in `app/.maestro` on both platforms. These flows cover planned and open-ended fasting, save/cancel behavior, history/edit navigation, custom goals, Settings, and offline legal/FAQ content. EAS project access and build quota are operational prerequisites.
+
+## CI/CD Ownership
+
+Use separate deployment owners rather than forcing the app and website through one tool:
+
+- GitHub Actions owns deterministic repository gates and website artifacts.
+- EAS owns native app builds, native E2E, signing, TestFlight/internal-track builds, and store upload automation.
+- Cloudflare Pages owns the production website.
+
+Do not use Expo web output as the production marketing/legal website. Expo web export remains a bundling check for the app. Do not use Cloudflare Pages to build or submit native app binaries.
+
+## Website Release
+
+Production website deploys should be manual until the native release process is intentionally automated. After the Expo/EAS app release is approved or shipped, run `.github/workflows/www-release.yml` from GitHub Actions:
+
+1. Select `main` unless releasing a specific reviewed ref.
+2. Leave `deploy_to_cloudflare` off to create only a `www-dist` artifact.
+3. Enable `deploy_to_cloudflare` to deploy the built artifact to Cloudflare Pages.
+
+The Cloudflare deploy step requires repository secrets:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+The workflow uses the `cloudflare_project_name` input, defaulting to `simple-fasting`. If the Cloudflare Pages project uses a different name, provide that name when running the workflow.
+
+Configure the GitHub `website-production` environment with manual approval if production website deploys should require a second human confirmation.
+
+Legal, FAQ, and What's New changes are special because the app also renders offline copies:
+
+- website-only copy fix: deploy Cloudflare Pages after website verification;
+- shared legal/FAQ/What's New change visible in the app: release through a new native build, or through EAS Update only after `expo-updates` is explicitly added, reviewed for privacy impact, and documented;
+- legal version change requiring renewed consent: ship app logic and content together so the app can compare the accepted legal version with the current legal version.
 
 ## Required Runtime Test Matrix
 

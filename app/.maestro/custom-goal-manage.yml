@@ -1,0 +1,36 @@
+appId: app.simplefasting
+name: Edit disable and delete a custom goal
+---
+- launchApp:
+    clearState: true
+- tapOn: I agree to the Terms of Use and Privacy Policy
+- tapOn: Agree and Continue
+- tapOn: Not Now
+- tapOn: Settings
+- tapOn: Manage fasting goals
+- tapOn: Add goal
+- tapOn: Goal name
+- inputText: Weekend
+- tapOn: Goal duration in hours
+- eraseText
+- inputText: '24'
+- tapOn: Save goal
+- assertVisible: Weekend
+- tapOn: Edit Weekend
+- tapOn: Goal name
+- eraseText
+- inputText: Travel
+- tapOn: Save goal
+- assertVisible: Travel
+- tapOn: Travel available on Fast screen
+- back
+- tapOn: Fast
+- assertNotVisible: Travel
+- tapOn: Settings
+- tapOn: Manage fasting goals
+- tapOn: Travel available on Fast screen
+- tapOn: Delete Travel
+- assertVisible: Delete goal?
+- tapOn: Delete
+- assertNotVisible: Travel
+

@@ -1,0 +1,69 @@
+name: Website Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Git ref to build and deploy
+        required: true
+        default: main
+      deploy_to_cloudflare:
+        description: Deploy the built artifact to Cloudflare Pages
+        required: true
+        type: boolean
+        default: false
+      cloudflare_project_name:
+        description: Cloudflare Pages project name
+        required: true
+        default: simple-fasting
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-release-${{ inputs.git_ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build website artifact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.git_ref }}
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22.14.0
+          cache: pnpm
+          cache-dependency-path: www/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: www
+      - run: pnpm test
+        working-directory: www
+      - uses: actions/upload-artifact@v6
+        with:
+          name: www-dist
+          path: www/dist
+          if-no-files-found: error
+          retention-days: 90
+
+  deploy-cloudflare:
+    name: Deploy to Cloudflare Pages
+    runs-on: ubuntu-latest
+    needs: build
+    if: inputs.deploy_to_cloudflare
+    environment: website-production
+    steps:
+      - uses: actions/download-artifact@v6
+        with:
+          name: www-dist
+          path: www/dist
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy www/dist --project-name=${{ inputs.cloudflare_project_name }} --branch=main

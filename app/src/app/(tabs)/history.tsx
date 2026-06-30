@@ -197,10 +197,10 @@ function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
       <View style={styles.listActions}>
         <View style={styles.listHeading}>
           <ThemedText type="smallBold" themeColor="textSecondary" style={styles.listTitle}>
-            Completed fasts
+            {sessions.length} completed fasts
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {selecting ? `${selectedIds.size} selected` : `${sessions.length}. Swipe left to delete an item.`}
+            {selecting ? `${selectedIds.size} selected` : `Swipe left to delete an item.`}
           </ThemedText>
         </View>
         <View style={styles.listActionButtons}>

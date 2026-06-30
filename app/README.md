@@ -52,7 +52,7 @@ The active state shows a compact progress timer, start/end times, local reminder
 - **Goals** — opens Goals.
 - **Notifications** — fast-end reminder and daily reminder with a minimal Hours/Minutes wheel that follows the active theme without a nested card or redundant label.
 - **Data** — non-destructive JSON/CSV import, JSON export, CSV export, and Clear data.
-- **About** — website, FAQ, bug reporting with an optional privacy-filtered local diagnostic file, support email, and build version.
+- **About** — website, FAQ, bug reporting with an optional privacy-filtered local diagnostic file, support email, build version, What's New, and Rate the app when store review links are configured.
 - **Legal** — external and offline Privacy Policy and Terms.
 
 ### Supporting Stack Screens
@@ -60,6 +60,7 @@ The active state shows a compact progress timer, start/end times, local reminder
 - **Goals** — app-wide goal time display format, standard and custom goals that can be enabled/disabled and reordered with a persisted drag handle, and custom goal edit/swipe-to-delete. A floating plus opens the add-goal editor. At least one goal remains enabled.
 - **Edit Fast** — reuses the Fast screen’s active goal selector, Custom/Open-ended actions, and Note control; Start and End use theme-aware native date/time controls. End time is required. Save and Delete are the only bottom actions.
 - **FAQ** — offline local help.
+- **What's New** — offline version history and release notes.
 - **Privacy Policy** — offline local copy.
 - **Terms of Use** — offline local copy.
 
@@ -89,7 +90,7 @@ The fallback `src/widgets/fasting-widget.tsx` must keep the same `.tsx` extensio
 
 Notifications are local only through `expo-notifications`.
 
-On first launch, onboarding starts with a welcome screen that explains the privacy-first, offline-first app behavior and requires explicit agreement to the Terms of Use and Privacy Policy. It then shows the reminder screen with **Allow Notifications** or **Not Now**. Granting notification permission enables fast-end reminders while daily reminders remain opt-in. Skipping or denying notifications keeps reminders off and shows an **Enable Notifications** action in Settings.
+On first launch, onboarding runs as its own native stack. The welcome screen explains the privacy-first, offline-first app behavior and requires explicit agreement to the Terms of Use and Privacy Policy. Terms and Privacy open as local stack routes with normal back navigation. After agreement, the notification step is pushed so users can return before choosing **Allow Notifications** or **Not Now**. Granting notification permission enables fast-end reminders while daily reminders remain opt-in. Skipping or denying notifications keeps reminders off and shows an **Enable Notifications** action in Settings. Finishing onboarding swaps to the main app stack.
 
 - fast-end notification for a planned fast;
 - optional daily reminder;
@@ -153,9 +154,11 @@ src/
 │   ├── (tabs)/          # Data, Fast, Settings
 │   ├── history/[id].tsx # Edit Fast
 │   ├── goals.tsx
+│   ├── onboarding/      # First-run welcome, legal documents, notifications
 │   ├── faq.tsx
 │   ├── privacy.tsx
-│   └── terms.tsx
+│   ├── terms.tsx
+│   └── whats-new.tsx
 ├── components/          # Shared surfaces, buttons, text, feedback, charts
 ├── constants/           # Theme and layout tokens
 ├── hooks/               # Theme hooks
@@ -207,7 +210,7 @@ Coverage output is generated under `coverage/` and is not committed. Appium is i
 
 ## Shared legal and FAQ content
 
-Privacy Policy, Terms of Use, and FAQ are authored in `../docs/content`, not in app route files. `pnpm content:sync` regenerates `src/content/generated/shared-documents.json` for both the app and website. Never edit generated JSON directly.
+Privacy Policy, Terms of Use, FAQ, and What's New are authored in `../docs/content`, not in app route files. `pnpm content:sync` regenerates `src/content/generated/shared-documents.json` for both the app and website. Never edit generated JSON directly.
 
 Content synchronization is required before native generation and builds:
 

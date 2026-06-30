@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider, usePathname } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, AppState, StatusBar, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,10 +7,9 @@ import * as SplashScreen from 'expo-splash-screen';
 
 import { FeedbackState } from '@/components/feedback-state';
 import { AppErrorBoundary } from '@/components/app-error-boundary';
+import { CrashReportPromptProvider } from '@/components/crash-report-prompt-provider';
 import { FastSavedNoticeProvider } from '@/components/fast-saved-notice-context';
-import { NotificationOnboardingScreen } from '@/components/notification-onboarding-screen';
 import { ThemedView } from '@/components/themed-view';
-import { WelcomeOnboardingScreen } from '@/components/welcome-onboarding-screen';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { AppThemeProvider, useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
 import { DiagnosticEventKind } from '@/storage/app-storage';
@@ -21,11 +20,6 @@ import {
 } from '@/storage/fasting-storage';
 import {
   reconcileDailyReminderNotification,
-  acceptLegalConsent,
-  completeNotificationOnboarding,
-  openPrivacyPolicy,
-  openTerms,
-  requestLocalNotificationPermission,
   refreshSettingsSnapshot,
   syncNotificationPermissionState,
   useSettings,
@@ -59,9 +53,11 @@ function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppThemeProvider>
-        <AppErrorBoundary>
-          <RootLayoutContent startupState={startupState} setStartupState={setStartupState} />
-        </AppErrorBoundary>
+        <CrashReportPromptProvider>
+          <AppErrorBoundary>
+            <RootLayoutContent startupState={startupState} setStartupState={setStartupState} />
+          </AppErrorBoundary>
+        </CrashReportPromptProvider>
       </AppThemeProvider>
     </GestureHandlerRootView>
   );
@@ -77,6 +73,7 @@ function RootLayoutContent({
   const colorScheme = useAppThemeColorScheme();
   const settings = useSettings();
   const theme = useTheme();
+  const pathname = usePathname();
   const navigationTheme = useMemo(() => {
     const baseTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
 
@@ -182,24 +179,22 @@ function RootLayoutContent({
     return () => subscription.remove();
   }, [startupState.status]);
 
-  const allowOnboardingNotifications = async (): Promise<void> => {
-    const notificationsAllowed = await requestLocalNotificationPermission();
-    completeNotificationOnboarding({ notificationsAllowed });
-    refreshSettingsSnapshot();
-    await Promise.all([
-      reconcileDailyReminderNotification(),
-      reconcileActiveFastEndNotification(),
-    ]).catch(() => undefined);
-  };
+  const onboardingRequired =
+    startupState.status === 'ready' &&
+    (!settings.legalConsentAccepted || !settings.onboardingCompleted);
 
-  const skipOnboardingNotifications = (): void => {
-    completeNotificationOnboarding({ notificationsAllowed: false });
-    refreshSettingsSnapshot();
-  };
-  const acceptOnboardingLegalConsent = (): void => {
-    acceptLegalConsent();
-    refreshSettingsSnapshot();
-  };
+  useEffect(() => {
+    if (startupState.status !== 'ready') return;
+
+    if (onboardingRequired && !pathname.startsWith('/onboarding')) {
+      router.replace(settings.legalConsentAccepted ? '/onboarding/notifications' : '/onboarding');
+      return;
+    }
+
+    if (!onboardingRequired && pathname.startsWith('/onboarding')) {
+      router.replace('/');
+    }
+  }, [onboardingRequired, pathname, settings.legalConsentAccepted, startupState.status]);
 
   return (
     <ThemeProvider value={navigationTheme}>
@@ -208,107 +203,10 @@ function RootLayoutContent({
         backgroundColor="transparent"
         translucent
       />
-      {startupState.status === 'ready' && !settings.legalConsentAccepted ? (
-        <WelcomeOnboardingScreen
-          onAccept={acceptOnboardingLegalConsent}
-          onOpenPrivacyPolicy={() => void openPrivacyPolicy()}
-          onOpenTerms={() => void openTerms()}
-        />
-      ) : startupState.status === 'ready' && !settings.onboardingCompleted ? (
-        <NotificationOnboardingScreen
-          onAllowNotifications={allowOnboardingNotifications}
-          onSkip={skipOnboardingNotifications}
-        />
+      {onboardingRequired ? (
+        <OnboardingStack initialRouteName={settings.legalConsentAccepted ? 'onboarding/notifications' : 'onboarding/index'} />
       ) : startupState.status === 'ready' ? (
-        <FastSavedNoticeProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen
-              name="history/[id]"
-              options={{
-                title: 'Edit Fast',
-                headerShown: true,
-                headerLargeTitle: false,
-                headerTransparent: true,
-                headerShadowVisible: false,
-                headerBlurEffect: 'none',
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="goals"
-              options={{
-                title: 'Goals',
-                headerShown: true,
-                headerLargeTitle: false,
-                headerTransparent: true,
-                headerShadowVisible: false,
-                headerBlurEffect: 'none',
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="goals/new"
-              options={{
-                title: 'New Goal',
-                headerShown: true,
-                headerLargeTitle: false,
-                headerTransparent: true,
-                headerShadowVisible: false,
-                headerBlurEffect: 'none',
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="goals/[id]"
-              options={{
-                title: 'Edit Goal',
-                headerShown: true,
-                headerLargeTitle: false,
-                headerTransparent: true,
-                headerShadowVisible: false,
-                headerBlurEffect: 'none',
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="faq"
-              options={{
-                title: 'FAQ',
-                headerShown: true,
-                headerLargeTitle: false,
-                headerTransparent: true,
-                headerShadowVisible: false,
-                headerBlurEffect: 'none',
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="privacy"
-              options={{
-                title: 'Privacy Policy',
-                headerShown: true,
-                headerLargeTitle: false,
-                headerTransparent: true,
-                headerShadowVisible: false,
-                headerBlurEffect: 'none',
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-            <Stack.Screen
-              name="terms"
-              options={{
-                title: 'Terms of Use',
-                headerShown: true,
-                headerLargeTitle: false,
-                headerTransparent: true,
-                headerShadowVisible: false,
-                headerBlurEffect: 'none',
-                headerBackButtonDisplayMode: 'minimal',
-              }}
-            />
-          </Stack>
-        </FastSavedNoticeProvider>
+        <MainAppStack />
       ) : (
         <StartupScreen
           startupState={startupState}
@@ -317,6 +215,114 @@ function RootLayoutContent({
         />
       )}
     </ThemeProvider>
+  );
+}
+
+const documentScreenOptions = {
+  headerShown: true,
+  headerLargeTitle: false,
+  headerTransparent: true,
+  headerShadowVisible: false,
+  headerBlurEffect: 'none' as const,
+  headerBackButtonDisplayMode: 'minimal' as const,
+};
+
+function OnboardingStack({
+  initialRouteName,
+}: {
+  initialRouteName: 'onboarding/index' | 'onboarding/notifications';
+}) {
+  return (
+    <Stack initialRouteName={initialRouteName} screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="onboarding/index" />
+      <Stack.Screen
+        name="onboarding/notifications"
+        options={{
+          ...documentScreenOptions,
+          title: 'Notifications',
+        }}
+      />
+      <Stack.Screen
+        name="onboarding/privacy"
+        options={{
+          ...documentScreenOptions,
+          title: 'Privacy Policy',
+        }}
+      />
+      <Stack.Screen
+        name="onboarding/terms"
+        options={{
+          ...documentScreenOptions,
+          title: 'Terms of Use',
+        }}
+      />
+    </Stack>
+  );
+}
+
+function MainAppStack() {
+  return (
+    <FastSavedNoticeProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="history/[id]"
+          options={{
+            ...documentScreenOptions,
+            title: 'Edit Fast',
+          }}
+        />
+        <Stack.Screen
+          name="goals"
+          options={{
+            ...documentScreenOptions,
+            title: 'Goals',
+          }}
+        />
+        <Stack.Screen
+          name="goals/new"
+          options={{
+            ...documentScreenOptions,
+            title: 'New Goal',
+          }}
+        />
+        <Stack.Screen
+          name="goals/[id]"
+          options={{
+            ...documentScreenOptions,
+            title: 'Edit Goal',
+          }}
+        />
+        <Stack.Screen
+          name="faq"
+          options={{
+            ...documentScreenOptions,
+            title: 'FAQ',
+          }}
+        />
+        <Stack.Screen
+          name="whats-new"
+          options={{
+            ...documentScreenOptions,
+            title: "What's New",
+          }}
+        />
+        <Stack.Screen
+          name="privacy"
+          options={{
+            ...documentScreenOptions,
+            title: 'Privacy Policy',
+          }}
+        />
+        <Stack.Screen
+          name="terms"
+          options={{
+            ...documentScreenOptions,
+            title: 'Terms of Use',
+          }}
+        />
+      </Stack>
+    </FastSavedNoticeProvider>
   );
 }
 

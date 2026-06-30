@@ -25,6 +25,11 @@ const structuredData = {
     'JSON and CSV export',
   ],
 };
+const releaseIntroBlock = documents.whatsNew.sections[0]?.blocks[0];
+const releaseIntro =
+  releaseIntroBlock?.type === 'paragraph'
+    ? releaseIntroBlock.text
+    : documents.whatsNew.intro;
 ---
 
 <Layout
@@ -175,6 +180,15 @@ const structuredData = {
         </details>
       ))
     }
+  </section>
+
+  <section class="section section--soft">
+    <div class="shell release-note">
+      <p class="release-note__version">Version {documents.whatsNew.version}</p>
+      <h2>{documents.whatsNew.title}</h2>
+      <p>{releaseIntro}</p>
+      <a href="/whats-new">Read the full version history</a>
+    </div>
   </section>
 
   <section class="final-cta" id="download">

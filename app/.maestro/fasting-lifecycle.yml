@@ -3,6 +3,9 @@ name: Complete a fasting lifecycle
 ---
 - launchApp:
     clearState: true
+- tapOn: I agree to the Terms of Use and Privacy Policy
+- tapOn: Agree and Continue
+- tapOn: Not Now
 - assertVisible: Simple Fasting
 - assertVisible: 16:8
 - tapOn: Start fast

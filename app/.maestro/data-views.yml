@@ -3,6 +3,9 @@ name: Review statistics charts and history
 ---
 - launchApp:
     clearState: true
+- tapOn: I agree to the Terms of Use and Privacy Policy
+- tapOn: Agree and Continue
+- tapOn: Not Now
 - tapOn: Start fast
 - tapOn: End fast
 - tapOn: Data
@@ -11,6 +14,7 @@ name: Review statistics charts and history
 - tapOn: Charts
 - assertVisible: Recent fast duration
 - assertVisible: Monthly fasting hours
-- tapOn: History (1)
+- tapOn: History
+- assertVisible: 1 completed fast
 - assertVisible: Started
 - assertVisible: Ended

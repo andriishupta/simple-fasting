@@ -61,7 +61,7 @@ Use this reference table to choose the right document before starting work:
 
 When unsure, start with `plan/01-product-specification.md`, then consult the more specific document if the work is about execution order, deployment, or future evolution.
 
-Shared user-facing content lives in `docs/content/legal/*.md` and `docs/content/faq.md`. These Markdown files are the source of truth for both `app` and `www`. Run `node scripts/sync-shared-content.mjs` after editing them; never edit generated `shared-documents.json` files directly. Legal documents require explicit `version` and `effectiveDate` metadata.
+Shared user-facing content lives in `docs/content/legal/*.md`, `docs/content/faq.md`, and `docs/content/whats-new.md`. These Markdown files are the source of truth for both `app` and `www`. Run `node scripts/sync-shared-content.mjs` after editing them; never edit generated `shared-documents.json` files directly. Legal documents require explicit `version` and `effectiveDate` metadata.
 
 Shared-content synchronization is a mandatory build invariant:
 

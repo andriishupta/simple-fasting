@@ -83,6 +83,13 @@ describe('notification storage', () => {
     expect(await hasLocalNotificationPermission()).toBe(false);
   });
 
+  test('fails closed when permission request APIs reject', async () => {
+    jest.mocked(Notifications.getPermissionsAsync).mockRejectedValueOnce(new Error('broken') as never);
+    jest.mocked(Notifications.requestPermissionsAsync).mockRejectedValueOnce(new Error('denied') as never);
+
+    expect(await requestLocalNotificationPermission()).toBe(false);
+  });
+
   test('reads existing permission and cancels only valid native identifiers', async () => {
     expect(await hasLocalNotificationPermission()).toBe(true);
     expect(await requestLocalNotificationPermission()).toBe(true);
@@ -115,6 +122,16 @@ describe('notification storage', () => {
     expect(await getLocalNotificationPermissionState()).toBe(
       LocalNotificationPermissionState.Denied,
     );
+
+    jest.mocked(Notifications.getPermissionsAsync).mockRejectedValueOnce(new Error('broken') as never);
+    expect(await getLocalNotificationPermissionState()).toBe(
+      LocalNotificationPermissionState.Denied,
+    );
+
+    setPlatform('web');
+    expect(await getLocalNotificationPermissionState()).toBe(
+      LocalNotificationPermissionState.Denied,
+    );
   });
 
   test('opens platform notification settings', async () => {
@@ -133,6 +150,10 @@ describe('notification storage', () => {
         expect.objectContaining({ key: 'android.provider.extra.APP_PACKAGE' }),
       ]),
     );
+
+    sendIntent.mockRejectedValueOnce(new Error('missing'));
+    await openLocalNotificationSettings();
+    expect(openSettings).toHaveBeenCalledTimes(2);
   });
 
   test('schedules a future fast-end notification', async () => {
@@ -191,5 +212,9 @@ describe('notification storage', () => {
     expect(await scheduleDailyReminderNotification('invalid')).toBeNull();
     jest.mocked(Notifications.getPermissionsAsync).mockResolvedValueOnce({ granted: false } as never);
     expect(await scheduleDailyReminderNotification('21:00')).toBeNull();
+    jest.mocked(Notifications.scheduleNotificationAsync).mockRejectedValueOnce(new Error('denied') as never);
+    expect(await scheduleDailyReminderNotification('22:00')).toBeNull();
+    setPlatform('web');
+    expect(await scheduleDailyReminderNotification('20:30')).toBeNull();
   });
 });

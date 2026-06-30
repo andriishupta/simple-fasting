@@ -21,4 +21,12 @@ describe('LocalDocumentScreen shared-content integration', () => {
     expect(screen.getByText('Does the app collect crash or diagnostic information?')).toBeOnTheScreen();
     expect(screen.getByText(/That file is not shared unless you choose it and a destination/)).toBeOnTheScreen();
   });
+
+  test("renders what's new release notes", async () => {
+    const screen = await render(<LocalDocumentScreen document={sharedDocuments.whatsNew} />);
+
+    expect(screen.getAllByText('Version 1.0.0')).toHaveLength(2);
+    expect(screen.getByText(/Initial release of Simple Fasting/)).toBeOnTheScreen();
+    expect(screen.getByText(/Start and track active fasts/)).toBeOnTheScreen();
+  });
 });

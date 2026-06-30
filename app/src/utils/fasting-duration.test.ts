@@ -1,6 +1,7 @@
 import { FastStatus } from '@/storage/app-storage';
 import {
   formatDuration,
+  formatDurationWorklet,
   formatHours,
   getElapsedSeconds,
   getGoalSeconds,
@@ -29,6 +30,8 @@ describe('fasting duration helpers', () => {
   test('formats duration and hours consistently', () => {
     expect(formatDuration(3661.9)).toBe('01:01:01');
     expect(formatDuration(-5)).toBe('00:00:00');
+    expect(formatDurationWorklet(3661.9)).toBe('01:01:01');
+    expect(formatDurationWorklet(-5)).toBe('00:00:00');
     expect(formatHours(9.25)).toBe('9.3');
     expect(formatHours(10.4)).toBe('10');
     expect(getGoalSeconds(completed)).toBe(57_600);

@@ -37,6 +37,13 @@ describe('data import', () => {
   it('rejects files without valid completed sessions', () => {
     expect(() =>
       parseImportSessions({
+        content: 'id,status\nfast-1,completed',
+        filename: 'backup.csv',
+      }),
+    ).toThrow('not a Simple Fasting export');
+
+    expect(() =>
+      parseImportSessions({
         content: JSON.stringify([{ ...session, status: FastStatus.Active, endedAt: null }]),
         filename: 'backup.json',
       }),

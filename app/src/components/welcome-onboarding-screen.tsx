@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Check, Palette, ShieldCheck, Smartphone, Timer, WifiOff } from 'lucide-react-native';
 
 import { AppButton } from '@/components/app-button';
+import { ScreenHeading } from '@/components/screen-heading';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -26,7 +27,7 @@ const features = [
   },
   {
     icon: Palette,
-    title: 'Accent colors',
+    title: 'Customisation',
     description: 'Personalize the app with a calm accent color that also appears in widgets.',
   },
   {
@@ -37,16 +38,18 @@ const features = [
 ] as const;
 
 export function WelcomeOnboardingScreen({
+  initialAccepted = false,
   onAccept,
   onOpenPrivacyPolicy,
   onOpenTerms,
 }: {
+  initialAccepted?: boolean;
   onAccept: () => void;
   onOpenPrivacyPolicy: () => void;
   onOpenTerms: () => void;
 }) {
   const theme = useTheme();
-  const [accepted, setAccepted] = useState(false);
+  const [accepted, setAccepted] = useState(initialAccepted);
 
   return (
     <ThemedView type="backgroundElement" style={styles.root}>
@@ -56,9 +59,7 @@ export function WelcomeOnboardingScreen({
         showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           <View style={styles.hero}>
-            <ThemedText type="subtitle" style={styles.title}>
-              Welcome to Simple Fasting
-            </ThemedText>
+            <ScreenHeading align="center">Welcome to Simple Fasting</ScreenHeading>
             <ThemedText themeColor="textSecondary" style={styles.body}>
               Simple Fasting helps you track fasts calmly, privately, and without unnecessary
               accounts or clutter.
@@ -166,14 +167,12 @@ const styles = StyleSheet.create({
   },
   hero: {
     gap: Spacing.two,
-  },
-  title: {
-    fontSize: 34,
-    lineHeight: 40,
+    alignItems: 'center',
   },
   body: {
-    fontSize: 17,
-    lineHeight: 25,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
   },
   features: {
     gap: Spacing.three,

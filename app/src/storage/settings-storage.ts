@@ -43,7 +43,7 @@ const readSettings = (): AppSettings =>
 let settingsSnapshot = createDefaultAppSettings(now());
 
 export const accentColorValues: Record<AccentColorName, string> = {
-  [AccentColorName.Red]: '#DC2626',
+  [AccentColorName.Rose]: '#F43F5E',
   [AccentColorName.Orange]: '#F97316',
   [AccentColorName.Amber]: '#F59E0B',
   [AccentColorName.Green]: '#22C55E',
@@ -62,10 +62,10 @@ type AccentPalette = {
 
 const accentPalettes: Record<'light' | 'dark', Record<AccentColorName, AccentPalette>> = {
   light: {
-    [AccentColorName.Red]: {
-      accent: '#DC2626',
-      accentBackground: '#FEE2E2',
-      accentBorder: '#FCA5A5',
+    [AccentColorName.Rose]: {
+      accent: '#BE123C',
+      accentBackground: '#FFE4E6',
+      accentBorder: '#FDA4AF',
       accentForeground: '#FFFFFF',
     },
     [AccentColorName.Orange]: {
@@ -112,59 +112,59 @@ const accentPalettes: Record<'light' | 'dark', Record<AccentColorName, AccentPal
     },
   },
   dark: {
-    [AccentColorName.Red]: {
-      accent: '#FCA5A5',
-      accentBackground: '#7F1D1D',
-      accentBorder: '#EF4444',
+    [AccentColorName.Rose]: {
+      accent: '#F87171',
+      accentBackground: '#450A0A',
+      accentBorder: '#DC2626',
       accentForeground: '#111827',
     },
     [AccentColorName.Orange]: {
-      accent: '#FDBA74',
-      accentBackground: '#7C2D12',
-      accentBorder: '#F97316',
+      accent: '#FB923C',
+      accentBackground: '#431407',
+      accentBorder: '#EA580C',
       accentForeground: '#111827',
     },
     [AccentColorName.Amber]: {
-      accent: '#FCD34D',
-      accentBackground: '#78350F',
-      accentBorder: '#F59E0B',
+      accent: '#D97706',
+      accentBackground: '#451A03',
+      accentBorder: '#B45309',
       accentForeground: '#111827',
     },
     [AccentColorName.Green]: {
-      accent: '#86EFAC',
-      accentBackground: '#14532D',
-      accentBorder: '#22C55E',
+      accent: '#4ADE80',
+      accentBackground: '#052E16',
+      accentBorder: '#16A34A',
       accentForeground: '#111827',
     },
     [AccentColorName.Teal]: {
-      accent: '#5EEAD4',
-      accentBackground: '#134E4A',
-      accentBorder: '#14B8A6',
+      accent: '#2DD4BF',
+      accentBackground: '#042F2E',
+      accentBorder: '#0D9488',
       accentForeground: '#111827',
     },
     [AccentColorName.Blue]: {
       accent: '#60A5FA',
-      accentBackground: '#1E3A8A',
-      accentBorder: '#3B82F6',
+      accentBackground: '#172554',
+      accentBorder: '#2563EB',
       accentForeground: '#0F172A',
     },
     [AccentColorName.Purple]: {
-      accent: '#C4B5FD',
-      accentBackground: '#4C1D95',
-      accentBorder: '#8B5CF6',
+      accent: '#A78BFA',
+      accentBackground: '#2E1065',
+      accentBorder: '#7C3AED',
       accentForeground: '#111827',
     },
     [AccentColorName.Pink]: {
-      accent: '#F9A8D4',
-      accentBackground: '#831843',
-      accentBorder: '#EC4899',
+      accent: '#F472B6',
+      accentBackground: '#500724',
+      accentBorder: '#DB2777',
       accentForeground: '#111827',
     },
   },
 };
 
 export const accentColorLabels: Record<AccentColorName, string> = {
-  [AccentColorName.Red]: 'Red',
+  [AccentColorName.Rose]: 'Rose',
   [AccentColorName.Orange]: 'Orange',
   [AccentColorName.Amber]: 'Amber',
   [AccentColorName.Green]: 'Green',
@@ -712,6 +712,35 @@ const websiteUrl = 'https://simplefasting.app';
 const supportEmail = 'support@simplefasting.app';
 const bugReportEmail = 'bugs@simplefasting.app';
 
+type StoreLinksExtra = {
+  storeLinks?: {
+    appStoreReview?: unknown;
+    playStoreReview?: unknown;
+  };
+};
+
+const getExtraString = (value: unknown): string | null =>
+  typeof value === 'string' && value.trim().length > 0 ? value : null;
+
+export const getStoreReviewUrlForPlatform = ({
+  extra,
+  platform,
+}: {
+  extra: StoreLinksExtra | undefined;
+  platform: typeof Platform.OS;
+}): string | null => {
+  if (platform === 'ios') return getExtraString(extra?.storeLinks?.appStoreReview);
+  if (platform === 'android') return getExtraString(extra?.storeLinks?.playStoreReview);
+
+  return null;
+};
+
+export const getStoreReviewUrl = (): string | null =>
+  getStoreReviewUrlForPlatform({
+    extra: Constants.expoConfig?.extra as StoreLinksExtra | undefined,
+    platform: Platform.OS,
+  });
+
 const openWebsitePath = async (path: string): Promise<void> => {
   await WebBrowser.openBrowserAsync(`${websiteUrl}${path}`);
 };
@@ -720,6 +749,14 @@ export const getAppVersionLabel = (): string =>
   `Version ${Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.0'}`;
 
 export const openWebsite = async (): Promise<void> => openWebsitePath('');
+
+export const openRateApp = async (): Promise<void> => {
+  const storeReviewUrl = getStoreReviewUrl();
+
+  if (!storeReviewUrl) return;
+
+  await Linking.openURL(storeReviewUrl);
+};
 
 export const openFaq = async (): Promise<void> => openWebsitePath('/faq');
 

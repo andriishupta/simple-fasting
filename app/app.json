@@ -88,6 +88,10 @@
     },
     "extra": {
       "router": {},
+      "storeLinks": {
+        "appStoreReview": null,
+        "playStoreReview": null
+      },
       "eas": {
         "projectId": "bde3ec07-6159-4be2-aa8d-fda6ee15e207"
       }

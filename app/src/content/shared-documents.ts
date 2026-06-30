@@ -22,6 +22,7 @@ type SharedDocuments = {
   privacy: SharedDocument;
   terms: SharedDocument;
   faq: SharedDocument;
+  whatsNew: SharedDocument;
 };
 
 export const sharedDocuments = generatedDocuments as SharedDocuments;

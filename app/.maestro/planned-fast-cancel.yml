@@ -1,14 +1,14 @@
 appId: app.simplefasting
-name: Cancel an open-ended fast without creating history
+name: Cancel a planned fast without saving history
 ---
 - launchApp:
     clearState: true
 - tapOn: I agree to the Terms of Use and Privacy Policy
 - tapOn: Agree and Continue
 - tapOn: Not Now
-- tapOn: Open-ended fast
+- assertVisible: 16:8
 - tapOn: Start fast
-- assertVisible: Open-ended fast
+- assertVisible: Cancel fast
 - tapOn: Cancel fast
 - assertVisible: Cancel fast?
 - tapOn: Cancel Fast
