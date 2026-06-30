@@ -48,7 +48,7 @@ function FastingLiveActivityView(
   const goalEndsAt = new Date(props.goalEndsAt);
   const showingRemaining = props.timerView === 'remaining' && hasGoal;
   const icon = showingRemaining ? '↓' : '↑';
-  const compactGoalLabel = hasGoal ? `${props.goalDurationHours}h` : 'Fast';
+  const compactGoalLabel = hasGoal ? props.goalDurationLabel : 'Fast';
 
   const banner = (
     <VStack

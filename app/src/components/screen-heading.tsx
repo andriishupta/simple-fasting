@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { Fonts, Typography } from '@/constants/theme';
 
 export function ScreenHeading({
   align = 'left',
@@ -22,8 +23,9 @@ const styles = StyleSheet.create({
   container: { alignItems: 'flex-start' },
   centered: { alignItems: 'center' },
   title: {
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: Typography.screenTitle.fontSize,
+    lineHeight: Typography.screenTitle.lineHeight,
+    fontFamily: Fonts.rounded,
     fontWeight: '700',
     textAlign: 'left',
   },

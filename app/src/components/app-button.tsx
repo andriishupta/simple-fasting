@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react';
 import { Pressable, StyleSheet, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -8,6 +9,7 @@ type AppButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'dangerGh
 
 type AppButtonProps = PressableProps & {
   label: string;
+  children?: ReactNode;
   variant?: AppButtonVariant;
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -15,6 +17,7 @@ type AppButtonProps = PressableProps & {
 
 export function AppButton({
   label,
+  children,
   variant = 'primary',
   fullWidth = false,
   style,
@@ -63,9 +66,11 @@ export function AppButton({
       ]}
       disabled={disabled}
       {...pressableProps}>
-      <ThemedText type="smallBold" style={{ color: colors.color }}>
-        {label}
-      </ThemedText>
+      {children ?? (
+        <ThemedText type="smallBold" style={{ color: colors.color }}>
+          {label}
+        </ThemedText>
+      )}
     </Pressable>
   );
 }

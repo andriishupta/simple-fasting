@@ -3,6 +3,7 @@ import { Alert, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { router, Stack } from 'expo-router';
 
 import { AppButton } from '@/components/app-button';
+import { AppSurface } from '@/components/app-surface';
 import { DurationPicker, maxCustomDurationHours } from '@/components/fast-setup-controls';
 import { FeedbackState } from '@/components/feedback-state';
 import { ThemedText } from '@/components/themed-text';
@@ -191,12 +192,14 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
               Duration
             </ThemedText>
-            <DurationPicker
-              value={draft.targetDurationHours}
-              onChange={(targetDurationHours) =>
-                setDraft((current) => ({ ...current, targetDurationHours }))
-              }
-            />
+            <AppSurface padded={false} style={styles.durationCard}>
+              <DurationPicker
+                value={draft.targetDurationHours}
+                onChange={(targetDurationHours) =>
+                  setDraft((current) => ({ ...current, targetDurationHours }))
+                }
+              />
+            </AppSurface>
           </View>
 
           <View style={styles.actions}>
@@ -262,6 +265,9 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.two,
     paddingHorizontal: Spacing.three,
     fontSize: 16,
+  },
+  durationCard: {
+    overflow: 'hidden',
   },
   actions: {
     flexDirection: 'row',

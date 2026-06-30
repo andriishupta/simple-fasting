@@ -4,15 +4,16 @@ import {
   Pressable,
   StyleSheet,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SegmentedControl as ExpoSegmentedControl } from '@expo/ui/community/segmented-control';
-import { Check, ChevronRight, Trash2 } from 'lucide-react-native';
+import { Check, ChevronRight, Circle, Trash2 } from 'lucide-react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
+import { AppSection } from '@/components/app-section';
 import { AppSurface } from '@/components/app-surface';
+import { FastingSummaryCard } from '@/components/fasting-summary-card';
 import {
   CompletionDonut,
   FastingBarChart,
@@ -23,7 +24,7 @@ import { FeedbackState } from '@/components/feedback-state';
 import { ScreenHeading } from '@/components/screen-heading';
 import { TabScreenShell } from '@/components/tab-screen-shell';
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
   deleteFastSession,
   deleteFastSessions,
@@ -81,10 +82,8 @@ const getCachedChartData = (history: HistoryState, locale?: string): ChartData =
 };
 
 export default function DataScreen() {
-  const { height } = useWindowDimensions();
   const dataViewPreference = useSettingsSelector((settings) => settings.dataViewPreference);
   const [selectedView, setSelectedView] = useState<DataView>(dataViewPreference);
-  const shouldScroll = selectedView !== DataViewPreference.Stats || height < 700;
   const selectDataView = (view: DataView): void => {
     setSelectedView(view);
 
@@ -95,7 +94,7 @@ export default function DataScreen() {
 
   return (
     <TabScreenShell
-      scrollEnabled={shouldScroll}
+      scrollEnabled="auto"
       maxWidth={Math.min(MaxContentWidth, 640)}>
       <ScreenHeading>Data</ScreenHeading>
       <DataPanel
@@ -196,13 +195,14 @@ function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
   return (
     <View style={styles.list}>
       <View style={styles.listActions}>
-        {selecting ? (
-          <ThemedText type="small" themeColor="textSecondary">
-            {selectedIds.size} selected
+        <View style={styles.listHeading}>
+          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.listTitle}>
+            Completed fasts
           </ThemedText>
-        ) : (
-          <View />
-        )}
+          <ThemedText type="small" themeColor="textSecondary">
+            {selecting ? `${selectedIds.size} selected` : `${sessions.length}. Swipe left to delete an item.`}
+          </ThemedText>
+        </View>
         <View style={styles.listActionButtons}>
           {selecting ? (
             <Pressable
@@ -243,16 +243,19 @@ function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
                 ],
               );
             }}
-            style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
-            <ThemedText
-              type="smallBold"
-              style={
-                selecting
-                  ? { color: selectedIds.size === 0 ? theme.textSecondary : theme.danger }
-                  : undefined
-              }>
-              {selecting ? 'Delete' : 'Select'}
-            </ThemedText>
+            style={({ pressed }) => [
+              selecting ? styles.textAction : styles.iconAction,
+              pressed && styles.pressed,
+            ]}>
+            {selecting ? (
+              <ThemedText
+                type="smallBold"
+                style={{ color: selectedIds.size === 0 ? theme.textSecondary : theme.danger }}>
+                Delete
+              </ThemedText>
+            ) : (
+              <Circle size={21} color={theme.textSecondary} strokeWidth={2.1} />
+            )}
           </Pressable>
         </View>
       </View>
@@ -306,60 +309,68 @@ function HistoryItem({
   return (
     <Animated.View
       entering={FadeInUp.delay(Math.min(index, 5) * 35).duration(180)}
-      style={[
-        styles.swipeContainer,
-        { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
-      ]}>
-      <ReanimatedSwipeable
-        enabled={!selecting}
-        friction={1.5}
-        rightThreshold={44}
-        overshootRight={false}
-        renderRightActions={() => (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Delete fast"
-            onPress={deleteSession}
-            style={[styles.deleteAction, { backgroundColor: theme.danger }]}>
-            <Trash2 size={22} color={theme.dangerForeground} strokeWidth={2} />
-            <ThemedText type="smallBold" style={{ color: theme.dangerForeground }}>
-              Delete
-            </ThemedText>
-          </Pressable>
-        )}>
+      style={styles.historyItemRow}>
+      {selecting ? (
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={selected ? 'Deselect fast' : 'Select fast'}
           accessibilityState={{ selected }}
-          onPress={selecting ? onToggle : editSession}
+          onPress={onToggle}
           style={({ pressed }) => [
-            styles.item,
-            { backgroundColor: theme.background },
+            styles.selectionControl,
+            {
+              backgroundColor: selected ? theme.accent : 'transparent',
+              borderColor: selected ? theme.accent : theme.textSecondary,
+            },
             pressed && styles.pressed,
           ]}>
-          {selecting ? (
-            <View
-              style={[
-                styles.selectionIndicator,
-                {
-                  backgroundColor: selected ? theme.accent : 'transparent',
-                  borderColor: selected ? theme.accent : theme.textSecondary,
-                },
-              ]}>
-              {selected ? <Check size={15} color={theme.background} strokeWidth={3} /> : null}
-            </View>
-          ) : null}
-          <View style={styles.itemText}>
-            <HistorySummary
-              session={session}
-              durationSeconds={getSessionDurationSeconds(session)}
-              showChevron={!selecting}
-              endedLabel={
-                session.endedAt === null ? 'In progress' : formatLocaleDateTime(session.endedAt)
-              }
-            />
-          </View>
+          {selected ? <Check size={15} color={theme.background} strokeWidth={3} /> : null}
         </Pressable>
-      </ReanimatedSwipeable>
+      ) : null}
+      <View
+        style={[
+          styles.swipeContainer,
+          { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
+        ]}>
+        <ReanimatedSwipeable
+          enabled={!selecting}
+          friction={1.5}
+          rightThreshold={44}
+          overshootRight={false}
+          renderRightActions={() => (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Delete fast"
+              onPress={deleteSession}
+              style={[styles.deleteAction, { backgroundColor: theme.danger }]}>
+              <Trash2 size={22} color={theme.dangerForeground} strokeWidth={2} />
+              <ThemedText type="smallBold" style={{ color: theme.dangerForeground }}>
+                Delete
+              </ThemedText>
+            </Pressable>
+          )}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            onPress={selecting ? onToggle : editSession}
+            style={({ pressed }) => [
+              styles.item,
+              { backgroundColor: theme.background },
+              pressed && styles.pressed,
+            ]}>
+            <View style={styles.itemText}>
+              <HistorySummary
+                session={session}
+                durationSeconds={getSessionDurationSeconds(session)}
+                showChevron={!selecting}
+                endedLabel={
+                  session.endedAt === null ? 'In progress' : formatLocaleDateTime(session.endedAt)
+                }
+              />
+            </View>
+          </Pressable>
+        </ReanimatedSwipeable>
+      </View>
     </Animated.View>
   );
 }
@@ -383,95 +394,165 @@ function HistorySummary({
       : null;
 
   return (
-    <View style={styles.historySummary}>
-      <View style={styles.historyTopLine}>
-        <View style={styles.durationGroup}>
-          <ThemedText type="small" themeColor="textSecondary">Duration</ThemedText>
-          <ThemedText type="smallBold">{formatDuration(durationSeconds)}</ThemedText>
-        </View>
-        <View style={styles.goalAction}>
-          <View style={[styles.goalPill, { backgroundColor: theme.accentBackground }]}>
-            <ThemedText type="smallBold" themeColor="accent">
-              {session.goalDurationHours <= 0
-                ? 'Open-ended'
-                : formatGoalDuration(session.goalDurationHours, goalDurationFormat)}
-            </ThemedText>
-          </View>
-          {showChevron ? <ChevronRight size={18} color={theme.textSecondary} /> : null}
-        </View>
-      </View>
-      {progress !== null ? (
-        <View
-          accessible
-          accessibilityLabel={`${Math.round(progress * 100)}% of goal`}
-          style={[styles.historyProgressTrack, { backgroundColor: theme.backgroundSelected }]}>
-          <View
-            style={[
-              styles.historyProgressFill,
-              { backgroundColor: theme.accent, width: `${Math.min(100, progress * 100)}%` },
-            ]}
-          />
-        </View>
-      ) : null}
-      <View style={styles.historyTimes}>
-        <HistoryTime label="Started" value={formatLocaleDateTime(session.startedAt)} />
-        <View style={[styles.historyTimeDivider, { backgroundColor: theme.backgroundSelected }]} />
-        <HistoryTime label="Ended" value={endedLabel} />
-      </View>
-      {session.reason !== null && (
-        <ThemedText type="small" themeColor="textSecondary">
-          {session.reason}
-        </ThemedText>
-      )}
-    </View>
-  );
-}
-
-function HistoryTime({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.historyTime}>
-      <ThemedText type="small" themeColor="textSecondary" style={styles.historyTimeText}>
-        {label}
-      </ThemedText>
-      <ThemedText type="smallBold" selectable style={styles.historyTimeText}>
-        {value}
-      </ThemedText>
-    </View>
+    <FastingSummaryCard
+      surface={false}
+      duration={formatDuration(durationSeconds)}
+      goalLabel={
+        session.goalDurationHours <= 0
+          ? 'Open-ended'
+          : formatGoalDuration(session.goalDurationHours, goalDurationFormat)
+      }
+      progress={progress}
+      started={formatLocaleDateTime(session.startedAt)}
+      ended={endedLabel}
+      trailing={showChevron ? <ChevronRight size={18} color={theme.textSecondary} /> : undefined}
+      note={session.reason}
+    />
   );
 }
 
 function StatsPanel({ history }: { history: HistoryState }) {
   const stats = useMemo(() => getFastingStats(history), [history]);
+  const groups = [
+    {
+      title: 'Overview',
+      description: 'Local totals from completed fasts.',
+      rows: [
+        {
+          label: 'Total fasts',
+          description: 'Completed fasts saved on this device.',
+          value: `${stats.totalFasts}`,
+        },
+        {
+          label: 'Total hours',
+          description: 'Lifetime fasting hours saved on this device.',
+          value: `${formatHours(stats.totalHours)} h`,
+        },
+      ],
+    },
+    {
+      title: 'Duration',
+      description: 'How long your fasts usually last.',
+      rows: [
+        {
+          label: 'Average duration',
+          description: 'Average length across completed fasts.',
+          value: `${formatHours(stats.averageDurationHours)} h`,
+        },
+        {
+          label: 'Current streak',
+          description: 'Consecutive days with a completed fast.',
+          value: `${stats.currentStreakDays} days`,
+        },
+        {
+          label: 'Longest streak',
+          description: 'Best run of consecutive fasting days.',
+          value: `${stats.longestStreakDays} days`,
+        },
+        {
+          label: 'Longest fast',
+          description: 'Longest completed fast in your local history.',
+          value: `${formatHours(stats.longestFastHours)} h`,
+        },
+      ],
+    },
+    {
+      title: 'Goals',
+      description: 'Planned fast goal performance.',
+      rows: [
+        {
+          label: 'Completion rate',
+          description: 'How often planned fasts reached their goal. Open-ended fasts do not count.',
+          value: formatPercent(stats.completionRate),
+        },
+      ],
+    },
+  ] as const;
 
   return (
-    <View style={styles.statGrid}>
-      <StatTile index={0} label="Current streak" value={`${stats.currentStreakDays} days`} />
-      <StatTile index={1} label="Total hours" value={`${formatHours(stats.totalHours)} h`} />
-      <StatTile index={2} label="Longest streak" value={`${stats.longestStreakDays} days`} />
-      <StatTile index={3} label="Longest fast" value={`${formatHours(stats.longestFastHours)} h`} />
-      <StatTile index={4} label="Average duration" value={`${formatHours(stats.averageDurationHours)} h`} />
-      <StatTile index={5} label="Total fasts" value={`${stats.totalFasts}`} />
-      <StatTile index={6} label="Completion rate" value={formatPercent(stats.completionRate)} />
+    <View style={styles.statGroups}>
+      {groups.map((group, groupIndex) => (
+        <StatGroup
+          key={group.title}
+          index={groupIndex}
+          title={group.title}
+          description={group.description}
+          rows={group.rows}
+        />
+      ))}
     </View>
   );
 }
 
-function StatTile({ index, label, value }: {
+function StatGroup({
+  index,
+  title,
+  description,
+  rows,
+}: {
   index: number;
-  label: string;
-  value: string;
+  title: string;
+  description: string;
+  rows: readonly {
+    label: string;
+    description: string;
+    value: string;
+  }[];
 }) {
   return (
     <Animated.View
       entering={FadeInUp.delay(Math.min(index, 5) * 35).duration(180)}
-      style={styles.statTileWrap}>
-      <AppSurface style={styles.statTile}>
-        <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
-        <ThemedText selectable style={styles.statValue}>
-          {value}
+      style={styles.statGroup}>
+      <View style={styles.statGroupHeading}>
+        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.statGroupTitle}>
+          {title}
         </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {description}
+        </ThemedText>
+      </View>
+      <AppSurface padded={false} style={styles.statList}>
+        {rows.map((row) => (
+          <StatRow
+            key={row.label}
+            label={row.label}
+            description={row.description}
+            value={row.value}
+          />
+        ))}
       </AppSurface>
     </Animated.View>
+  );
+}
+
+function StatRow({
+  label,
+  description,
+  value,
+}: {
+  label: string;
+  description: string;
+  value: string;
+}) {
+  return (
+    <View style={styles.statRow}>
+      <View style={styles.statText}>
+        <ThemedText type="smallBold">{label}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {description}
+        </ThemedText>
+      </View>
+      <View style={styles.statValueWrap}>
+        <ThemedText
+          selectable
+          themeColor="accent"
+          style={styles.statValue}
+          numberOfLines={1}
+          adjustsFontSizeToFit>
+          {value}
+        </ThemedText>
+      </View>
+    </View>
   );
 }
 
@@ -524,15 +605,11 @@ function ChartSection({
 }) {
   return (
     <Animated.View entering={FadeInUp.delay(Math.min(index, 5) * 35).duration(180)}>
-      <AppSurface style={styles.section}>
-        <View style={styles.sectionHeading}>
-          <ThemedText type="smallBold">{title}</ThemedText>
-          {description !== undefined ? (
-            <ThemedText type="small" themeColor="textSecondary">{description}</ThemedText>
-          ) : null}
-        </View>
+      <AppSection title={title} description={description}>
+        <View style={styles.chartBody}>
         {children}
-      </AppSurface>
+        </View>
+      </AppSection>
     </Animated.View>
   );
 }
@@ -540,35 +617,49 @@ function ChartSection({
 const styles = StyleSheet.create({
   panel: {
     flex: 1,
-    gap: Spacing.three,
+    gap: Spacing.md,
   },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   viewPicker: {
     minHeight: 36,
   },
   list: {
-    gap: Spacing.two,
+    gap: Spacing.xs,
   },
   listActions: { minHeight: 36, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  listActionButtons: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  textAction: { minHeight: 36, justifyContent: 'center', paddingHorizontal: Spacing.two },
+  listHeading: { flex: 1, gap: Spacing.xxxs },
+  listTitle: { textTransform: 'uppercase' },
+  listActionButtons: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  textAction: { minHeight: 36, justifyContent: 'center', paddingHorizontal: Spacing.xs },
+  iconAction: {
+    width: 38,
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   item: {
     minHeight: 76,
     flexDirection: 'row',
     alignItems: 'stretch',
-    gap: Spacing.three,
-    padding: Spacing.three,
+    gap: Spacing.md,
+    padding: Spacing.md,
+  },
+  historyItemRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
   },
   swipeContainer: {
+    flex: 1,
     overflow: 'hidden',
     borderWidth: 1,
     borderRadius: Radius.surface,
     borderCurve: 'continuous',
   },
-  selectionIndicator: {
+  selectionControl: {
     width: 24,
     height: 24,
-    alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
@@ -583,61 +674,51 @@ const styles = StyleSheet.create({
   itemText: {
     flex: 1,
   },
-  historySummary: { gap: Spacing.two },
-  historyTopLine: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
+  statGroups: {
+    gap: Spacing.lg,
   },
-  durationGroup: { gap: Spacing.half },
-  goalAction: {
-    flexShrink: 1,
+  statGroup: {
+    width: '100%',
+    gap: Spacing.xs,
+  },
+  statGroupHeading: {
+    gap: Spacing.xxxs,
+  },
+  statGroupTitle: {
+    textTransform: 'uppercase',
+  },
+  statList: {
+    overflow: 'hidden',
+  },
+  statRow: {
+    minHeight: 78,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: Spacing.one,
+    gap: Spacing.md,
+    padding: Spacing.md,
   },
-  goalPill: { borderRadius: Radius.pill, paddingHorizontal: Spacing.two, paddingVertical: Spacing.one },
-  historyProgressTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
-  historyProgressFill: { height: '100%', borderRadius: 3 },
-  historyTimes: { flexDirection: 'row', alignItems: 'stretch' },
-  historyTime: { flex: 1, alignItems: 'center', gap: Spacing.half },
-  historyTimeText: { textAlign: 'center' },
-  historyTimeDivider: {
-    width: StyleSheet.hairlineWidth,
-    alignSelf: 'stretch',
-    marginHorizontal: Spacing.three,
-  },
-  statGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  statTileWrap: {
-    width: '48%',
-    flexGrow: 1,
-  },
-  statTile: {
-    minHeight: 82,
+  statText: {
     flex: 1,
-    justifyContent: 'space-between',
-    gap: Spacing.two,
+    gap: Spacing.xxxs,
+  },
+  statValueWrap: {
+    width: 112,
+    alignItems: 'flex-end',
   },
   statValue: {
-    fontSize: 20,
-    lineHeight: 25,
-    fontWeight: '600',
+    textAlign: 'right',
+    fontSize: 19,
+    lineHeight: 24,
+    fontFamily: Fonts.rounded,
+    fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },
   content: {
-    gap: Spacing.three,
+    gap: Spacing.md,
   },
-  section: {
-    gap: Spacing.three,
-    overflow: 'hidden',
+  chartBody: {
+    padding: Spacing.md,
   },
-  sectionHeading: { gap: Spacing.half },
   pressed: {
     opacity: 0.72,
   },

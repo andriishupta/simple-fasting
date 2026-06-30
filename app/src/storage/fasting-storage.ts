@@ -39,11 +39,51 @@ let historySnapshot = createEmptyHistoryState(now());
 const createSessionId = (): string =>
   `fast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-const saveActiveFastState = (activeFastState: ActiveFastState): ActiveFastState => {
-  activeFastSnapshot = activeFastState;
-  appStorage.insert(StorageKey.ActiveFast, activeFastState);
+const runAfterNextFrame = (task: () => void): void => {
+  requestAnimationFrame(() => {
+    setTimeout(task, 0);
+  });
+};
+
+let deferredWidgetSyncScheduled = false;
+let deferredLiveActivitySyncScheduled = false;
+
+const syncActiveFastSurfaces = (
+  activeFastState: ActiveFastState,
+  options: { defer?: boolean } = {},
+): void => {
+  if (options.defer === true) {
+    if (!deferredWidgetSyncScheduled) {
+      deferredWidgetSyncScheduled = true;
+      runAfterNextFrame(() => {
+        deferredWidgetSyncScheduled = false;
+        updateFastingWidget(activeFastSnapshot);
+      });
+    }
+
+    if (!deferredLiveActivitySyncScheduled) {
+      deferredLiveActivitySyncScheduled = true;
+      runAfterNextFrame(() => {
+        deferredLiveActivitySyncScheduled = false;
+        void syncFastingLiveActivityState(activeFastSnapshot);
+      });
+    }
+
+    return;
+  }
+
   updateFastingWidget(activeFastState);
   void syncFastingLiveActivityState(activeFastState);
+};
+
+const saveActiveFastState = (
+  activeFastState: ActiveFastState,
+  options: { deferSurfaceSync?: boolean } = {},
+): ActiveFastState => {
+  activeFastSnapshot = activeFastState;
+  appStorage.insert(StorageKey.ActiveFast, activeFastState);
+
+  syncActiveFastSurfaces(activeFastState, { defer: options.deferSurfaceSync });
 
   return activeFastState;
 };
@@ -435,7 +475,7 @@ export const setActiveFastTimerView = (
     ...activeFastState,
     timerViewPreference,
     updatedAt: now(),
-  });
+  }, { deferSurfaceSync: true });
 };
 
 const subscribeToActiveFast = (onStoreChange: () => void): (() => void) => {

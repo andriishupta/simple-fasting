@@ -8,7 +8,8 @@ import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeabl
 import { AppSurface } from '@/components/app-surface';
 import { DraggableListRow } from '@/components/draggable-list-row';
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { TruncatedText } from '@/components/truncated-text';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { FastingGoalType, type FastingGoal } from '@/storage/app-storage';
 import {
@@ -60,9 +61,14 @@ export default function GoalsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.screen}>
         <View style={styles.content}>
-          <ThemedText type="small" themeColor="textSecondary">
-            Drag to reorder. Swipe left to delete custom goals.
-          </ThemedText>
+          <View style={styles.sectionHeading}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+              Goals
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              Drag to reorder. Swipe left to delete custom goals.
+            </ThemedText>
+          </View>
           <View style={styles.goalList}>
             {settings.goals.map((goal, index) => (
               <GoalRow
@@ -142,9 +148,7 @@ function GoalRow({
           onPress={onEdit}
           style={({ pressed }) => [styles.goalText, pressed && styles.pressed]}>
           <View style={styles.goalNameRow}>
-            <ThemedText type="smallBold" selectable>
-              {goal.name}
-            </ThemedText>
+            <TruncatedText value={goal.name} type="smallBold" selectable style={styles.goalName} />
             <View style={[styles.typeBadge, { backgroundColor: theme.backgroundSelected }]}>
               <ThemedText type="small" themeColor="textSecondary">
                 {isCustom ? 'Custom' : 'Standard'}
@@ -155,17 +159,19 @@ function GoalRow({
             {formatGoalDuration(goal.targetDurationHours, settings.goalDurationFormat)}
           </ThemedText>
         </Pressable>
-        <Switch
-          accessibilityLabel={`${goal.name} available on Fast screen`}
-          value={goal.isEnabled}
-          onValueChange={(isEnabled) => {
-            if (!setFastingGoalEnabled(goal.id, isEnabled)) {
-              Alert.alert('Goal required', 'At least one fasting goal must stay enabled.');
-            }
-          }}
-          trackColor={{ true: theme.accent }}
-        />
-        {isCustom ? <ChevronRight size={18} color={theme.textSecondary} /> : null}
+        <View style={styles.goalActionColumn}>
+          <Switch
+            accessibilityLabel={`${goal.name} available on Fast screen`}
+            value={goal.isEnabled}
+            onValueChange={(isEnabled) => {
+              if (!setFastingGoalEnabled(goal.id, isEnabled)) {
+                Alert.alert('Goal required', 'At least one fasting goal must stay enabled.');
+              }
+            }}
+            trackColor={{ true: theme.accent }}
+          />
+          {isCustom ? <ChevronRight size={18} color={theme.textSecondary} /> : null}
+        </View>
       </View>
     </AppSurface>
   );
@@ -213,19 +219,21 @@ const styles = StyleSheet.create({
   screen: {
     flexGrow: 1,
     alignItems: 'center',
-    paddingBottom: Spacing.six,
+    paddingBottom: Spacing.huge,
   },
   content: {
     width: '100%',
     maxWidth: Math.min(MaxContentWidth, 640),
-    gap: Spacing.three,
-    paddingHorizontal: Spacing.four,
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.xl,
   },
+  sectionHeading: { gap: Spacing.xxxs },
+  sectionTitle: { textTransform: 'uppercase' },
   goalList: {
-    gap: Spacing.two,
+    gap: Spacing.xs,
   },
   goalCard: {
-    padding: 12,
+    padding: Spacing.sm,
   },
   goalCardDragging: {
     borderWidth: 2,
@@ -235,11 +243,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Spacing.two,
+    gap: Spacing.xs,
   },
   goalText: {
     flex: 1,
-    gap: Spacing.one,
+    gap: Spacing.xxs,
+  },
+  goalActionColumn: {
+    minWidth: 78,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: Spacing.xs,
   },
   dragHandle: {
     width: 28,
@@ -251,37 +266,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: Spacing.two,
+    gap: Spacing.xs,
+  },
+  goalName: {
+    maxWidth: '100%',
+    flexShrink: 1,
   },
   typeBadge: {
-    borderRadius: 999,
-    paddingHorizontal: Spacing.two,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.xs,
     paddingVertical: Spacing.half,
   },
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.two,
+    gap: Spacing.xs,
   },
   deleteAction: {
     width: 88,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.one,
-    borderTopRightRadius: 16,
-    borderBottomRightRadius: 16,
+    gap: Spacing.xxs,
+    borderTopRightRadius: Radius.surface,
+    borderBottomRightRadius: Radius.surface,
   },
-  swipeable: { borderRadius: 16, borderCurve: 'continuous', overflow: 'hidden' },
-  swipeableChildren: { borderRadius: 16, borderCurve: 'continuous', overflow: 'hidden' },
+  swipeable: { borderRadius: Radius.surface, borderCurve: 'continuous', overflow: 'hidden' },
+  swipeableChildren: { borderRadius: Radius.surface, borderCurve: 'continuous', overflow: 'hidden' },
   fab: {
     position: 'absolute',
-    right: Spacing.four,
-    bottom: Spacing.four,
+    right: Spacing.xl,
+    bottom: Spacing.xl,
     width: 56,
     height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 28,
+    borderRadius: Radius.pill,
     boxShadow: '0 6px 16px rgba(0, 0, 0, 0.22)',
   },
   pressed: { opacity: 0.72 },

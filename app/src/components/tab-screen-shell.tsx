@@ -1,4 +1,5 @@
-import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useState } from 'react';
+import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,7 +13,7 @@ type TabScreenShellProps = {
   contentStyle?: StyleProp<ViewStyle>;
   keyboardShouldPersistTaps?: 'always' | 'handled' | 'never';
   maxWidth?: number;
-  scrollEnabled?: boolean;
+  scrollEnabled?: boolean | 'auto';
 };
 
 export function TabScreenShell({
@@ -25,28 +26,42 @@ export function TabScreenShell({
   const insets = useSafeAreaInsets();
   const colorScheme = useAppThemeColorScheme();
   const theme = useTheme();
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
   const topOverlayHeight = Math.max(insets.top + Spacing.five, 84);
   const blurTint = colorScheme === 'dark' ? 'systemMaterialDark' : 'systemMaterialLight';
+  const autoScrollEnabled = contentHeight > viewportHeight + 1;
+  const canScroll = scrollEnabled === 'auto' ? autoScrollEnabled : scrollEnabled;
+  const usesScrollView = scrollEnabled !== false;
+  const containerInsets = {
+    paddingTop: insets.top + Spacing.three,
+    paddingBottom: insets.bottom + FloatingTabBarClearance,
+  };
+  const content = <View style={[styles.content, { maxWidth }, contentStyle]}>{children}</View>;
+  const updateViewportHeight = (event: LayoutChangeEvent): void => {
+    setViewportHeight(event.nativeEvent.layout.height);
+  };
 
   return (
     <View style={styles.root}>
-      <ScrollView
-        style={styles.scroll}
-        scrollEnabled={scrollEnabled}
-        bounces={scrollEnabled}
-        contentInsetAdjustmentBehavior="never"
-        keyboardShouldPersistTaps={keyboardShouldPersistTaps}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.container,
-          !scrollEnabled && styles.centeredContainer,
-          {
-            paddingTop: insets.top + Spacing.three,
-            paddingBottom: insets.bottom + FloatingTabBarClearance,
-          },
-        ]}>
-        <View style={[styles.content, { maxWidth }, contentStyle]}>{children}</View>
-      </ScrollView>
+      {usesScrollView ? (
+        <ScrollView
+          style={styles.scroll}
+          scrollEnabled={canScroll}
+          bounces={canScroll}
+          onLayout={updateViewportHeight}
+          onContentSizeChange={(_width, height) => setContentHeight(height)}
+          contentInsetAdjustmentBehavior="never"
+          keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.container, containerInsets]}>
+          {content}
+        </ScrollView>
+      ) : (
+        <View style={[styles.staticContainer, styles.centeredContainer, containerInsets]}>
+          {content}
+        </View>
+      )}
       <MaskedView
         pointerEvents="none"
         style={[styles.topOverlay, { height: topOverlayHeight }]}
@@ -86,6 +101,10 @@ function TopFadeMask() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1 },
+  staticContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
   container: {
     flexGrow: 1,
     alignItems: 'center',

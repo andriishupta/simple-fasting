@@ -33,6 +33,6 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
   },
   padded: {
-    padding: Spacing.three,
+    padding: Spacing.md,
   },
 });

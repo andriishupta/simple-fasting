@@ -67,6 +67,16 @@ export const Fonts = Platform.select({
 });
 
 export const Spacing = {
+  xxxs: 2,
+  xxs: 4,
+  xs: 8,
+  sm: 12,
+  md: 16,
+  lg: 20,
+  xl: 24,
+  xxl: 32,
+  xxxl: 48,
+  huge: 64,
   half: 2,
   one: 4,
   two: 8,
@@ -77,9 +87,28 @@ export const Spacing = {
 } as const;
 
 export const Radius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
   control: 12,
   surface: 16,
   pill: 999,
+} as const;
+
+export const Typography = {
+  screenTitle: {
+    fontSize: 24,
+    lineHeight: 30,
+  },
+  heroTitle: {
+    fontSize: 28,
+    lineHeight: 34,
+  },
+  timer: {
+    fontSize: 38,
+    lineHeight: 44,
+  },
 } as const;
 
 export const MaxContentWidth = 800;

@@ -11,17 +11,15 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { AppButton } from '@/components/app-button';
-import { AppSurface } from '@/components/app-surface';
 import { FeedbackState } from '@/components/feedback-state';
+import { FastingSummaryCard } from '@/components/fasting-summary-card';
 import {
   customGoalId,
   FastGoalSelector,
-  FastNoteEditor,
   getGoalSelectionId,
   maxCustomDurationHours,
   unlimitedGoalId,
 } from '@/components/fast-setup-controls';
-import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
 import {
@@ -35,6 +33,7 @@ import {
 } from '@/storage/fasting-storage';
 import { type FastSession } from '@/storage/app-storage';
 import { useSettings } from '@/storage/settings-storage';
+import { formatGoalDuration } from '@/utils/fast-goals';
 
 type EditState = {
   startedAt: Date | null;
@@ -117,6 +116,8 @@ function DetailContent({ session }: { session: FastSession }) {
     editState.startedAt !== null && editState.endedAt !== null
       ? Math.max(0, (editState.endedAt.getTime() - editState.startedAt.getTime()) / 1000)
       : getSessionDurationSeconds(session);
+  const editedProgress =
+    goalDurationHours > 0 ? editedDurationSeconds / (goalDurationHours * 3600) : null;
   const [selectedGoalId, setSelectedGoalId] = useState(() =>
     getGoalSelectionId(enabledGoals, goalDurationHours),
   );
@@ -225,6 +226,8 @@ function DetailContent({ session }: { session: FastSession }) {
         selectedGoalId={selectedGoalId}
         customDurationHours={Math.max(1, goalDurationHours || 1)}
         customDurationExpanded={customDurationExpanded}
+        noteEnabled={noteEnabled}
+        noteValue={editState.reason}
         onSelectGoal={(goalId) => {
           setSelectedGoalId(goalId);
           if (goalId === unlimitedGoalId) {
@@ -248,16 +251,12 @@ function DetailContent({ session }: { session: FastSession }) {
           setEditState((state) => ({ ...state, goalDurationHours: String(hours) }))
         }
         onCustomDurationExpandedChange={setCustomDurationExpanded}
+        onNoteEnabledChange={(enabled: boolean) => {
+          setNoteEnabled(enabled);
+          if (!enabled) setEditState((state) => ({ ...state, reason: '' }));
+        }}
+        onNoteChangeText={(reason: string) => setEditState((state) => ({ ...state, reason }))}
       />
-
-      <View style={styles.summary}>
-        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
-          Duration
-        </ThemedText>
-        <ThemedText type="subtitle" selectable style={styles.duration}>
-          {formatDuration(editedDurationSeconds)}
-        </ThemedText>
-      </View>
 
       {editError !== null && (
         <FeedbackState
@@ -268,34 +267,27 @@ function DetailContent({ session }: { session: FastSession }) {
         />
       )}
 
-      <View style={styles.sectionGroup}>
-        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
-          Schedule
-        </ThemedText>
-        <AppSurface style={styles.timeFields}>
+      <FastingSummaryCard
+        duration={formatDuration(editedDurationSeconds)}
+        goalLabel={
+          goalDurationHours <= 0
+            ? 'Open-ended'
+            : formatGoalDuration(goalDurationHours, settings.goalDurationFormat)
+        }
+        progress={editedProgress}
+        started={
           <NativeDateTimeField
-            label="Start"
             value={editState.startedAt}
             onChange={(startedAt) => setEditState((state) => ({ ...state, startedAt }))}
           />
-          <View style={styles.sectionDivider} />
+        }
+        ended={
           <NativeDateTimeField
-            label="End"
             value={editState.endedAt}
             fallbackDate={editState.startedAt ?? undefined}
             onChange={(endedAt) => setEditState((state) => ({ ...state, endedAt }))}
           />
-        </AppSurface>
-      </View>
-
-      <FastNoteEditor
-        enabled={noteEnabled}
-        value={editState.reason}
-        onEnabledChange={(enabled) => {
-          setNoteEnabled(enabled);
-          if (!enabled) setEditState((state) => ({ ...state, reason: '' }));
-        }}
-        onChangeText={(reason) => setEditState((state) => ({ ...state, reason }))}
+        }
       />
 
       <View style={styles.actions}>
@@ -307,12 +299,10 @@ function DetailContent({ session }: { session: FastSession }) {
 }
 
 function NativeDateTimeField({
-  label,
   value,
   fallbackDate,
   onChange,
 }: {
-  label: string;
   value: Date | null;
   fallbackDate?: Date;
   onChange: (value: Date | null) => void;
@@ -333,7 +323,6 @@ function NativeDateTimeField({
 
   return (
     <View style={styles.timeField}>
-      <ThemedText type="smallBold">{label}</ThemedText>
       <View style={styles.dateTimeControls}>
         <DateTimePicker
           mode="date"
@@ -371,23 +360,14 @@ const styles = StyleSheet.create({
   content: {
     gap: Spacing.three,
   },
-  summary: {
+  timeField: {
     alignItems: 'center',
-    gap: Spacing.half,
+    gap: Spacing.xs,
   },
-  duration: {
-    textAlign: 'center',
-  },
-  sectionGroup: { gap: Spacing.one },
-  sectionLabel: { paddingHorizontal: Spacing.two, textTransform: 'uppercase' },
-  timeFields: { gap: Spacing.two },
-  timeField: { gap: Spacing.two },
-  sectionDivider: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(128,128,128,0.24)' },
   dateTimeControls: {
-    flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
+    justifyContent: 'center',
+    gap: Spacing.xs,
   },
   actions: {
     flexDirection: 'row',

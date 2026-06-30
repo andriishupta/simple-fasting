@@ -7,12 +7,17 @@ import {
   StyleSheet,
   Switch,
   View,
+  type ColorValue,
 } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { Picker } from '@expo/ui/community/picker';
+import { BlurView } from 'expo-blur';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
+import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 import {
+  Activity,
   Bell,
   Bug,
   ChevronRight,
@@ -33,11 +38,18 @@ import {
   Trash2,
   type LucideIcon,
 } from 'lucide-react-native';
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  FadeOutUp,
+  LinearTransition,
+} from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
 import { CenteredWheelPicker } from '@/components/centered-wheel-picker';
 import { ScreenHeading } from '@/components/screen-heading';
 import { TabScreenShell } from '@/components/tab-screen-shell';
+import { TimerViewToggle } from '@/components/timer-view-toggle';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
   setAccentColorName,
@@ -68,15 +80,17 @@ import {
   AccentColorName,
   GoalDurationFormat,
   StorageKey,
+  TimerViewPreference,
   ThemePreference,
   appStorage,
 } from '@/storage/app-storage';
-import { useTheme } from '@/hooks/use-theme';
+import { useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
 import {
   getActiveFastState,
   mergeImportedFastSessions,
   reconcileActiveFastEndNotification,
   refreshFastSnapshots,
+  setActiveFastTimerView,
   syncActiveFastingLiveActivity,
   useActiveFastState,
 } from '@/storage/fasting-storage';
@@ -127,7 +141,7 @@ const goalDurationFormatOptions = [
   },
 ] as const;
 
-const accentItemWidth = 76;
+const accentItemWidth = 88;
 const reminderHours = Array.from({ length: 24 }, (_, hour) => hour);
 const reminderMinutes = Array.from({ length: 60 }, (_, minute) => minute);
 
@@ -331,7 +345,7 @@ export default function SettingsScreen() {
   return (
     <TabScreenShell maxWidth={Math.min(MaxContentWidth, 640)}>
         <ScreenHeading>Settings</ScreenHeading>
-        <SettingsSection title="Goals">
+        <SettingsSection index={0} title="Goals">
           <GoalDurationFormatPicker
             selectedValue={settings.goalDurationFormat}
             onSelect={(goalDurationFormat) => {
@@ -339,6 +353,10 @@ export default function SettingsScreen() {
               refreshFastSnapshots();
               void syncActiveFastingLiveActivity();
             }}
+          />
+          <TimerViewPreferencePicker
+            selectedValue={activeFastState.timerViewPreference}
+            onSelect={setActiveFastTimerView}
           />
           <SettingsActionRow
             icon={Target}
@@ -349,11 +367,16 @@ export default function SettingsScreen() {
         </SettingsSection>
 
         <SettingsSection
+          index={1}
           title="Notifications"
-          description={notificationsAvailable ? undefined : 'Notifications are disabled.'}>
+          description={
+            notificationsAvailable
+              ? 'Widgets are available from your Home Screen.'
+              : 'Widgets are available from your Home Screen. Notifications are disabled.'
+          }>
           {Platform.OS === 'ios' ? (
             <SettingsSwitch
-              icon={Timer}
+              icon={Activity}
               title="Live Activity"
               description="Show the active fast on the Lock Screen and Dynamic Island."
               value={settings.liveActivitiesEnabled}
@@ -380,14 +403,19 @@ export default function SettingsScreen() {
                 onValueChange={setDailyReminderEnabled}
               />
               {settings.notifications.dailyReminderEnabled && (
-                <TimePicker
-                  value={settings.notifications.dailyReminderTime ?? '20:00'}
-                  onChange={(dailyReminderTime) => {
-                    void runNotificationUpdate(async () => {
-                      await setDailyReminderTimeAndSchedule(dailyReminderTime);
-                    });
-                  }}
-                />
+                <Animated.View
+                  entering={FadeInDown.duration(180)}
+                  exiting={FadeOutUp.duration(140)}
+                  layout={LinearTransition.duration(180)}>
+                  <TimePicker
+                    value={settings.notifications.dailyReminderTime ?? '20:00'}
+                    onChange={(dailyReminderTime) => {
+                      void runNotificationUpdate(async () => {
+                        await setDailyReminderTimeAndSchedule(dailyReminderTime);
+                      });
+                    }}
+                  />
+                </Animated.View>
               )}
             </>
           ) : (
@@ -400,7 +428,7 @@ export default function SettingsScreen() {
           )}
         </SettingsSection>
 
-        <SettingsSection title="Theme & Customization">
+        <SettingsSection index={2} title="Theme & Accent Color">
           <ThemePicker
             selectedValue={settings.themePreference}
             onSelect={setThemePreference}
@@ -411,7 +439,7 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
 
-        <SettingsSection title="Data">
+        <SettingsSection index={3} title="Data">
           <SettingsActionRow
             icon={FileUp}
             title="Import JSON or CSV"
@@ -444,7 +472,7 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
 
-        <SettingsSection title="About">
+        <SettingsSection index={4} title="About">
           <SettingsActionRow
             icon={Globe}
             title="Website"
@@ -476,7 +504,7 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
 
-        <SettingsSection title="Legal">
+        <SettingsSection index={5} title="Legal">
           <SettingsLinkedDocumentRow
             icon={Shield}
             title="Privacy Policy"
@@ -496,11 +524,13 @@ export default function SettingsScreen() {
 }
 
 function SettingsSection({
+  index,
   title,
   description,
   disabled = false,
   children,
 }: {
+  index: number;
   title: string;
   description?: string;
   disabled?: boolean;
@@ -509,7 +539,10 @@ function SettingsSection({
   const theme = useTheme();
 
   return (
-    <View style={[styles.section, disabled && styles.disabledSection]}>
+    <Animated.View
+      entering={FadeInUp.delay(Math.min(index, 5) * 35).duration(180)}
+      layout={LinearTransition.duration(180)}
+      style={[styles.section, disabled && styles.disabledSection]}>
       <View style={styles.sectionHeading}>
         <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
           {title}
@@ -527,6 +560,26 @@ function SettingsSection({
         ]}>
         {children}
       </View>
+    </Animated.View>
+  );
+}
+
+function TimerViewPreferencePicker({
+  selectedValue,
+  onSelect,
+}: {
+  selectedValue: TimerViewPreference;
+  onSelect: (value: TimerViewPreference) => void;
+}) {
+  return (
+    <View style={styles.timerViewControl}>
+      <View style={styles.goalFormatHeading}>
+        <ThemedText type="smallBold">Timer view</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Choose the default active fast timer display.
+        </ThemedText>
+      </View>
+      <TimerViewToggle value={selectedValue} onChange={onSelect} iconPosition="right" />
     </View>
   );
 }
@@ -541,7 +594,7 @@ function ThemePicker({
   const theme = useTheme();
 
   return (
-    <View style={[styles.themePicker, { borderBottomColor: theme.backgroundSelected }]}>
+    <View style={styles.themePicker}>
       {themeOptions.map((option) => {
         const selected = option.value === selectedValue;
         const Icon = option.icon;
@@ -595,6 +648,7 @@ function TimePicker({
             HOURS
           </ThemedText>
           <Picker
+            key="daily-reminder-hours"
             selectedValue={String(Number(hour))}
             onValueChange={(nextHour) => updatePart(nextHour, minute)}
             style={styles.timePicker}>
@@ -604,6 +658,7 @@ function TimePicker({
                 label={String(option).padStart(2, '0')}
                 value={String(option)}
                 color={theme.text}
+                style={styles.pickerItem}
               />
             ))}
           </Picker>
@@ -613,6 +668,7 @@ function TimePicker({
             MINUTES
           </ThemedText>
           <Picker
+            key="daily-reminder-minutes"
             selectedValue={String(Number(minute))}
             onValueChange={(nextMinute) => updatePart(hour, nextMinute)}
             style={styles.timePicker}>
@@ -622,6 +678,7 @@ function TimePicker({
                 label={String(option).padStart(2, '0')}
                 value={String(option)}
                 color={theme.text}
+                style={styles.pickerItem}
               />
             ))}
           </Picker>
@@ -639,8 +696,10 @@ function AccentPicker({
   onSelect: (accentColorName: AccentColorName) => void;
 }) {
   const theme = useTheme();
+  const colorScheme = useAppThemeColorScheme();
   const [previewAccentName, setPreviewAccentName] = useState(selectedAccentName);
   const selectedIndex = accentOptions.indexOf(previewAccentName);
+  const blurTint = colorScheme === 'dark' ? 'systemMaterialDark' : 'systemMaterialLight';
 
   const selectAccent = (accentName: AccentColorName): void => {
     setPreviewAccentName(accentName);
@@ -649,12 +708,6 @@ function AccentPicker({
 
   return (
     <View style={styles.accentControl}>
-      <View style={styles.accentHeading}>
-        <ThemedText type="smallBold">Accent color</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {accentColorLabels[previewAccentName]}
-        </ThemedText>
-      </View>
       <CenteredWheelPicker
         accessibilityLabel="Accent color"
         itemWidth={accentItemWidth}
@@ -672,27 +725,84 @@ function AccentPicker({
             <View
               style={[styles.accentSwatch, { backgroundColor: accentColorValues[accentName] }]}
             />
-            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-              {accentColorLabels[accentName]}
-            </ThemedText>
+            <View style={styles.accentLabelSlot}>
+              {accentName === previewAccentName ? (
+                <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                  {accentColorLabels[accentName]}
+                </ThemedText>
+              ) : null}
+            </View>
           </View>
         )}
         renderOverlay={({ sideInset }) => (
-          <View
-            pointerEvents="none"
-            style={[
-              styles.accentSelection,
-              {
-                left: sideInset,
-                transform: [{ translateX: (accentItemWidth - 48) / 2 }],
-                borderColor: theme.accent,
-                boxShadow: `0 0 0 4px ${theme.accentBackground}`,
-              },
-            ]}
-          />
+          <>
+            <AccentEdgeFog side="left" tint={blurTint} backgroundColor={theme.background} />
+            <AccentEdgeFog side="right" tint={blurTint} backgroundColor={theme.background} />
+            <View
+              pointerEvents="none"
+              style={[
+                styles.accentSelection,
+                {
+                  left: sideInset,
+                  transform: [{ translateX: (accentItemWidth - 48) / 2 }],
+                  borderColor: theme.accent,
+                  boxShadow: `0 0 0 4px ${theme.accentBackground}`,
+                },
+              ]}
+            />
+          </>
         )}
       />
     </View>
+  );
+}
+
+function AccentEdgeFog({
+  side,
+  tint,
+  backgroundColor,
+}: {
+  side: 'left' | 'right';
+  tint: 'systemMaterialDark' | 'systemMaterialLight';
+  backgroundColor: string;
+}) {
+  const maskColors: [ColorValue, ColorValue] =
+    side === 'left'
+      ? ['#000000', 'rgba(0,0,0,0)']
+      : ['rgba(0,0,0,0)', '#000000'];
+  const fillColors: [ColorValue, ColorValue] =
+    side === 'left'
+      ? [backgroundColor, `${backgroundColor}00`]
+      : [`${backgroundColor}00`, backgroundColor];
+
+  return (
+    <MaskedView
+      pointerEvents="none"
+      style={[
+        styles.accentEdgeFog,
+        side === 'left' ? styles.accentEdgeFogLeft : styles.accentEdgeFogRight,
+      ]}
+      maskElement={
+        <LinearGradient
+          colors={maskColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      }>
+      <BlurView
+        intensity={42}
+        tint={tint}
+        blurMethod="dimezisBlurViewSdk31Plus"
+        style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={fillColors}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={StyleSheet.absoluteFill}
+      />
+    </MaskedView>
   );
 }
 
@@ -706,7 +816,7 @@ function GoalDurationFormatPicker({
   const theme = useTheme();
 
   return (
-    <View style={[styles.goalFormatControl, { borderTopColor: theme.backgroundSelected }]}>
+    <View style={styles.goalFormatControl}>
       <View style={styles.goalFormatHeading}>
         <ThemedText type="smallBold">Display format</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
@@ -883,7 +993,7 @@ function SettingsRow({
   const Icon = icon;
 
   return (
-    <View style={[styles.row, { borderBottomColor: theme.backgroundSelected }]}>
+    <View style={styles.row}>
       {Icon !== undefined ? (
         <View style={[styles.rowIcon, { backgroundColor: theme.accentBackground }]}>
           <Icon size={18} color={theme.accent} strokeWidth={2} />
@@ -906,7 +1016,7 @@ function SettingsRow({
 
 const styles = StyleSheet.create({
   section: {
-    gap: Spacing.two,
+    gap: Spacing.xs,
   },
   sectionHeading: { gap: Spacing.half },
   disabledSection: { opacity: 0.52 },
@@ -922,8 +1032,10 @@ const styles = StyleSheet.create({
   },
   timeControl: {
     alignItems: 'center',
-    gap: Spacing.one,
-    padding: Spacing.two,
+    gap: Spacing.xxs,
+    paddingHorizontal: Spacing.xs,
+    paddingTop: 0,
+    paddingBottom: Spacing.xs,
   },
   timeLabel: { textAlign: 'center' },
   timePickers: {
@@ -932,48 +1044,65 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.two,
+    gap: Spacing.xxs,
+    paddingHorizontal: Spacing.xs,
   },
   timePickerColumn: {
     flex: 1,
     alignItems: 'center',
   },
   timePicker: { width: '100%', minHeight: 116 },
+  pickerItem: { backgroundColor: 'transparent' },
   themePicker: {
     flexDirection: 'row',
-    gap: Spacing.two,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    padding: Spacing.three,
+    gap: Spacing.xs,
+    padding: Spacing.md,
   },
   themeOption: {
     minHeight: 76,
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.two,
-    borderRadius: 14,
+    gap: Spacing.xs,
+    borderRadius: Radius.control,
     borderCurve: 'continuous',
   },
-  accentControl: { gap: Spacing.two, paddingVertical: Spacing.three },
+  accentControl: { gap: Spacing.xs, paddingVertical: Spacing.md },
   accentHeading: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.md,
   },
   accentViewport: { height: 84, overflow: 'hidden' },
+  accentEdgeFog: {
+    position: 'absolute',
+    top: 0,
+    width: 42,
+    height: 84,
+  },
+  accentEdgeFogLeft: {
+    left: 0,
+  },
+  accentEdgeFogRight: {
+    right: 0,
+  },
   accentItem: {
     width: accentItemWidth,
     height: 80,
     alignItems: 'center',
-    gap: Spacing.one,
-    paddingTop: Spacing.two,
+    gap: Spacing.xxs,
+    paddingTop: Spacing.xs,
   },
   accentSwatch: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: Radius.pill,
+  },
+  accentLabelSlot: {
+    minHeight: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   accentSelection: {
     position: 'absolute',
@@ -981,49 +1110,51 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderWidth: 2,
-    borderRadius: 24,
+    borderRadius: Radius.pill,
   },
   goalFormatControl: {
-    gap: Spacing.two,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    padding: Spacing.three,
+    gap: Spacing.xs,
+    padding: Spacing.md,
+  },
+  timerViewControl: {
+    gap: Spacing.xs,
+    padding: Spacing.md,
   },
   goalFormatHeading: {
     gap: Spacing.half,
   },
   goalFormatOptions: {
     flexDirection: 'row',
-    gap: Spacing.two,
+    gap: Spacing.xs,
   },
   goalFormatOption: {
     minHeight: 74,
     flex: 1,
     justifyContent: 'center',
-    gap: Spacing.one,
+    gap: Spacing.xxs,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: Radius.control,
     borderCurve: 'continuous',
-    padding: Spacing.two,
+    padding: Spacing.xs,
   },
   row: {
     minHeight: 72,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
-    padding: Spacing.three,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: Spacing.md,
+    padding: Spacing.md,
   },
   rowIcon: {
     width: 34,
     height: 34,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
+    borderRadius: Radius.sm,
     borderCurve: 'continuous',
   },
   rowText: {
     flex: 1,
-    gap: Spacing.one,
+    gap: Spacing.xxs,
   },
   rowActions: {
     flexDirection: 'row',

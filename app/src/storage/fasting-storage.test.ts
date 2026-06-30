@@ -108,6 +108,41 @@ describe('fasting lifecycle integration', () => {
     expect(getActiveFastState().fastEndNotificationId).toBeNull();
   });
 
+  test('coalesces deferred timer view surface sync with the latest snapshot', async () => {
+    const requestAnimationFrameMock = jest
+      .spyOn(globalThis, 'requestAnimationFrame')
+      .mockImplementation((callback: FrameRequestCallback) => {
+        setTimeout(() => callback(0), 0);
+        return 1;
+      });
+
+    try {
+      await startFast({ goalDurationHours: 16, reason: null });
+      mockUpdateFastingWidget.mockClear();
+      mockSyncFastingLiveActivity.mockClear();
+
+      setActiveFastTimerView(TimerViewPreference.Remaining);
+      setActiveFastTimerView(TimerViewPreference.Elapsed);
+
+      expect(mockUpdateFastingWidget).not.toHaveBeenCalled();
+      expect(mockSyncFastingLiveActivity).not.toHaveBeenCalled();
+
+      jest.runOnlyPendingTimers();
+      jest.runOnlyPendingTimers();
+
+      expect(mockUpdateFastingWidget).toHaveBeenCalledTimes(1);
+      expect(mockSyncFastingLiveActivity).toHaveBeenCalledTimes(1);
+      expect(mockUpdateFastingWidget).toHaveBeenLastCalledWith(
+        expect.objectContaining({ timerViewPreference: TimerViewPreference.Elapsed }),
+      );
+      expect(mockSyncFastingLiveActivity).toHaveBeenLastCalledWith(
+        expect.objectContaining({ timerViewPreference: TimerViewPreference.Elapsed }),
+      );
+    } finally {
+      requestAnimationFrameMock.mockRestore();
+    }
+  });
+
   test('cancels without history and supports timer/reminder preferences', async () => {
     await startFast({ goalDurationHours: 0, reason: null });
     expect(setActiveFastTimerView(TimerViewPreference.Remaining).timerViewPreference).toBe(

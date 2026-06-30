@@ -67,7 +67,7 @@ Data contains a native segmented control with three views:
 
 ### Stats
 
-Stats are presented as separate neutral two-column metric tiles without accent-only emphasis.
+Stats are presented in grouped metric cards with accent-colored values.
 
 - current streak;
 - longest streak;

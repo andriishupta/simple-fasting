@@ -314,10 +314,11 @@ For meaningful UI changes:
 2. Identify the existing shared tokens and native interaction patterns.
 3. Prefer Expo and platform-native controls, safe-area handling, navigation, gestures, and transitions.
 4. Keep cards, grouped rows, spacing, radii, typography, and icon treatment consistent across screens.
-5. Avoid scrolling when a normal phone viewport has enough room; retain responsive scrolling for small or expanded states.
-6. Check both idle and expanded/error/keyboard states.
-7. When a simulator is available, verify with screenshots and interaction rather than relying only on code inspection.
-8. Consider iOS and Android behavior separately while keeping product behavior consistent.
+5. Avoid divider lines between cards or grouped card rows unless explicitly requested; prefer spacing, padding, and clear grouping. Vertical dividers are acceptable between paired left/right metrics when they clarify comparison.
+6. Avoid scrolling when a normal phone viewport has enough room; retain responsive scrolling for small or expanded states.
+7. Check both idle and expanded/error/keyboard states.
+8. When a simulator is available, verify with screenshots and interaction rather than relying only on code inspection.
+9. Consider iOS and Android behavior separately while keeping product behavior consistent.
 
 Do not optimize a single screen in isolation if the result makes the application feel like multiple unrelated products.
 
