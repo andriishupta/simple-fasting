@@ -8,32 +8,33 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/locales/i18n';
 
 const features = [
   {
     icon: Timer,
-    title: 'Simple fasting timer',
-    description: 'Start a fast quickly and keep your elapsed or remaining time visible.',
+    titleKey: 'onboarding.features.timerTitle',
+    descriptionKey: 'onboarding.features.timerDescription',
   },
   {
     icon: WifiOff,
-    title: 'Works offline',
-    description: 'Your active fast, history, goals, and settings stay on this device.',
+    titleKey: 'onboarding.features.offlineTitle',
+    descriptionKey: 'onboarding.features.offlineDescription',
   },
   {
     icon: ShieldCheck,
-    title: 'No tracking',
-    description: 'No account, no ads, no behavioral profiling, and no advertising identifiers.',
+    titleKey: 'onboarding.features.privacyTitle',
+    descriptionKey: 'onboarding.features.privacyDescription',
   },
   {
     icon: Palette,
-    title: 'Customisation',
-    description: 'Personalize the app with a calm accent color that also appears in widgets.',
+    titleKey: 'onboarding.features.accentTitle',
+    descriptionKey: 'onboarding.features.accentDescription',
   },
   {
     icon: Smartphone,
-    title: 'Simple reminders',
-    description: 'Optional local notifications can remind you when a fasting goal is reached.',
+    titleKey: 'onboarding.features.remindersTitle',
+    descriptionKey: 'onboarding.features.remindersDescription',
   },
 ] as const;
 
@@ -59,10 +60,9 @@ export function WelcomeOnboardingScreen({
         showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           <View style={styles.hero}>
-            <ScreenHeading align="center">Welcome to Simple Fasting</ScreenHeading>
+            <ScreenHeading align="center">{t('onboarding.welcomeTitle')}</ScreenHeading>
             <ThemedText themeColor="textSecondary" style={styles.body}>
-              Simple Fasting helps you track fasts calmly, privately, and without unnecessary
-              accounts or clutter.
+              {t('onboarding.welcomeBody')}
             </ThemedText>
           </View>
 
@@ -71,14 +71,14 @@ export function WelcomeOnboardingScreen({
               const Icon = feature.icon;
 
               return (
-                <View key={feature.title} style={styles.featureRow}>
+                <View key={feature.titleKey} style={styles.featureRow}>
                   <View style={[styles.featureIcon, { backgroundColor: theme.accentBackground }]}>
                     <Icon size={20} color={theme.accent} strokeWidth={2.2} />
                   </View>
                   <View style={styles.featureCopy}>
-                    <ThemedText type="smallBold">{feature.title}</ThemedText>
+                    <ThemedText type="smallBold">{t(feature.titleKey)}</ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
-                      {feature.description}
+                      {t(feature.descriptionKey)}
                     </ThemedText>
                   </View>
                 </View>
@@ -90,7 +90,7 @@ export function WelcomeOnboardingScreen({
             <Pressable
               accessibilityRole="checkbox"
               accessibilityState={{ checked: accepted }}
-              accessibilityLabel="I agree to the Terms of Use and Privacy Policy"
+              accessibilityLabel={t('onboarding.agreementAccessibilityLabel')}
               onPress={() => setAccepted((value) => !value)}
               style={({ pressed }) => [
                 styles.checkboxRow,
@@ -108,7 +108,7 @@ export function WelcomeOnboardingScreen({
                 {accepted ? <Check size={15} color={theme.accentForeground} strokeWidth={3} /> : null}
               </View>
               <ThemedText style={styles.checkboxText}>
-                I agree to the Terms of Use and Privacy Policy.
+                {t('onboarding.agreementAccessibilityLabel')}.
               </ThemedText>
             </Pressable>
 
@@ -118,7 +118,7 @@ export function WelcomeOnboardingScreen({
                 onPress={onOpenTerms}
                 hitSlop={8}
                 style={({ pressed }) => pressed && styles.pressed}>
-                <ThemedText type="linkPrimary">Terms of Use</ThemedText>
+                <ThemedText type="linkPrimary">{t('navigation.terms')}</ThemedText>
               </Pressable>
               <ThemedText type="small" themeColor="textSecondary">
                 ·
@@ -128,7 +128,7 @@ export function WelcomeOnboardingScreen({
                 onPress={onOpenPrivacyPolicy}
                 hitSlop={8}
                 style={({ pressed }) => pressed && styles.pressed}>
-                <ThemedText type="linkPrimary">Privacy Policy</ThemedText>
+                <ThemedText type="linkPrimary">{t('navigation.privacy')}</ThemedText>
               </Pressable>
             </View>
           </View>
@@ -136,12 +136,12 @@ export function WelcomeOnboardingScreen({
           <AppButton
             accessibilityHint={
               accepted
-                ? 'Continues to notification setup'
-                : 'Check the agreement box before continuing'
+                ? t('onboarding.continueHint')
+                : t('onboarding.agreementBlocked')
             }
             accessibilityState={{ disabled: !accepted }}
             disabled={!accepted}
-            label="Agree and Continue"
+            label={t('onboarding.continue')}
             onPress={onAccept}
           />
         </View>

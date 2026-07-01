@@ -139,18 +139,7 @@ const normalizeGoals = (
   const customGoals = uniqueGoals
     .filter((goal) => !standardDurations.has(goal.targetDurationHours))
     .map((goal) => ({ ...goal, type: FastingGoalType.Custom }));
-  const mergedGoals = [...standardGoals, ...customGoals];
-  const enabledGoals = mergedGoals.filter((goal) => goal.isEnabled);
-  const fallbackGoal =
-    enabledGoals.find((goal) => goal.id === 'goal-16-hours') ??
-    enabledGoals[0] ??
-    mergedGoals.find((goal) => goal.id === 'goal-16-hours') ??
-    mergedGoals[0];
-
-  return mergedGoals.map((goal) => ({
-    ...goal,
-    isEnabled: goal.id === fallbackGoal.id ? true : goal.isEnabled,
-  }));
+  return [...standardGoals, ...customGoals];
 };
 
 export const repairSettings = (

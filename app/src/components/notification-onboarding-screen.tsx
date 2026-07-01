@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/locales/i18n';
 
 export function NotificationOnboardingScreen({
   onAllowNotifications,
@@ -35,24 +36,24 @@ export function NotificationOnboardingScreen({
 
         <View style={styles.copy}>
           <ThemedText type="subtitle" style={styles.title}>
-            Stay informed about your fasts
+            {t('onboarding.notificationsTitle')}
           </ThemedText>
           <ThemedText themeColor="textSecondary" style={styles.body}>
-            Notifications help remind you when your fasting goal is reached.
+            {t('onboarding.notificationsBody')}
           </ThemedText>
           <ThemedText themeColor="textSecondary" style={styles.body}>
-            You can change this later in Settings.
+            {t('onboarding.notificationsSettings')}
           </ThemedText>
         </View>
 
         <View style={styles.actions}>
           <AppButton
-            label="Allow Notifications"
+            label={t('onboarding.allowNotifications')}
             disabled={isSubmitting}
             onPress={() => void allowNotifications()}
           />
           <AppButton
-            label="Not Now"
+            label={t('onboarding.notNow')}
             variant="ghost"
             disabled={isSubmitting}
             onPress={onSkip}

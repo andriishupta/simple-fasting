@@ -28,6 +28,7 @@ import { ThemedText } from '@/components/themed-text';
 import { TruncatedText } from '@/components/truncated-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/locales/i18n';
 import { useSettingsSelector } from '@/storage/settings-storage';
 import {
   customGoalId,
@@ -54,6 +55,7 @@ const durationDays = Array.from({ length: 8 }, (_, day) => day);
 const durationHours = Array.from({ length: 24 }, (_, hour) => hour);
 const durationHoursWithoutZero = durationHours.slice(1);
 const goalCardWidth = 108;
+const noteMaxLength = 128;
 
 export function FastGoalSelector({
   goals,
@@ -87,7 +89,7 @@ export function FastGoalSelector({
   return (
     <View style={styles.goalSelector}>
       <CenteredWheelPicker
-        accessibilityLabel="Fasting goals"
+        accessibilityLabel={t('goals.listTitle')}
         itemWidth={goalCardWidth}
         itemGap={Spacing.two}
         items={goals}
@@ -115,22 +117,24 @@ export function FastGoalSelector({
           <View style={styles.optionRow}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Select custom duration"
+              accessibilityLabel={t('setup.thisTimeAccessibility')}
               accessibilityState={{ selected: selectedGoalId === customGoalId }}
-              accessibilityHint="Uses a one-time fasting duration without selecting a saved goal"
+              accessibilityHint={t('setup.thisTimeDescription')}
               onPress={() => {
                 onSelectGoal(customGoalId);
               }}
               style={({ pressed }) => [styles.optionPrimary, pressed && styles.pressed]}>
               <OptionIcon icon="custom" />
               <View style={styles.optionLabel}>
-                <ThemedText>Custom</ThemedText>
+                <ThemedText>{t('setup.thisTime')}</ThemedText>
               </View>
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Edit custom duration, currently ${formatGoalDuration(customDurationHours, goalDurationFormat)}`}
-              accessibilityHint="Shows or hides the custom duration picker"
+              accessibilityLabel={t('setup.editThisTimeAccessibility', {
+                duration: formatGoalDuration(customDurationHours, goalDurationFormat),
+              })}
+              accessibilityHint={t('setup.editThisTimeHint')}
               onPress={() => {
                 unstable_batchedUpdates(() => {
                   onSelectGoal(customGoalId);
@@ -154,10 +158,10 @@ export function FastGoalSelector({
               <DurationPicker value={customDurationHours} onChange={onCustomDurationChange} />
               <View style={styles.customDurationHelp}>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.centeredText}>
-                  Maximum duration is 7 days.
+                  {t('setup.maxDuration')}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.centeredText}>
-                  Create reusable goals in Settings.
+                  {t('setup.reusableGoals')}
                 </ThemedText>
               </View>
             </View>
@@ -166,12 +170,12 @@ export function FastGoalSelector({
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ selected: selectedGoalId === unlimitedGoalId }}
-            accessibilityLabel="Select open-ended fast"
-            accessibilityHint="Starts a fast without a planned end time"
+            accessibilityLabel={t('setup.openEndedAccessibility')}
+            accessibilityHint={t('setup.openEndedHint')}
             onPress={() => onSelectGoal(unlimitedGoalId)}
             style={({ pressed }) => [styles.optionRow, pressed && styles.pressed]}>
             <OptionIcon icon="unlimited" />
-            <ThemedText style={styles.optionLabel}>Open-ended</ThemedText>
+            <ThemedText style={styles.optionLabel}>{t('setup.openEnded')}</ThemedText>
             <View style={styles.optionCheck}>
               {selectedGoalId === unlimitedGoalId ? (
                 <Check size={16} color={theme.accent} strokeWidth={2.5} />
@@ -181,15 +185,15 @@ export function FastGoalSelector({
           <View style={styles.optionRow}>
             <OptionIcon icon="note" />
             <View style={styles.optionLabel}>
-              <ThemedText>Note</ThemedText>
+              <ThemedText>{t('setup.note')}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                Optional
+                {t('setup.optional')}
               </ThemedText>
             </View>
             <View style={styles.switchWrap}>
               <Switch
-                accessibilityLabel="Note"
-                accessibilityHint="Adds an optional note to this fast"
+                accessibilityLabel={t('setup.note')}
+                accessibilityHint={t('setup.noteHint')}
                 value={noteEnabled}
                 onValueChange={onNoteEnabledChange}
                 trackColor={{ true: theme.accent }}
@@ -199,12 +203,13 @@ export function FastGoalSelector({
           {noteEnabled ? (
             <View style={styles.noteInputWrap}>
               <TextInput
-                accessibilityLabel="Fast note"
+                accessibilityLabel={t('setup.noteAccessibility')}
                 value={noteValue}
                 onChangeText={onNoteChangeText}
-                placeholder="Add a note"
+                maxLength={noteMaxLength}
+                placeholder={t('setup.notePlaceholder')}
                 placeholderTextColor={theme.textSecondary}
-                returnKeyType="done"
+                returnKeyType="default"
                 multiline
                 scrollEnabled
                 textAlignVertical="top"
@@ -216,6 +221,12 @@ export function FastGoalSelector({
                   },
                 ]}
               />
+              <ThemedText type="small" themeColor="textSecondary" style={styles.characterCount}>
+                {t('common.characterCount', {
+                  count: noteValue.length,
+                  max: noteMaxLength,
+                })}
+              </ThemedText>
             </View>
           ) : null}
         </View>
@@ -320,7 +331,7 @@ export function DurationPicker({
     <View style={styles.durationEditor}>
       <View style={styles.pickers}>
         <PickerColumn
-          label="DAYS"
+          label={t('setup.days').toUpperCase()}
           value={days}
           values={durationDays}
           onChange={(nextDays) => {
@@ -329,7 +340,7 @@ export function DurationPicker({
           }}
         />
         <PickerColumn
-          label="HOURS"
+          label={t('setup.hours').toUpperCase()}
           value={shownHours}
           values={hourValues}
           onChange={(nextHours) =>
@@ -381,6 +392,7 @@ function PickerColumn({
 const styles = StyleSheet.create({
   goalSelector: { gap: Spacing.md },
   centeredText: { textAlign: 'center', fontVariant: ['tabular-nums'] },
+  characterCount: { textAlign: 'right', fontVariant: ['tabular-nums'] },
   goalCard: {
     width: 108,
     minHeight: 76,
@@ -451,7 +463,7 @@ const styles = StyleSheet.create({
   pickerColumn: { flex: 1, alignItems: 'center' },
   picker: { width: '100%', minHeight: 152 },
   pickerItem: { backgroundColor: 'transparent' },
-  noteInputWrap: { paddingBottom: Spacing.xxs },
+  noteInputWrap: { gap: Spacing.half, paddingBottom: Spacing.xxs },
   input: {
     height: 112,
     borderWidth: 1,

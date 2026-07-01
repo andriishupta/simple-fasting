@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { Alert } from 'react-native';
 import { router } from 'expo-router';
 
+import { t } from '@/locales/i18n';
 import { appStorage, StorageKey } from '@/storage/app-storage';
 import {
   getRepeatedFailurePromptEventId,
@@ -47,16 +48,16 @@ export function CrashReportPromptProvider({
   useEffect(() => {
     const confirmClearLocalData = (): void => {
       Alert.alert(
-        'Clear all local data?',
-        'This is a last-resort recovery option. It permanently removes local settings, active fast, and fasting history from this device. This cannot be undone.',
+        t('errors.resetTitle'),
+        t('errors.resetMessage'),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Clear Data',
+            text: t('errors.clearData'),
             style: 'destructive',
             onPress: () => {
               void clearLocalData().catch(() => {
-                Alert.alert('Clear failed', 'Local data could not be cleared.');
+                Alert.alert(t('errors.clearFailedTitle'), t('errors.clearFailedMessage'));
               });
             },
           },
@@ -81,23 +82,23 @@ export function CrashReportPromptProvider({
       promptedLatestEventIdRef.current = promptEventId;
       markRepeatedFailurePromptShown(promptEventId);
       Alert.alert(
-        'Simple Fasting keeps stopping',
-        'Simple Fasting is local-first, so we do not upload analytics or crash reports automatically. We noticed the app stopped a few times recently. Please report this bug and include the local diagnostics so we can fix it.',
+        t('errors.criticalTitle'),
+        t('errors.criticalMessage'),
         [
-          { text: 'Not Now', style: 'cancel' },
+          { text: t('onboarding.notNow'), style: 'cancel' },
           {
-            text: 'Report Bug',
+            text: t('errors.reportBug'),
             onPress: () => {
               void shareDiagnosticReport().catch(() => {
                 Alert.alert(
-                  'Report unavailable',
-                  'The local diagnostic report could not be created. You can email bugs@simplefasting.app directly.',
+                  t('errors.reportBugUnavailableTitle'),
+                  t('errors.reportBugUnavailableMessage'),
                 );
               });
             },
           },
           {
-            text: 'Clear Data',
+            text: t('errors.lastResortClearData'),
             style: 'destructive',
             onPress: confirmClearLocalData,
           },

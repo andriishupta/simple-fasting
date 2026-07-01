@@ -3,6 +3,7 @@ import {
   TimerViewPreference,
   type ActiveFastState,
 } from '@/storage/app-storage';
+import { t } from '@/locales/i18n';
 import { formatGoalDuration } from '@/utils/fast-goals';
 import { formatDuration } from '@/utils/fasting-duration';
 
@@ -40,9 +41,9 @@ export const createFastingWidgetModel = (
   if (session === null) {
     return {
       status: 'inactive',
-      accessibilityLabel: 'Open Simple Fasting to start a fast',
-      headline: 'Ready to fast?',
-      subtitle: 'Tap to start',
+      accessibilityLabel: t('widgets.readyAccessibility'),
+      headline: t('widgets.readyHeadline'),
+      subtitle: t('widgets.readySubtitle'),
     };
   }
 
@@ -59,8 +60,8 @@ export const createFastingWidgetModel = (
   const displayTime = formatDuration(shownSeconds);
   const goalDurationLabel = hasGoal
     ? formatGoalDuration(session.goalDurationHours, goalDurationFormat)
-    : 'No time limit';
-  const displayGoalName = hasGoal ? (goalName ?? 'Fasting goal') : 'Open-ended fast';
+    : t('common.noTimeLimit');
+  const displayGoalName = hasGoal ? (goalName ?? t('widgets.goalFallback')) : t('widgets.openEndedFast');
 
   return {
     status: 'active',
@@ -76,8 +77,8 @@ export const createFastingWidgetModel = (
     startedAt,
     subtitle:
       showsRemaining
-        ? 'Remaining'
-        : 'Elapsed',
+        ? t('common.remaining')
+        : t('common.elapsed'),
     timerView: showsRemaining ? TimerViewPreference.Remaining : TimerViewPreference.Elapsed,
   };
 };

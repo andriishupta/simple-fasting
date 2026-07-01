@@ -5,6 +5,7 @@ import { AppSurface } from '@/components/app-surface';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/locales/i18n';
 
 type FastingSummaryCardProps = {
   duration: string;
@@ -33,7 +34,7 @@ export function FastingSummaryCard({
       <View style={styles.topLine}>
         <View style={styles.durationGroup}>
           <ThemedText type="small" themeColor="textSecondary">
-            Duration
+            {t('summary.duration')}
           </ThemedText>
           <ThemedText type="smallBold" selectable>
             {duration}
@@ -55,7 +56,7 @@ export function FastingSummaryCard({
       {progress !== null ? (
         <View
           accessible
-          accessibilityLabel={`${Math.round(progress * 100)}% of goal`}
+          accessibilityLabel={t('summary.goalProgressAccessibility', { percent: Math.round(progress * 100) })}
           style={[styles.progressTrack, { backgroundColor: theme.backgroundSelected }]}>
           <View
             style={[
@@ -66,9 +67,9 @@ export function FastingSummaryCard({
         </View>
       ) : null}
       <View style={styles.times}>
-        <SummaryTime label="Started">{started}</SummaryTime>
+        <SummaryTime label={t('summary.started')}>{started}</SummaryTime>
         <View style={[styles.timeDivider, { backgroundColor: theme.backgroundSelected }]} />
-        <SummaryTime label="Ended">{ended}</SummaryTime>
+        <SummaryTime label={t('summary.ended')}>{ended}</SummaryTime>
       </View>
       {note !== null && note !== undefined ? (
         <ThemedText type="small" themeColor="textSecondary">

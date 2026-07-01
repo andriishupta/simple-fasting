@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
 import type { SharedDocument, SharedDocumentBlock } from '@/content/shared-documents';
+import { t } from '@/locales/i18n';
 
 export function LocalDocumentScreen({
   document,
@@ -10,8 +11,11 @@ export function LocalDocumentScreen({
   document: SharedDocument;
 }) {
   const meta = document.effectiveDate
-    ? `Effective ${document.effectiveDate} · Version ${document.version}`
-    : `Version ${document.version}`;
+    ? t('documents.effectiveVersion', {
+        date: document.effectiveDate,
+        version: document.version,
+      })
+    : t('documents.version', { version: document.version });
 
   return (
     <ScrollView

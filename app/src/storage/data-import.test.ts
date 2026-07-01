@@ -1,5 +1,5 @@
 import { FastStatus } from '@/storage/app-storage';
-import { parseImportSessions } from '@/storage/data-import';
+import { parseImportData, parseImportSessions } from '@/storage/data-import';
 
 const session = {
   id: 'fast-1',
@@ -20,12 +20,32 @@ describe('data import', () => {
   afterEach(() => jest.useRealTimers());
 
   it('reads the current JSON export shape', () => {
+    const settings = { themePreference: 'dark' };
+    const imported = parseImportData({
+      content: JSON.stringify({ metadata: {}, settings, sessions: [session] }),
+      filename: 'backup.json',
+    });
+
+    expect(imported.sessions).toEqual([session]);
+    expect(imported.settings).toEqual(settings);
+  });
+
+  it('keeps reading older JSON exports with data arrays', () => {
     expect(
       parseImportSessions({ content: JSON.stringify({ metadata: {}, data: [session] }), filename: 'backup.json' }),
     ).toEqual([session]);
   });
 
   it('reads quoted values from the current CSV export shape', () => {
+    const content = [
+      'exportedAt,appVersion,buildVersion,id,status,startedAt,endedAt,goalDurationHours,note,createdAt,updatedAt',
+      '2026-06-21,1.0.0,,fast-1,completed,2026-06-20T08:00:00.000Z,2026-06-21T00:00:00.000Z,16,"Routine, ""easy""",2026-06-20T08:00:00.000Z,2026-06-21T00:00:00.000Z',
+    ].join('\n');
+
+    expect(parseImportSessions({ content, filename: 'backup.csv' })).toEqual([session]);
+  });
+
+  it('keeps reading older CSV exports with reason column names', () => {
     const content = [
       'exportedAt,appVersion,buildVersion,id,status,startedAt,endedAt,goalDurationHours,reason,createdAt,updatedAt',
       '2026-06-21,1.0.0,,fast-1,completed,2026-06-20T08:00:00.000Z,2026-06-21T00:00:00.000Z,16,"Routine, ""easy""",2026-06-20T08:00:00.000Z,2026-06-21T00:00:00.000Z',
@@ -47,7 +67,7 @@ describe('data import', () => {
         content: JSON.stringify([{ ...session, status: FastStatus.Active, endedAt: null }]),
         filename: 'backup.json',
       }),
-    ).toThrow('No valid completed fasting sessions');
+    ).toThrow('does not contain completed fasting sessions');
   });
 
   it('rejects impossible imported session times', () => {

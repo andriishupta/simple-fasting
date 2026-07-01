@@ -5,6 +5,7 @@ import { AppButton } from '@/components/app-button';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/locales/i18n';
 
 type FeedbackStateKind = 'empty' | 'error' | 'loading';
 
@@ -49,7 +50,7 @@ export function FeedbackState({
       {dismissAction !== undefined ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Close"
+          accessibilityLabel={t('common.close')}
           hitSlop={8}
           onPress={dismissAction.onPress}
           style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>

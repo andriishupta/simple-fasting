@@ -33,8 +33,8 @@ describe('fasting widget model', () => {
       status: 'active',
       displayTime: '02:30:00',
       goalDurationLabel: '2 hours',
-      goalName: 'Fasting goal',
-      headline: 'Fasting goal · 2 hours',
+      goalName: 'Goal',
+      headline: 'Goal · 2 hours',
       subtitle: 'Elapsed',
       progress: 1,
       goalEndsAt: Date.parse('2026-06-21T12:00:00.000Z'),
@@ -100,10 +100,10 @@ describe('fasting widget model', () => {
       status: 'active',
       displayTime: '00:00:00',
       goalDurationLabel: 'No time limit',
-      goalName: 'Open-ended fast',
+      goalName: 'Open-ended',
       hasGoal: false,
       progress: 0,
-      headline: 'Open-ended fast',
+      headline: 'Open-ended',
       subtitle: 'Elapsed',
     }));
   });

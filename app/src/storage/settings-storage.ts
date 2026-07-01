@@ -5,6 +5,7 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as WebBrowser from 'expo-web-browser';
 
+import { t } from '@/locales/i18n';
 import {
   appStorage,
   createDefaultAppSettings,
@@ -29,6 +30,7 @@ import {
   requestLocalNotificationPermission,
   scheduleDailyReminderNotification,
 } from '@/storage/notification-storage';
+import { repairSettings } from '@/storage/storage-validation';
 
 export enum SettingsExportFormat {
   Json = 'json',
@@ -36,6 +38,26 @@ export enum SettingsExportFormat {
 }
 
 const now = (): string => new Date().toISOString();
+
+type ExportedNotificationSettings = Pick<
+  NotificationSettings,
+  'fastEndReminderEnabled' | 'dailyReminderEnabled' | 'dailyReminderTime'
+>;
+
+export type ExportedAppSettings = Pick<
+  AppSettings,
+  | 'themePreference'
+  | 'accentColorName'
+  | 'goals'
+  | 'lastUsedGoalDurationHours'
+  | 'goalDurationFormat'
+  | 'liveActivitiesEnabled'
+> & {
+  notifications: ExportedNotificationSettings;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const readSettings = (): AppSettings =>
   appStorage.getOrDefault(StorageKey.Settings, createDefaultAppSettings(now()));
@@ -199,6 +221,69 @@ export const updateSettings = (
   saveSettings(updatedSettings);
 
   return updatedSettings;
+};
+
+export const createExportSettings = (settings: AppSettings = getSettings()): ExportedAppSettings => ({
+  themePreference: settings.themePreference,
+  accentColorName: settings.accentColorName,
+  goals: settings.goals,
+  lastUsedGoalDurationHours: settings.lastUsedGoalDurationHours,
+  goalDurationFormat: settings.goalDurationFormat,
+  liveActivitiesEnabled: settings.liveActivitiesEnabled,
+  notifications: {
+    fastEndReminderEnabled: settings.notifications.fastEndReminderEnabled,
+    dailyReminderEnabled: settings.notifications.dailyReminderEnabled,
+    dailyReminderTime: settings.notifications.dailyReminderTime,
+  },
+});
+
+export const mergeImportedSettings = (value: unknown): AppSettings | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const repaired = repairSettings(value, now()).value;
+  const importedNotifications = isRecord(value.notifications) ? value.notifications : null;
+
+  if (repaired === undefined) {
+    return null;
+  }
+
+  return updateSettings((currentSettings) => {
+    return {
+      ...currentSettings,
+      themePreference: 'themePreference' in value
+        ? repaired.themePreference
+        : currentSettings.themePreference,
+      accentColorName: 'accentColorName' in value
+        ? repaired.accentColorName
+        : currentSettings.accentColorName,
+      goals: 'goals' in value ? repaired.goals : currentSettings.goals,
+      lastUsedGoalDurationHours: 'lastUsedGoalDurationHours' in value
+        ? repaired.lastUsedGoalDurationHours
+        : currentSettings.lastUsedGoalDurationHours,
+      goalDurationFormat: 'goalDurationFormat' in value
+        ? repaired.goalDurationFormat
+        : currentSettings.goalDurationFormat,
+      liveActivitiesEnabled: 'liveActivitiesEnabled' in value
+        ? repaired.liveActivitiesEnabled
+        : currentSettings.liveActivitiesEnabled,
+      notifications: {
+        ...currentSettings.notifications,
+        fastEndReminderEnabled: importedNotifications !== null && 'fastEndReminderEnabled' in importedNotifications
+          ? repaired.notifications.fastEndReminderEnabled
+          : currentSettings.notifications.fastEndReminderEnabled,
+        dailyReminderEnabled: importedNotifications !== null && 'dailyReminderEnabled' in importedNotifications
+          ? repaired.notifications.dailyReminderEnabled
+          : currentSettings.notifications.dailyReminderEnabled,
+        dailyReminderTime: importedNotifications !== null && 'dailyReminderTime' in importedNotifications
+          ? repaired.notifications.dailyReminderTime
+          : currentSettings.notifications.dailyReminderTime,
+        dailyReminderNotificationId: null,
+      },
+      updatedAt: now(),
+    };
+  });
 };
 
 export const setThemePreference = (themePreference: ThemePreferenceType): AppSettings =>
@@ -380,10 +465,6 @@ export const setFastingGoalEnabled = (goalId: string, isEnabled: boolean): boole
     (goal) => goal.id !== goalId && goal.isEnabled,
   );
 
-  if (!isEnabled && enabledGoals.length === 0) {
-    return false;
-  }
-
   const fallbackGoal =
     enabledGoals.find((goal) => goal.id === 'goal-16-hours') ?? enabledGoals[0];
   const timestamp = now();
@@ -397,6 +478,7 @@ export const setFastingGoalEnabled = (goalId: string, isEnabled: boolean): boole
     })),
     lastUsedGoalDurationHours:
       !isEnabled &&
+      fallbackGoal !== undefined &&
       currentSettings.lastUsedGoalDurationHours === selectedGoal.targetDurationHours
         ? fallbackGoal.targetDurationHours
         : currentSettings.lastUsedGoalDurationHours,
@@ -625,7 +707,7 @@ export const createHistoryCsv = (): string => {
     'startedAt',
     'endedAt',
     'goalDurationHours',
-    'reason',
+    'note',
     'createdAt',
     'updatedAt',
   ];
@@ -654,7 +736,8 @@ export const createJsonExport = (): string =>
   JSON.stringify(
     {
       metadata: createExportMetadata(),
-      data: appStorage.get(StorageKey.History)?.sessions ?? [],
+      settings: createExportSettings(),
+      sessions: appStorage.get(StorageKey.History)?.sessions ?? [],
     },
     null,
     2,
@@ -691,7 +774,7 @@ export const shareDataExport = async (format: SettingsExportFormat): Promise<voi
 
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(file.uri, {
-      dialogTitle: 'Export Simple Fasting data',
+      dialogTitle: t('exports.shareDialogTitle'),
       mimeType: format === SettingsExportFormat.Json ? 'application/json' : 'text/csv',
       UTI: format === SettingsExportFormat.Json ? 'public.json' : 'public.comma-separated-values-text',
     });

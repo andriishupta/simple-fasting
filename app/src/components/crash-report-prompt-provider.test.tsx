@@ -60,8 +60,8 @@ describe('CrashReportPromptProvider', () => {
 
     expect(alert).toHaveBeenCalledTimes(2);
     expect(alert.mock.calls[1]).toEqual([
-      'Clear all local data?',
-      expect.stringContaining('last-resort recovery option'),
+      'Reset local data?',
+      expect.stringContaining('cannot open normally'),
       [
         expect.objectContaining({ text: 'Cancel', style: 'cancel' }),
         expect.objectContaining({ text: 'Clear Data', style: 'destructive' }),

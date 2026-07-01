@@ -57,7 +57,7 @@ The active state shows a compact progress timer, start/end times, local reminder
 
 ### Supporting Stack Screens
 
-- **Goals** — app-wide goal time display format, standard and custom goals that can be enabled/disabled and reordered with a persisted drag handle, and custom goal edit/swipe-to-delete. A floating plus opens the add-goal editor. At least one goal remains enabled.
+- **Goals** — app-wide goal time display format, standard and custom goals that can be enabled/disabled and reordered with a persisted drag handle, and custom goal edit/swipe-to-delete. A floating plus opens the add-goal editor. All saved goals can be disabled; This time and Open-ended remain available on the Fast screen.
 - **Edit Fast** — reuses the Fast screen’s active goal selector, Custom/Open-ended actions, and Note control; Start and End use theme-aware native date/time controls. End time is required. Save and Delete are the only bottom actions.
 - **FAQ** — offline local help.
 - **What's New** — offline version history and release notes.

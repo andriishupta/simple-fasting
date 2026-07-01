@@ -11,6 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { TruncatedText } from '@/components/truncated-text';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/locales/i18n';
 import { FastingGoalType, type FastingGoal } from '@/storage/app-storage';
 import {
   deleteFastingGoal,
@@ -32,20 +33,20 @@ export default function GoalsScreen() {
     if (goal.type === FastingGoalType.Standard) return;
 
     Alert.alert(
-      'Delete goal?',
-      `Remove “${goal.name}”? Existing fasting history will keep its recorded duration.`,
+      t('goals.deleteTitle'),
+      t('goals.deleteMessage', { name: goal.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('goals.cancelAction'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('goals.deleteAction'),
           style: 'destructive',
           onPress: () => {
             try {
               if (!deleteFastingGoal(goal.id)) {
-                Alert.alert('Goal not deleted', 'At least one fasting goal is required.');
+                Alert.alert(t('goals.deleteFailedTitle'), t('goals.deleteRequiredMessage'));
               }
             } catch {
-              Alert.alert('Goal not deleted', 'Your saved goals were not changed.');
+              Alert.alert(t('goals.deleteFailedTitle'), t('goals.deleteFailedMessage'));
             }
           },
         },
@@ -63,10 +64,10 @@ export default function GoalsScreen() {
         <View style={styles.content}>
           <View style={styles.sectionHeading}>
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-              Goals
+              {t('goals.listTitle')}
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              Drag to reorder. Swipe left to delete custom goals.
+              {t('goals.listDescription')}
             </ThemedText>
           </View>
           <View style={styles.goalList}>
@@ -91,7 +92,7 @@ export default function GoalsScreen() {
       </ScrollView>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Add goal"
+        accessibilityLabel={t('goals.addAccessibilityLabel')}
         onPress={() => router.push('/goals/new')}
         style={({ pressed }) => [
           styles.fab,
@@ -132,7 +133,7 @@ function GoalRow({
     <View
       accessible
       accessibilityRole="adjustable"
-      accessibilityLabel={`Reorder ${goal.name}`}
+      accessibilityLabel={t('goals.reorderAccessibilityLabel', { name: goal.name })}
       style={styles.dragHandle}>
       <GripVertical size={20} color={theme.textSecondary} />
     </View>
@@ -143,7 +144,7 @@ function GoalRow({
         {wrappedDragHandle}
         <Pressable
           accessibilityRole={isCustom ? 'button' : undefined}
-          accessibilityLabel={isCustom ? `Edit ${goal.name}` : undefined}
+          accessibilityLabel={isCustom ? t('goals.editAccessibilityLabel', { name: goal.name }) : undefined}
           disabled={!isCustom}
           onPress={onEdit}
           style={({ pressed }) => [styles.goalText, pressed && styles.pressed]}>
@@ -151,7 +152,7 @@ function GoalRow({
             <TruncatedText value={goal.name} type="smallBold" selectable style={styles.goalName} />
             <View style={[styles.typeBadge, { backgroundColor: theme.backgroundSelected }]}>
               <ThemedText type="small" themeColor="textSecondary">
-                {isCustom ? 'Custom' : 'Standard'}
+                {isCustom ? t('goals.customBadge') : t('goals.standardBadge')}
               </ThemedText>
             </View>
           </View>
@@ -161,12 +162,10 @@ function GoalRow({
         </Pressable>
         <View style={styles.goalActionColumn}>
           <Switch
-            accessibilityLabel={`${goal.name} available on Fast screen`}
+            accessibilityLabel={t('goals.availableAccessibilityLabel', { name: goal.name })}
             value={goal.isEnabled}
             onValueChange={(isEnabled) => {
-              if (!setFastingGoalEnabled(goal.id, isEnabled)) {
-                Alert.alert('Goal required', 'At least one fasting goal must stay enabled.');
-              }
+              setFastingGoalEnabled(goal.id, isEnabled);
             }}
             trackColor={{ true: theme.accent }}
           />
@@ -195,12 +194,12 @@ function GoalRow({
             renderRightActions={() => (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Delete ${goal.name}`}
+                accessibilityLabel={t('goals.deleteAccessibilityLabel', { name: goal.name })}
                 onPress={onDelete}
                 style={[styles.deleteAction, { backgroundColor: theme.danger }]}>
                 <Trash2 size={20} color={theme.dangerForeground} />
                 <ThemedText type="smallBold" style={{ color: theme.dangerForeground }}>
-                  Delete
+                  {t('goals.deleteAction')}
                 </ThemedText>
               </Pressable>
             )}>
@@ -287,8 +286,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.xxs,
-    borderTopRightRadius: Radius.surface,
-    borderBottomRightRadius: Radius.surface,
   },
   swipeable: { borderRadius: Radius.surface, borderCurve: 'continuous', overflow: 'hidden' },
   swipeableChildren: { borderRadius: Radius.surface, borderCurve: 'continuous', overflow: 'hidden' },

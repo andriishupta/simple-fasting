@@ -10,6 +10,7 @@ import {
   HeatmapGrid,
 } from '@/components/charts/fasting-charts';
 import { Spacing } from '@/constants/theme';
+import { t } from '@/locales/i18n';
 import type { HistoryState } from '@/storage/app-storage';
 import { formatHours } from '@/storage/fasting-storage';
 import { getChartData, type ChartData } from '@/utils/fasting-analytics';
@@ -45,31 +46,31 @@ export const HiddenDataChartsPanel = memo(
 
     return (
       <View style={styles.content}>
-        <ChartSection index={0} title="Recent fast duration" description="Your last seven completed fasts">
+        <ChartSection index={0} title={t('charts.recentDuration')} description={t('charts.recentDurationDescription')}>
           <FastingLineChart data={chartData.recentDurations} formatValue={formatChartHours} />
         </ChartSection>
 
-        <ChartSection index={1} title="Monthly fasting hours" description="Total hours over the last six months">
+        <ChartSection index={1} title={t('charts.monthlyHours')} description={t('charts.monthlyHoursDescription')}>
           <FastingBarChart data={chartData.monthlyHours} formatValue={formatChartHours} />
         </ChartSection>
 
-        <ChartSection index={2} title="Goal completion" description="Average progress across planned fasts">
+        <ChartSection index={2} title={t('charts.goalCompletion')} description={t('charts.goalCompletionDescription')}>
           <CompletionDonut value={chartData.completionRate} />
         </ChartSection>
 
-        <ChartSection index={3} title="This week">
+        <ChartSection index={3} title={t('charts.thisWeek')}>
           <HeatmapGrid cells={chartData.weeklyHeatmap} columns={7} />
         </ChartSection>
 
-        <ChartSection index={4} title="Last 30 days">
+        <ChartSection index={4} title={t('charts.last30Days')}>
           <HeatmapGrid cells={chartData.monthlyHeatmap} columns={10} />
         </ChartSection>
 
-        <ChartSection index={5} title="Last year">
+        <ChartSection index={5} title={t('charts.lastYear')}>
           <HeatmapGrid cells={chartData.yearlyHeatmap} columns={26} compact />
         </ChartSection>
 
-        <ChartSection index={6} title="Duration mix" description="Completed fasts grouped by length">
+        <ChartSection index={6} title={t('charts.durationMix')} description={t('charts.durationMixDescription')}>
           <FastingBarChart data={chartData.durationDistribution} formatValue={(value) => `${value}`} />
         </ChartSection>
       </View>

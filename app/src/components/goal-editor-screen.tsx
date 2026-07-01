@@ -9,6 +9,7 @@ import { FeedbackState } from '@/components/feedback-state';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/locales/i18n';
 import { FastingGoalType, type FastingGoal } from '@/storage/app-storage';
 import {
   createFastingGoal,
@@ -20,6 +21,8 @@ type GoalDraft = {
   name: string;
   targetDurationHours: number;
 };
+
+const goalNameMaxLength = 32;
 
 const createEmptyDraft = (goals: readonly FastingGoal[]): GoalDraft => ({
   name: '',
@@ -52,7 +55,6 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
       ? createEmptyDraft(settings.goals)
       : createGoalDraft(existingGoal),
   );
-  const [validationError, setValidationError] = useState<string | null>(null);
   const isEditing = goalId !== null;
   const initialDraft = useMemo(
     () =>
@@ -65,17 +67,21 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
     draft.name !== initialDraft.name ||
     draft.targetDurationHours !== initialDraft.targetDurationHours;
 
+  const showValidationError = (message: string): void => {
+    Alert.alert(message);
+  };
+
   const saveDraft = (): void => {
     const name = draft.name.trim();
     const targetDurationHours = draft.targetDurationHours;
 
     if (name.length === 0) {
-      setValidationError('Enter a name for this goal.');
+      showValidationError(t('goals.validationNameRequired'));
       return;
     }
 
-    if (name.length > 60) {
-      setValidationError('Goal names can be up to 60 characters.');
+    if (name.length > goalNameMaxLength) {
+      showValidationError(t('goals.validationNameLength'));
       return;
     }
 
@@ -84,7 +90,7 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
       targetDurationHours < 1 ||
       targetDurationHours > maxCustomDurationHours
     ) {
-      setValidationError('Choose a duration from 1 hour to 7 days.');
+      showValidationError(t('goals.validationDuration'));
       return;
     }
 
@@ -93,7 +99,7 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
     );
 
     if (duplicateDuration) {
-      setValidationError('A goal with this duration already exists.');
+      showValidationError(t('goals.validationDuplicateDuration'));
       return;
     }
 
@@ -107,28 +113,27 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
           targetDurationHours,
         }) === undefined
       ) {
-        setValidationError('This goal no longer exists.');
+        showValidationError(t('goals.validationMissingGoal'));
         return;
       }
     } catch {
-      setValidationError('This goal could not be saved. Your existing goals were not changed.');
+      showValidationError(t('goals.validationSaveFailed'));
       return;
     }
 
-    setValidationError(null);
     router.back();
   };
 
   if (existingGoal?.type === FastingGoalType.Standard) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Goal' }} />
+        <Stack.Screen options={{ title: t('goals.editorTitle') }} />
         <GoalEditorShell>
           <FeedbackState
             kind="empty"
-            title="Standard goal"
-            description="Standard goals can be reordered or disabled, but only custom goals can be edited."
-            action={{ label: 'Back to Goals', onPress: () => router.back() }}
+            title={t('goals.standardTitle')}
+            description={t('goals.standardDescription')}
+            action={{ label: t('goals.backAction'), onPress: () => router.back() }}
           />
         </GoalEditorShell>
       </>
@@ -138,13 +143,13 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
   if (isEditing && existingGoal === undefined) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Goal' }} />
+        <Stack.Screen options={{ title: t('goals.editorTitle') }} />
         <GoalEditorShell>
           <FeedbackState
             kind="error"
-            title="Goal not found"
-            description="This custom goal no longer exists."
-            action={{ label: 'Back to Goals', onPress: () => router.back() }}
+            title={t('goals.notFoundTitle')}
+            description={t('goals.notFoundDescription')}
+            action={{ label: t('goals.backAction'), onPress: () => router.back() }}
           />
         </GoalEditorShell>
       </>
@@ -153,29 +158,20 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
 
   return (
     <>
-      <Stack.Screen options={{ title: isEditing ? 'Edit Goal' : 'New Goal' }} />
+      <Stack.Screen options={{ title: isEditing ? t('goals.editTitle') : t('goals.newTitle') }} />
       <GoalEditorShell>
         <View style={styles.editor}>
-          {validationError !== null ? (
-            <FeedbackState
-              kind="error"
-              title="Check this goal"
-              description={validationError}
-              action={{ label: 'Dismiss', onPress: () => setValidationError(null) }}
-            />
-          ) : null}
-
           <View style={styles.field}>
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
-              Name
+              {t('goals.nameLabel')}
             </ThemedText>
             <TextInput
-              accessibilityLabel="Goal name"
+              accessibilityLabel={t('goals.nameAccessibilityLabel')}
               autoCapitalize="sentences"
-              maxLength={60}
+              maxLength={goalNameMaxLength}
               value={draft.name}
               onChangeText={(name) => setDraft((current) => ({ ...current, name }))}
-              placeholder="For example, Weekday fast"
+              placeholder={t('goals.namePlaceholder')}
               placeholderTextColor={theme.textSecondary}
               style={[
                 styles.input,
@@ -186,11 +182,17 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
                 },
               ]}
             />
+            <ThemedText type="small" themeColor="textSecondary" style={styles.characterCount}>
+              {t('common.characterCount', {
+                count: draft.name.length,
+                max: goalNameMaxLength,
+              })}
+            </ThemedText>
           </View>
 
           <View style={styles.field}>
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
-              Duration
+              {t('goals.durationLabel')}
             </ThemedText>
             <AppSurface padded={false} style={styles.durationCard}>
               <DurationPicker
@@ -204,14 +206,14 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
 
           <View style={styles.actions}>
             <AppButton
-              label="Cancel"
+              label={t('goals.cancelAction')}
               variant="dangerGhost"
               fullWidth
               onPress={() => {
                 if (isDirty) {
-                  Alert.alert('Discard changes?', 'This goal will not be saved.', [
-                    { text: 'Keep Editing', style: 'cancel' },
-                    { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+                  Alert.alert(t('goals.discardTitle'), t('goals.discardMessage'), [
+                    { text: t('goals.keepEditingAction'), style: 'cancel' },
+                    { text: t('goals.discardAction'), style: 'destructive', onPress: () => router.back() },
                   ]);
                   return;
                 }
@@ -219,7 +221,7 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
                 router.back();
               }}
             />
-            <AppButton label="Save goal" fullWidth onPress={saveDraft} />
+            <AppButton label={t('goals.saveAction')} fullWidth onPress={saveDraft} />
           </View>
         </View>
       </GoalEditorShell>
@@ -259,6 +261,7 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   sectionLabel: { paddingHorizontal: Spacing.two, textTransform: 'uppercase' },
+  characterCount: { paddingHorizontal: Spacing.two, textAlign: 'right', fontVariant: ['tabular-nums'] },
   input: {
     minHeight: 44,
     borderWidth: 1,

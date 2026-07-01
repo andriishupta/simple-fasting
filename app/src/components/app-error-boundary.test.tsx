@@ -22,7 +22,7 @@ describe('AppErrorBoundary', () => {
         </AppErrorBoundary>,
       );
 
-      expect(screen.getByText('Simple Fasting stopped unexpectedly')).toBeOnTheScreen();
+      expect(screen.getByText('Something went wrong')).toBeOnTheScreen();
       expect(getDiagnostics().events).toEqual([
         expect.objectContaining({ kind: DiagnosticEventKind.Render, message: 'Render failed' }),
       ]);

@@ -29,6 +29,7 @@ import {
   getEffectiveColorScheme,
   getSettings,
   getStoreReviewUrlForPlatform,
+  mergeImportedSettings,
   moveFastingGoal,
   LocalNotificationPermissionState,
   openBugReportEmail,
@@ -194,12 +195,10 @@ describe('settings storage integration', () => {
     expect(deleteFastingGoal('goal-16-hours')).toBe(false);
     expect(setFastingGoalEnabled('missing-goal', true)).toBe(false);
 
-    getSettings().goals.filter(({ isEnabled }) => isEnabled).slice(1).forEach(({ id }) => {
+    getSettings().goals.filter(({ isEnabled }) => isEnabled).forEach(({ id }) => {
       expect(setFastingGoalEnabled(id, false)).toBe(true);
     });
-    const onlyEnabled = getSettings().goals.find(({ isEnabled }) => isEnabled);
-    expect(onlyEnabled).toBeDefined();
-    expect(setFastingGoalEnabled(onlyEnabled!.id, false)).toBe(false);
+    expect(getSettings().goals.every(({ isEnabled }) => !isEnabled)).toBe(true);
   });
 
   test('updates and persists goal ordering immediately', () => {
@@ -306,6 +305,16 @@ describe('settings storage integration', () => {
   });
 
   test('creates deterministic JSON and escaped CSV exports', () => {
+    setThemePreference(ThemePreference.Dark);
+    setAccentColorName(AccentColorName.Teal);
+    setGoalDurationFormat(GoalDurationFormat.Days);
+    updateNotificationSettings((notifications) => ({
+      ...notifications,
+      dailyReminderEnabled: true,
+      dailyReminderTime: '20:30',
+      dailyReminderNotificationId: 'local-only',
+    }));
+    const customGoal = createFastingGoal({ name: 'Weekend', targetDurationHours: 24 });
     appStorage.insert(StorageKey.History, {
       ...createEmptyHistoryState(timestamp),
       sessions: [
@@ -315,10 +324,86 @@ describe('settings storage integration', () => {
 
     expect(createExportFilename(SettingsExportFormat.Json)).toBe('simple-fasting-export-2026-06-21.json');
     expect(escapeCsvValue('Dinner, "late"')).toBe('"Dinner, ""late"""');
-    expect(JSON.parse(createExportContent(SettingsExportFormat.Json)).data).toHaveLength(1);
+    const json = JSON.parse(createExportContent(SettingsExportFormat.Json)) as {
+      data?: unknown;
+      sessions?: unknown[];
+      settings?: {
+        accentColorName?: unknown;
+        dataViewPreference?: unknown;
+        goalDurationFormat?: unknown;
+        goals?: unknown[];
+        notifications?: {
+          dailyReminderEnabled?: unknown;
+          dailyReminderNotificationId?: unknown;
+          dailyReminderTime?: unknown;
+        };
+        themePreference?: unknown;
+      };
+    };
+    expect(json.sessions).toHaveLength(1);
+    expect(json.data).toBeUndefined();
+    expect(json.settings).toMatchObject({
+      themePreference: ThemePreference.Dark,
+      accentColorName: AccentColorName.Teal,
+      goalDurationFormat: GoalDurationFormat.Days,
+      notifications: {
+        dailyReminderEnabled: true,
+        dailyReminderTime: '20:30',
+      },
+    });
+    expect(json.settings?.goals).toEqual(expect.arrayContaining([expect.objectContaining({ id: customGoal.id })]));
+    expect(json.settings?.dataViewPreference).toBeUndefined();
+    expect(json.settings?.notifications?.dailyReminderNotificationId).toBeUndefined();
     const csv = createExportContent(SettingsExportFormat.Csv);
-    expect(csv).toContain('exportedAt,appVersion,buildVersion,id,status');
+    expect(csv).toContain('exportedAt,appVersion,buildVersion,id,status,startedAt,endedAt,goalDurationHours,note');
     expect(csv).toContain('"Dinner, ""late"""');
+  });
+
+  test('merges imported settings without restoring transient UI state or notification ids', () => {
+    setDataViewPreference(DataViewPreference.History);
+    updateNotificationSettings((notifications) => ({
+      ...notifications,
+      dailyReminderNotificationId: 'daily-1',
+    }));
+
+    const importedGoal = {
+      id: 'goal-weekend',
+      kind: 'duration',
+      type: FastingGoalType.Custom,
+      name: 'Weekend',
+      targetDurationHours: 30,
+      isEnabled: true,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    mergeImportedSettings({
+      themePreference: ThemePreference.Dark,
+      accentColorName: AccentColorName.Purple,
+      dataViewPreference: DataViewPreference.Stats,
+      goals: [importedGoal],
+      lastUsedGoalDurationHours: 30,
+      goalDurationFormat: GoalDurationFormat.Days,
+      notifications: {
+        dailyReminderEnabled: true,
+        dailyReminderTime: '21:00',
+        dailyReminderNotificationId: 'from-export',
+      },
+    });
+
+    expect(getSettings()).toMatchObject({
+      themePreference: ThemePreference.Dark,
+      accentColorName: AccentColorName.Purple,
+      lastUsedGoalDurationHours: 30,
+      goalDurationFormat: GoalDurationFormat.Days,
+      dataViewPreference: DataViewPreference.History,
+    });
+    expect(getSettings().goals).toEqual(expect.arrayContaining([expect.objectContaining({ id: importedGoal.id })]));
+    expect(getSettings().notifications).toMatchObject({
+      dailyReminderEnabled: true,
+      dailyReminderTime: '21:00',
+      dailyReminderNotificationId: null,
+    });
   });
 
   test('shares an export only after the user requests it', async () => {
@@ -329,7 +414,7 @@ describe('settings storage integration', () => {
 
     expect(share).toHaveBeenCalledWith(expect.objectContaining({
       title: 'simple-fasting-export-2026-06-21.json',
-      message: expect.stringContaining('"data": []'),
+      message: expect.stringContaining('"sessions": []'),
     }));
   });
 

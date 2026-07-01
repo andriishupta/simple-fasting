@@ -22,6 +22,7 @@ import {
 } from '@/components/fast-setup-controls';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
+import { t } from '@/locales/i18n';
 import {
   deleteFastSession,
   formatDuration,
@@ -85,9 +86,9 @@ export default function HistoryDetailScreen() {
         contentContainerStyle={styles.screen}>
         <FeedbackState
           kind="error"
-          title="Fast not found"
-          description="This session may have been deleted from local history."
-          action={{ label: 'Back to History', onPress: () => router.replace('/history') }}
+          title={t('historyEdit.missingTitle')}
+          description={t('historyEdit.missingDescription')}
+          action={{ label: t('historyEdit.backAction'), onPress: () => router.replace('/history') }}
         />
       </ScrollView>
     );
@@ -123,10 +124,10 @@ function DetailContent({ session }: { session: FastSession }) {
   );
 
   const deleteSession = (): void => {
-    Alert.alert('Delete fast?', 'This removes the session from local history.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('historyEdit.deleteTitle'), t('historyEdit.deleteMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () => {
           deleteFastSession(session.id);
@@ -143,42 +144,42 @@ function DetailContent({ session }: { session: FastSession }) {
     const currentTime = Date.now();
 
     if (startedAt === null) {
-      setEditError('Start time is required.');
+      setEditError(t('historyEdit.startRequired'));
       return;
     }
 
     if (startedAt.getTime() > currentTime) {
-      setEditError('Start time cannot be in the future.');
+      setEditError(t('historyEdit.startFuture'));
       return;
     }
 
     if (endedAt === null) {
-      setEditError('End time is required.');
+      setEditError(t('historyEdit.endRequired'));
       return;
     }
 
     if (endedAt.getTime() > currentTime) {
-      setEditError('End time cannot be in the future.');
+      setEditError(t('historyEdit.endFuture'));
       return;
     }
 
     if (selectedGoalId === customGoalId && goalDurationText === '') {
-      setEditError('Goal must be unlimited or a positive number of hours.');
+      setEditError(t('historyEdit.goalRequired'));
       return;
     }
 
     if (!Number.isInteger(goalDurationHours) || goalDurationHours < 0) {
-      setEditError('Goal must be unlimited or a positive number of hours.');
+      setEditError(t('historyEdit.goalRequired'));
       return;
     }
 
     if (goalDurationHours > maxCustomDurationHours) {
-      setEditError('Goal can be up to 7 days.');
+      setEditError(t('historyEdit.goalMax'));
       return;
     }
 
     if (endedAt.getTime() <= startedAt.getTime()) {
-      setEditError('End time must be after start time.');
+      setEditError(t('historyEdit.dateInvalidMessage'));
       return;
     }
 
@@ -194,7 +195,7 @@ function DetailContent({ session }: { session: FastSession }) {
 
     if (overlappingSession !== undefined) {
       setEditError(
-        'Fasts cannot overlap. Save this one, delete the previous overlapping fast, then edit again.',
+        t('historyEdit.overlapMessage'),
       );
       return;
     }
@@ -211,7 +212,7 @@ function DetailContent({ session }: { session: FastSession }) {
     });
 
     if (updatedSession === undefined) {
-      setEditError('This fast could not be found in local history.');
+      setEditError(t('historyEdit.missingSaveTarget'));
       return;
     }
 
@@ -261,9 +262,9 @@ function DetailContent({ session }: { session: FastSession }) {
       {editError !== null && (
         <FeedbackState
           kind="error"
-          title="Could not save changes"
+          title={t('historyEdit.saveFailedTitle')}
           description={editError}
-          action={{ label: 'Dismiss', onPress: () => setEditError(null) }}
+          action={{ label: t('common.dismiss'), onPress: () => setEditError(null) }}
         />
       )}
 
@@ -271,7 +272,7 @@ function DetailContent({ session }: { session: FastSession }) {
         duration={formatDuration(editedDurationSeconds)}
         goalLabel={
           goalDurationHours <= 0
-            ? 'Open-ended'
+            ? t('common.openEnded')
             : formatGoalDuration(goalDurationHours, settings.goalDurationFormat)
         }
         progress={editedProgress}
@@ -291,8 +292,8 @@ function DetailContent({ session }: { session: FastSession }) {
       />
 
       <View style={styles.actions}>
-        <AppButton label="Delete" onPress={deleteSession} variant="dangerGhost" fullWidth />
-        <AppButton label="Save" onPress={saveEdits} fullWidth />
+        <AppButton label={t('historyEdit.deleteAction')} onPress={deleteSession} variant="dangerGhost" fullWidth />
+        <AppButton label={t('historyEdit.saveAction')} onPress={saveEdits} fullWidth />
       </View>
     </View>
   );

@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Simple Fasting"
+  },
+  "android": {
+    "app_name": "Simple Fasting"
+  }
+}

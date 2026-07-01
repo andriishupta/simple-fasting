@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'rea
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/locales/i18n';
 import { TimerViewPreference } from '@/storage/app-storage';
 
 type TimerViewToggleProps = {
@@ -16,12 +17,12 @@ type TimerViewToggleProps = {
 const timerViewOptions = [
   {
     value: TimerViewPreference.Elapsed,
-    label: 'Elapsed',
+    labelKey: 'common.elapsed',
     Icon: ArrowUp,
   },
   {
     value: TimerViewPreference.Remaining,
-    label: 'Remaining',
+    labelKey: 'common.remaining',
     Icon: ArrowDown,
   },
 ] as const;
@@ -45,13 +46,14 @@ export function TimerViewToggle({
       {timerViewOptions.map((option) => {
         const selected = option.value === value;
         const Icon = option.Icon;
+        const label = t(option.labelKey);
 
         return (
           <Pressable
             key={option.value}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
-            accessibilityLabel={`${option.label} timer view`}
+            accessibilityLabel={t('settings.timerView.optionAccessibility', { label })}
             onPress={() => onChange(option.value)}
             style={({ pressed }) => [
               styles.option,
@@ -70,7 +72,7 @@ export function TimerViewToggle({
             <ThemedText
               type="smallBold"
               style={{ color: selected ? theme.accentForeground : theme.textSecondary }}>
-              {option.label}
+              {label}
             </ThemedText>
             {iconPosition === 'right' ? (
               <Icon

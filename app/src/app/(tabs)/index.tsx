@@ -44,6 +44,7 @@ import { ThemedText } from '@/components/themed-text';
 import { TruncatedText } from '@/components/truncated-text';
 import { Fonts, MaxContentWidth, Radius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/locales/i18n';
 import {
   cancelFast,
   endFast,
@@ -106,18 +107,22 @@ const getShownTimerLabelWorklet = ({
   elapsedSeconds,
   goalSeconds,
   timerView,
+  elapsedLabel,
+  remainingLabel,
 }: {
   elapsedSeconds: number;
   goalSeconds: number | null;
   timerView: TimerViewPreference;
+  elapsedLabel: string;
+  remainingLabel: string;
 }): string => {
   'worklet';
 
   return timerView === TimerViewPreference.Remaining &&
     goalSeconds !== null &&
     elapsedSeconds < goalSeconds
-    ? 'Remaining'
-    : 'Elapsed';
+    ? remainingLabel
+    : elapsedLabel;
 };
 
 const useElapsedSecondsValue = (startedAt: string): SharedValue<number> => {
@@ -231,9 +236,9 @@ export default function HomeScreen() {
     if (operationError === null) return;
 
     Alert.alert(
-      'Fast action failed',
+      t('fast.actionFailedTitle'),
       operationError,
-      [{ text: 'OK', onPress: () => setOperationError(null) }],
+      [{ text: t('common.ok'), onPress: () => setOperationError(null) }],
       { cancelable: true, onDismiss: () => setOperationError(null) },
     );
   }, [operationError]);
@@ -249,7 +254,7 @@ export default function HomeScreen() {
       setOperationError(null);
       dismissSavedFastNotice();
     } catch {
-      setOperationError('The fast could not be started. Your local data was not changed.');
+      setOperationError(t('fast.startFailed'));
     }
   };
 
@@ -259,19 +264,19 @@ export default function HomeScreen() {
       setOperationError(null);
       if (completedSession === null) return;
     } catch {
-      setOperationError('The fast could not be ended. Your active fast is still saved locally.');
+      setOperationError(t('fast.endFailed'));
     }
   };
 
   const cancelActiveFast = (): void => {
-    Alert.alert('Cancel fast?', 'This stops the active fast without saving it to history.', [
-      { text: 'Keep Fasting', style: 'cancel' },
+    Alert.alert(t('fast.cancelTitle'), t('fast.cancelMessage'), [
+      { text: t('fast.keepFasting'), style: 'cancel' },
       {
-        text: 'Cancel Fast',
+        text: t('fast.cancelFast'),
         style: 'destructive',
         onPress: () => {
           void cancelFast().catch(() =>
-            setOperationError('The fast could not be cancelled. Your active fast is still saved.'),
+            setOperationError(t('fast.cancelFailed')),
           );
         },
       },
@@ -287,21 +292,21 @@ export default function HomeScreen() {
       }
 
       if (result.status === 'future') {
-        setOperationError('A fast cannot start in the future.');
+        setOperationError(t('fast.futureStart'));
         return false;
       }
 
       if (result.status === 'overlap') {
         setOperationError(
-          'Fasts cannot overlap. Save this one, delete the previous overlapping fast, then edit again.',
+          t('fast.overlapStart'),
         );
         return false;
       }
 
-      setOperationError('There is no active fast to update.');
+      setOperationError(t('fast.noActiveFast'));
       return false;
     } catch {
-      setOperationError('The fast start time could not be updated. Your active fast is still saved.');
+      setOperationError(t('fast.startUpdateFailed'));
       return false;
     }
   };
@@ -312,7 +317,7 @@ export default function HomeScreen() {
       keyboardShouldPersistTaps="handled"
       maxWidth={Math.min(MaxContentWidth, 560)}
       contentStyle={styles.homeContent}>
-        <ScreenHeading align="center">Simple Fasting</ScreenHeading>
+        <ScreenHeading align="center">{t('common.appName')}</ScreenHeading>
         <View style={styles.fastStateShell}>
           {activeSession === null ? (
             <ReadyToFast
@@ -337,7 +342,7 @@ export default function HomeScreen() {
               goalName={
                 goals.find(
                   (goal) => goal.targetDurationHours === activeSession.goalDurationHours,
-                )?.name ?? (activeSession.goalDurationHours > 0 ? 'This Time' : 'Open-ended')
+                )?.name ?? (activeSession.goalDurationHours > 0 ? t('fast.thisTime') : t('common.openEnded'))
               }
               goalDurationFormat={goalDurationFormat}
               startedAt={activeSession.startedAt}
@@ -351,7 +356,7 @@ export default function HomeScreen() {
               onStartedAtChange={updateActiveFastStartedAt}
               onReminderChange={(enabled) => {
                 void setActiveFastEndReminderEnabled(enabled).catch(() =>
-                  setOperationError('The fast reminder could not be updated.'),
+                  setOperationError(t('fast.reminderUpdateFailed')),
                 );
               }}
               onEnd={() => {
@@ -401,7 +406,7 @@ function ReadyToFast({
   const selectedGoal = goals.find((goal) => goal.id === selectedGoalId);
   const selectedGoalDuration =
     selectedGoalId === unlimitedGoalId
-      ? 'Unlimited'
+      ? t('common.unlimited')
       : formatGoalDuration(
           selectedGoalId === customGoalId
             ? customDurationHours
@@ -410,10 +415,10 @@ function ReadyToFast({
         );
   const startButtonLabel =
     selectedGoalId === unlimitedGoalId
-      ? 'Start Unlimited Fast'
-      : `Start ${selectedGoalDuration} Fast`;
+      ? t('fast.startUnlimited')
+      : t('fast.startWithDuration', { duration: selectedGoalDuration });
   const startButtonDuration =
-    selectedGoalId === unlimitedGoalId ? 'Unlimited' : selectedGoalDuration;
+    selectedGoalId === unlimitedGoalId ? t('common.unlimited') : selectedGoalDuration;
 
   return (
     <Animated.View entering={FadeInUp.duration(180)} style={styles.ready}>
@@ -437,13 +442,13 @@ function ReadyToFast({
       <Animated.View layout={LinearTransition.duration(180)} style={styles.readyFooter}>
         <AppButton label={startButtonLabel} onPress={onStart} style={styles.primaryAction}>
           <ThemedText type="small" style={[styles.primaryActionText, { color: theme.accentForeground }]}>
-            Start{' '}
+            {t('fast.start')}{' '}
             <ThemedText
               type="smallBold"
               style={[styles.primaryActionText, styles.primaryActionValue, { color: theme.accentForeground }]}>
               {startButtonDuration}
             </ThemedText>{' '}
-            Fast
+            {t('fast.fast')}
           </ThemedText>
         </AppButton>
         <View style={styles.savedNoticeSlot}>
@@ -454,7 +459,7 @@ function ReadyToFast({
               style={styles.savedNoticeWrap}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Fast saved. View fast. Closing in ${savedNoticeSeconds} seconds.`}
+                accessibilityLabel={t('fast.savedAccessibility', { seconds: savedNoticeSeconds })}
                 onPress={() => router.push(`/history/${savedSessionId}`)}
                 style={({ pressed }) => [
                   styles.savedNotice,
@@ -466,9 +471,9 @@ function ReadyToFast({
                 ]}>
                 <CheckCircle2 size={21} color={theme.accent} />
                 <View style={styles.savedNoticeText}>
-                  <ThemedText type="smallBold">Fast saved</ThemedText>
+                  <ThemedText type="smallBold">{t('fast.savedTitle')}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    View fast · closes in {savedNoticeSeconds}s
+                    {t('fast.savedSubtitle', { seconds: savedNoticeSeconds })}
                   </ThemedText>
                 </View>
                 <ChevronRight size={18} color={theme.accent} />
@@ -513,9 +518,9 @@ function ActiveFast({
   const theme = useTheme();
   const startedDate = new Date(startedAt);
   const endDate = goalSeconds === null ? null : new Date(startedDate.getTime() + goalSeconds * 1000);
-  const goalTitle = goalDurationHours > 0 ? goalName : 'Open-ended';
+  const goalTitle = goalDurationHours > 0 ? goalName : t('common.openEnded');
   const goalSubtitle =
-    goalDurationHours > 0 ? formatGoalDuration(goalDurationHours, goalDurationFormat) : 'Unlimited';
+    goalDurationHours > 0 ? formatGoalDuration(goalDurationHours, goalDurationFormat) : t('common.unlimited');
   const initialElapsedSeconds = getElapsedSecondsFromStart(startedDate.getTime());
   const elapsedSeconds = useElapsedSecondsValue(startedAt);
   const [editingStartedAt, setEditingStartedAt] = useState(false);
@@ -524,99 +529,105 @@ function ActiveFast({
     <Animated.View entering={FadeInUp.duration(180)} style={styles.active}>
       <AppSection>
         <View style={styles.activeFastBody}>
-        <View style={styles.activeFastTopLine}>
-          <View style={styles.activeDurationGroup}>
-            <View style={styles.timerLabelRow}>
-              <LiveTimerLabel
+          <View style={styles.activeFastTopLine}>
+            <View style={styles.activeDurationGroup}>
+              <View style={styles.timerLabelRow}>
+                <LiveTimerLabel
+                  elapsedSeconds={elapsedSeconds}
+                  goalSeconds={goalSeconds}
+                  timerView={timerView}
+                  color={theme.textSecondary}
+                  initialElapsedSeconds={initialElapsedSeconds}
+                />
+                {goalSeconds !== null ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('fast.timerShowAccessibility', {
+                      timerView: timerView === TimerViewPreference.Elapsed
+                        ? t('common.remaining').toLowerCase()
+                        : t('common.elapsed').toLowerCase(),
+                    })}
+                    onPress={() =>
+                      onTimerViewChange(
+                        timerView === TimerViewPreference.Elapsed
+                          ? TimerViewPreference.Remaining
+                          : TimerViewPreference.Elapsed,
+                      )
+                    }
+                    hitSlop={10}
+                    style={({ pressed }) => [
+                      styles.timerViewButton,
+                      { backgroundColor: theme.accent },
+                      pressed && styles.timerViewButtonPressed,
+                    ]}>
+                    {timerView === TimerViewPreference.Elapsed ? (
+                      <ArrowUp size={17} color={theme.accentForeground} strokeWidth={2.6} />
+                    ) : (
+                      <ArrowDown size={17} color={theme.accentForeground} strokeWidth={2.6} />
+                    )}
+                  </Pressable>
+                ) : null}
+              </View>
+              <LiveTimerText
                 elapsedSeconds={elapsedSeconds}
                 goalSeconds={goalSeconds}
                 timerView={timerView}
-                color={theme.textSecondary}
+                color={theme.text}
+                accessibilityLabel={t('fast.timerAccessibility')}
                 initialElapsedSeconds={initialElapsedSeconds}
               />
-              {goalSeconds !== null ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Show ${timerView === TimerViewPreference.Elapsed ? 'remaining' : 'elapsed'} time`}
-                  onPress={() =>
-                    onTimerViewChange(
-                      timerView === TimerViewPreference.Elapsed
-                        ? TimerViewPreference.Remaining
-                        : TimerViewPreference.Elapsed,
-                    )
-                  }
-                  hitSlop={10}
-                  style={({ pressed }) => [
-                    styles.timerViewButton,
-                    { backgroundColor: theme.accent },
-                    pressed && styles.timerViewButtonPressed,
-                  ]}>
-                  {timerView === TimerViewPreference.Elapsed ? (
-                    <ArrowUp size={17} color={theme.accentForeground} strokeWidth={2.6} />
-                  ) : (
-                    <ArrowDown size={17} color={theme.accentForeground} strokeWidth={2.6} />
-                  )}
-                </Pressable>
-              ) : null}
             </View>
-            <LiveTimerText
-              elapsedSeconds={elapsedSeconds}
-              goalSeconds={goalSeconds}
-              timerView={timerView}
-              color={theme.text}
-              accessibilityLabel="Fasting timer"
-              initialElapsedSeconds={initialElapsedSeconds}
-            />
-          </View>
-          <View style={styles.activeGoalSummary}>
-            <TruncatedText value={goalTitle} type="smallBold" style={styles.activeGoalSummaryName} />
-            <ThemedText type="smallBold" themeColor="accent" style={styles.activeGoalSummaryDuration}>
-              {goalSubtitle}
-            </ThemedText>
-          </View>
-        </View>
-        <LinearTimerProgress
-          elapsedSeconds={elapsedSeconds}
-          goalSeconds={goalSeconds}
-          color={theme.accent}
-          trackColor={theme.backgroundSelected}
-        />
-        <View style={styles.activeFastTimes}>
-          <EditableStartedMetric
-            value={startedDate}
-            editing={editingStartedAt}
-            onEditingChange={setEditingStartedAt}
-            onSave={onStartedAtChange}
-          />
-          <View style={[styles.metricDivider, { backgroundColor: theme.backgroundSelected }]} />
-          <Metric label="Ends" value={endDate === null ? 'No planned end' : formatDateTime(endDate)} />
-        </View>
-        {goalSeconds !== null ? (
-          <View style={styles.reminderRow}>
-            <View style={styles.reminderText}>
-              <ThemedText type="smallBold">Reminder</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Optional notification when your fasting goal is reached.
+            <View style={styles.activeGoalSummary}>
+              <TruncatedText value={goalTitle} type="smallBold" style={styles.activeGoalSummaryName} />
+              <ThemedText type="smallBold" themeColor="accent" style={styles.activeGoalSummaryDuration}>
+                {goalSubtitle}
               </ThemedText>
             </View>
-            <View style={styles.reminderSwitchColumn}>
-              <Switch
-                accessibilityLabel="Fasting goal reminder"
-                value={reminderEnabled}
-                onValueChange={onReminderChange}
-                trackColor={{ true: theme.accent }}
-              />
-            </View>
           </View>
-        ) : null}
+          <LinearTimerProgress
+            elapsedSeconds={elapsedSeconds}
+            goalSeconds={goalSeconds}
+            color={theme.accent}
+            trackColor={theme.backgroundSelected}
+          />
+          <View style={styles.activeFastTimes}>
+            <EditableStartedMetric
+              value={startedDate}
+              editing={editingStartedAt}
+              onEditingChange={setEditingStartedAt}
+              onSave={onStartedAtChange}
+            />
+            <View style={[styles.metricDivider, { backgroundColor: theme.backgroundSelected }]} />
+            <Metric label={t('fast.ends')} value={endDate === null ? t('fast.noPlannedEnd') : formatDateTime(endDate)} />
+          </View>
+          {goalSeconds !== null ? (
+            <View style={styles.reminderRow}>
+              <View style={styles.reminderText}>
+                <ThemedText type="smallBold">{t('fast.reminderTitle')}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {t('fast.reminderDescription')}
+                </ThemedText>
+              </View>
+              <View style={styles.reminderSwitchColumn}>
+                <Switch
+                  accessibilityLabel={t('fast.reminderAccessibility')}
+                  value={reminderEnabled}
+                  onValueChange={onReminderChange}
+                  trackColor={{ true: theme.accent }}
+                />
+              </View>
+            </View>
+          ) : null}
+          {reason !== null ? (
+            <View style={styles.activeNote}>
+              <ThemedText type="smallBold">{t('setup.note')}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" selectable>
+                {reason}
+              </ThemedText>
+            </View>
+          ) : null}
         </View>
       </AppSection>
-
-      {reason !== null ? (
-        <ThemedText themeColor="textSecondary" style={styles.centeredText} selectable>
-          {reason}
-        </ThemedText>
-      ) : null}
 
       <View style={styles.activeActions}>
         <Pressable
@@ -627,11 +638,11 @@ function ActiveFast({
             pressed && styles.pressed,
           ]}>
           <ThemedText type="smallBold" style={{ color: theme.danger }}>
-            Cancel fast
+            {t('fast.cancelAction')}
           </ThemedText>
         </Pressable>
         <View style={styles.activeAction}>
-          <AppButton label="End fast" onPress={onEnd} style={styles.primaryAction} />
+          <AppButton label={t('fast.endAction')} onPress={onEnd} style={styles.primaryAction} />
         </View>
       </View>
     </Animated.View>
@@ -663,8 +674,8 @@ function LinearTimerProgress({
       accessible
       accessibilityLabel={
         goalSeconds === null
-          ? 'Open-ended fasting timer'
-          : 'Fasting goal progress'
+          ? t('fast.progressOpenEndedAccessibility')
+          : t('fast.progressGoalAccessibility')
       }
       style={[styles.timerProgressTrack, { backgroundColor: trackColor }]}>
       <Animated.View style={[styles.timerProgressFill, { backgroundColor: color }, progressStyle]} />
@@ -685,11 +696,15 @@ function LiveTimerLabel({
   color: string;
   initialElapsedSeconds: number;
 }) {
+  const elapsedLabel = t('common.elapsed');
+  const remainingLabel = t('common.remaining');
   const animatedProps = useAnimatedProps(() => {
     const text = getShownTimerLabelWorklet({
       elapsedSeconds: elapsedSeconds.value,
       goalSeconds,
       timerView,
+      elapsedLabel,
+      remainingLabel,
     });
 
     return { text, defaultValue: text } satisfies AnimatedTextInputProps;
@@ -706,6 +721,8 @@ function LiveTimerLabel({
         elapsedSeconds: initialElapsedSeconds,
         goalSeconds,
         timerView,
+        elapsedLabel,
+        remainingLabel,
       })}
       style={[styles.timerLabel, { color }]}
     />
@@ -792,18 +809,18 @@ function EditableStartedMetric({
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Started ${formatDateTime(value)}. Edit start time.`}
+        accessibilityLabel={t('fast.startedEditAccessibility', { date: formatDateTime(value) })}
         onPress={() => {
           setDraft(value);
           onEditingChange(true);
         }}
         style={({ pressed }) => [styles.metricButton, pressed && styles.pressed]}>
-        <ThemedText type="small" themeColor="textSecondary">Started</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{t('fast.started')}</ThemedText>
         <ThemedText type="smallBold" selectable style={styles.centeredText}>
           {formatDateTime(value)}
         </ThemedText>
         <ThemedText type="small" themeColor="accent">
-          Edit
+          {t('common.edit')}
         </ThemedText>
       </Pressable>
     );
@@ -811,7 +828,7 @@ function EditableStartedMetric({
 
   return (
     <View style={styles.startedEditor}>
-      <ThemedText type="small" themeColor="textSecondary">Started</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{t('fast.started')}</ThemedText>
       <DateTimePicker
         value={draft}
         mode="date"
@@ -831,7 +848,7 @@ function EditableStartedMetric({
           accessibilityRole="button"
           onPress={() => onEditingChange(false)}
           style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
-          <ThemedText type="smallBold" themeColor="textSecondary">Cancel</ThemedText>
+          <ThemedText type="smallBold" themeColor="textSecondary">{t('common.cancel')}</ThemedText>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -841,7 +858,7 @@ function EditableStartedMetric({
             });
           }}
           style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
-          <ThemedText type="smallBold" themeColor="accent">Save</ThemedText>
+          <ThemedText type="smallBold" themeColor="accent">{t('common.save')}</ThemedText>
         </Pressable>
       </View>
     </View>
@@ -1009,6 +1026,10 @@ const styles = StyleSheet.create({
   reminderSwitchColumn: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  activeNote: {
+    gap: Spacing.xxs,
+    paddingTop: Spacing.xs,
   },
   activeActions: { width: '100%', flexDirection: 'row', gap: Spacing.xs },
   activeAction: { flex: 1 },

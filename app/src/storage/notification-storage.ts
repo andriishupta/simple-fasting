@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Linking, Platform } from 'react-native';
 
+import { t } from '@/locales/i18n';
 import { type FastSession } from '@/storage/app-storage';
 
 const notificationChannelId = 'fasting-reminders';
@@ -54,7 +55,7 @@ export const requestLocalNotificationPermission = async (): Promise<boolean> => 
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(notificationChannelId, {
-      name: 'Fasting reminders',
+      name: t('notifications.channelName'),
       importance: Notifications.AndroidImportance.DEFAULT,
     }).catch(() => undefined);
   }
@@ -150,8 +151,10 @@ export const scheduleFastEndNotification = async ({
 
   return Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Fast goal reached',
-        body: `${goalDurationLabel ?? `${session.goalDurationHours} hours`} fast complete.`,
+        title: t('notifications.goalReachedTitle'),
+        body: t('notifications.goalReachedBody', {
+          goal: goalDurationLabel ?? `${session.goalDurationHours} ${t('durations.hourOther')}`,
+        }),
       },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -176,8 +179,8 @@ export const scheduleDailyReminderNotification = async (
 
   return Notifications.scheduleNotificationAsync({
     content: {
-      title: 'Ready to start your fast?',
-      body: 'Open Simple Fasting when you are ready.',
+      title: t('notifications.dailyTitle'),
+      body: t('notifications.dailyBody'),
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,

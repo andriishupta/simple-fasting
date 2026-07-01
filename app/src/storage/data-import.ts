@@ -1,5 +1,11 @@
+import { t } from '@/locales/i18n';
 import { FastStatus, type FastSession } from '@/storage/app-storage';
 import { repairHistory } from '@/storage/storage-validation';
+
+export type ParsedImportData = {
+  sessions: readonly FastSession[];
+  settings: unknown | null;
+};
 
 const requiredCsvColumns = [
   'id',
@@ -7,7 +13,6 @@ const requiredCsvColumns = [
   'startedAt',
   'endedAt',
   'goalDurationHours',
-  'reason',
   'createdAt',
   'updatedAt',
 ] as const;
@@ -41,7 +46,7 @@ const parseCsvRows = (content: string): readonly (readonly string[])[] => {
     }
   }
 
-  if (quoted) throw new Error('The CSV file contains an unfinished quoted value.');
+  if (quoted) throw new Error(t('imports.unfinishedCsv'));
   row.push(field);
   if (row.some((value) => value !== '')) rows.push(row);
   return rows;
@@ -49,12 +54,15 @@ const parseCsvRows = (content: string): readonly (readonly string[])[] => {
 
 const parseCsvSessions = (content: string): readonly unknown[] => {
   const [headerRow, ...rows] = parseCsvRows(content);
-  if (headerRow === undefined) throw new Error('The CSV file is empty.');
+  if (headerRow === undefined) throw new Error(t('imports.emptyCsv'));
   const indexes = new Map(headerRow.map((column, index) => [column.trim(), index]));
-  if (requiredCsvColumns.some((column) => !indexes.has(column))) {
-    throw new Error('The CSV file is not a Simple Fasting export.');
+  if (requiredCsvColumns.some((column) => !indexes.has(column)) || (!indexes.has('note') && !indexes.has('reason'))) {
+    throw new Error(t('imports.invalidCsv'));
   }
-  const get = (row: readonly string[], column: string): string => row[indexes.get(column)!] ?? '';
+  const get = (row: readonly string[], column: string): string => {
+    const index = indexes.get(column);
+    return index === undefined ? '' : row[index] ?? '';
+  };
 
   return rows.map((row) => ({
     id: get(row, 'id'),
@@ -62,7 +70,7 @@ const parseCsvSessions = (content: string): readonly unknown[] => {
     startedAt: get(row, 'startedAt'),
     endedAt: get(row, 'endedAt') || null,
     goalDurationHours: Number(get(row, 'goalDurationHours')),
-    reason: get(row, 'reason') || null,
+    reason: get(row, 'note') || get(row, 'reason') || null,
     createdAt: get(row, 'createdAt'),
     updatedAt: get(row, 'updatedAt'),
   }));
@@ -91,8 +99,46 @@ const assertImportTimesArePossible = (source: readonly unknown[]): void => {
   });
 
   if (hasImpossibleTime) {
-    throw new Error('Imported fasts cannot be in the future or end before they start.');
+    throw new Error(t('imports.impossibleTime'));
   }
+};
+
+export const parseImportData = ({
+  content,
+  filename,
+}: {
+  content: string;
+  filename: string;
+}): ParsedImportData => {
+  let source: unknown;
+  let settings: unknown | null = null;
+
+  if (filename.toLowerCase().endsWith('.csv')) {
+    source = parseCsvSessions(content);
+  } else {
+    const parsed: unknown = JSON.parse(content);
+    if (isRecord(parsed)) {
+      settings = 'settings' in parsed ? parsed.settings : null;
+      source = 'sessions' in parsed
+        ? parsed.sessions
+        : 'data' in parsed
+          ? parsed.data
+          : parsed;
+    } else {
+      source = parsed;
+    }
+  }
+
+  if (!Array.isArray(source)) throw new Error(t('imports.invalidJson'));
+  assertImportTimesArePossible(source);
+  const repaired = repairHistory({ sessions: source }, new Date().toISOString()).value?.sessions ?? [];
+  const sessions = repaired.filter(
+    (session) => session.status === FastStatus.Completed && session.endedAt !== null,
+  );
+  if (source.length > 0 && sessions.length === 0) {
+    throw new Error(t('imports.noSessions'));
+  }
+  return { sessions, settings };
 };
 
 export const parseImportSessions = ({
@@ -101,26 +147,4 @@ export const parseImportSessions = ({
 }: {
   content: string;
   filename: string;
-}): readonly FastSession[] => {
-  let source: unknown;
-  if (filename.toLowerCase().endsWith('.csv')) {
-    source = parseCsvSessions(content);
-  } else {
-    const parsed: unknown = JSON.parse(content);
-    source =
-      typeof parsed === 'object' && parsed !== null && 'data' in parsed
-        ? (parsed as { data: unknown }).data
-        : parsed;
-  }
-
-  if (!Array.isArray(source)) throw new Error('The file does not contain a session list.');
-  assertImportTimesArePossible(source);
-  const repaired = repairHistory({ sessions: source }, new Date().toISOString()).value?.sessions ?? [];
-  const sessions = repaired.filter(
-    (session) => session.status === FastStatus.Completed && session.endedAt !== null,
-  );
-  if (source.length > 0 && sessions.length === 0) {
-    throw new Error('No valid completed fasting sessions were found.');
-  }
-  return sessions;
-};
+}): readonly FastSession[] => parseImportData({ content, filename }).sessions;

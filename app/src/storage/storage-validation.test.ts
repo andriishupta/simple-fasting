@@ -6,6 +6,7 @@ import {
   GoalDurationFormat,
   StorageSchemaVersion,
   ThemePreference,
+  createDefaultGoals,
 } from '@/storage/app-storage';
 import {
   repairActiveFast,
@@ -75,6 +76,18 @@ describe('storage validation', () => {
       name: '24 hours',
       isEnabled: false,
     });
+  });
+
+  test('preserves all-disabled goals during repair', () => {
+    const result = repairSettings(
+      {
+        goals: createDefaultGoals(timestamp).map((goal) => ({ ...goal, isEnabled: false })),
+      },
+      timestamp,
+    );
+
+    expect(result.value?.goals).toHaveLength(5);
+    expect(result.value?.goals.every((goal) => !goal.isEnabled)).toBe(true);
   });
 
   test('drops invalid active sessions and repairs active preferences', () => {

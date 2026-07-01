@@ -10,7 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "app.simplefasting"
+      "bundleIdentifier": "app.simplefasting",
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true,
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "app.simplefasting",
@@ -31,13 +35,21 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#000000",
-          "image": "./assets/images/splash-icon.png",
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/images/splash-icon-light.png",
           "imageWidth": 76,
-          "android": {
+          "dark": {
             "backgroundColor": "#000000",
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
+            "image": "./assets/images/splash-icon-dark.png"
+          },
+          "android": {
+            "backgroundColor": "#FFFFFF",
+            "image": "./assets/images/splash-icon-light.png",
+            "imageWidth": 76,
+            "dark": {
+              "backgroundColor": "#000000",
+              "image": "./assets/images/splash-icon-dark.png"
+            }
           }
         }
       ],
@@ -81,8 +93,24 @@
           ]
         }
       ],
-      "expo-mail-composer"
+      "expo-mail-composer",
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": [
+              "en"
+            ],
+            "android": [
+              "en"
+            ]
+          }
+        }
+      ]
     ],
+    "locales": {
+      "en": "./src/locales/native/en.json"
+    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

@@ -1,6 +1,5 @@
 import { HStack, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import {
-  activityBackgroundTint,
   font,
   foregroundStyle,
   frame,
@@ -39,7 +38,6 @@ function FastingLiveActivityView(
   'widget';
 
   const isDark = environment.colorScheme === 'dark';
-  const backgroundColor = isDark ? '#15171C' : '#F7F8FC';
   const primaryColor = isDark ? '#F5F7FF' : '#17191F';
   const secondaryColor = isDark ? '#A9AFBD' : '#626979';
   const accentColor = isDark
@@ -61,7 +59,6 @@ function FastingLiveActivityView(
       spacing={8}
       modifiers={[
         padding({ all: 14 }),
-        activityBackgroundTint(backgroundColor),
       ]}>
       <HStack spacing={8} modifiers={[frame({ maxWidth: Infinity })]}>
         <VStack alignment="leading" spacing={3}>

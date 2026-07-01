@@ -32,6 +32,7 @@ import {
   type HistoryState,
 } from '@/storage/app-storage';
 import { useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
+import { t } from '@/locales/i18n';
 import {
   setDataViewPreference,
   useSettingsSelector,
@@ -50,8 +51,8 @@ const formatLocaleDateTime = (timestamp: string): string =>
   }).format(new Date(timestamp));
 
 const visibleDataViews = [
-  { label: 'Stats', value: DataViewPreference.Stats },
-  { label: 'History', value: DataViewPreference.History },
+  { labelKey: 'data.stats', value: DataViewPreference.Stats },
+  { labelKey: 'data.history', value: DataViewPreference.History },
 ] as const;
 
 const getVisibleDataView = (view: DataViewPreference): VisibleDataView =>
@@ -74,7 +75,7 @@ export default function DataScreen() {
     <TabScreenShell
       scrollEnabled="auto"
       maxWidth={Math.min(MaxContentWidth, 640)}>
-      <ScreenHeading>Data</ScreenHeading>
+      <ScreenHeading>{t('data.title')}</ScreenHeading>
       <DataPanel
         selectedView={selectedView}
         onSelectView={selectDataView}
@@ -110,8 +111,8 @@ function DataPanel({
         <View style={styles.emptyState}>
           <FeedbackState
             kind="empty"
-            title="Finish at least one fast"
-            description="Your fasting data will appear here."
+            title={t('data.emptyTitle')}
+            description={t('data.emptyDescription')}
           />
         </View>
       )}
@@ -135,10 +136,10 @@ function DataViewPicker({
 
   return (
     <ExpoSegmentedControl
-      values={visibleDataViews.map((view) => view.label)}
+      values={visibleDataViews.map((view) => t(view.labelKey))}
       selectedIndex={selectedIndex}
       onValueChange={(label) => {
-        const view = visibleDataViews.find((option) => option.label === label);
+        const view = visibleDataViews.find((option) => t(option.labelKey) === label);
         if (view !== undefined) onSelect(view.value);
       }}
       tintColor={theme.accent}
@@ -158,8 +159,8 @@ function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
     return (
       <FeedbackState
         kind="empty"
-        title="No completed fasts yet"
-        description="Completed fasts will appear here."
+        title={t('data.noCompletedTitle')}
+        description={t('data.noCompletedDescription')}
       />
     );
   }
@@ -169,10 +170,13 @@ function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
       <View style={styles.listActions}>
         <View style={styles.listHeading}>
           <ThemedText type="smallBold" themeColor="textSecondary" style={styles.listTitle}>
-            {sessions.length} completed fasts
+            {t('data.completedCount', {
+              count: sessions.length,
+              label: sessions.length === 1 ? t('data.sessionSingular') : t('data.sessionPlural'),
+            })}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {selecting ? `${selectedIds.size} selected` : `Swipe left to delete an item.`}
+            {selecting ? t('data.selectedCount', { count: selectedIds.size }) : t('data.swipeToDelete')}
           </ThemedText>
         </View>
         <View style={styles.listActionButtons}>
@@ -184,12 +188,12 @@ function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
                 setSelectionMode(false);
               }}
               style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
-              <ThemedText type="smallBold" themeColor="textSecondary">Cancel</ThemedText>
+              <ThemedText type="smallBold" themeColor="textSecondary">{t('common.cancel')}</ThemedText>
             </Pressable>
           ) : null}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={selecting ? 'Delete selected fasts' : 'Select fasts'}
+            accessibilityLabel={selecting ? t('data.deleteSelected') : t('data.selectSessions')}
             accessibilityState={{ disabled: selecting && selectedIds.size === 0 }}
             disabled={selecting && selectedIds.size === 0}
             onPress={() => {
@@ -199,12 +203,15 @@ function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
               }
               if (selectedIds.size === 0) return;
               Alert.alert(
-                `Delete ${selectedIds.size} fast${selectedIds.size === 1 ? '' : 's'}?`,
-                'This permanently removes the selected sessions from local history.',
+                t('data.deleteSelectedTitle', {
+                  count: selectedIds.size,
+                  label: selectedIds.size === 1 ? t('data.sessionSingular') : t('data.sessionPlural'),
+                }),
+                t('data.deleteSelectedMessage'),
                 [
-                  { text: 'Cancel', style: 'cancel' },
+                  { text: t('common.cancel'), style: 'cancel' },
                   {
-                    text: 'Delete',
+                    text: t('common.delete'),
                     style: 'destructive',
                     onPress: () => {
                       deleteFastSessions([...selectedIds]);
@@ -223,7 +230,7 @@ function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
               <ThemedText
                 type="smallBold"
                 style={{ color: selectedIds.size === 0 ? theme.textSecondary : theme.danger }}>
-                Delete
+                {t('common.delete')}
               </ThemedText>
             ) : (
               <Circle size={21} color={theme.textSecondary} strokeWidth={2.1} />
@@ -268,10 +275,10 @@ function HistoryItem({
   const theme = useTheme();
   const editSession = (): void => router.push(`/history/${session.id}`);
   const deleteSession = (): void => {
-    Alert.alert('Delete fast?', 'This removes the session from local history.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('data.deleteSessionTitle'), t('data.deleteSessionMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () => deleteFastSession(session.id),
       },
@@ -285,7 +292,7 @@ function HistoryItem({
       {selecting ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={selected ? 'Deselect fast' : 'Select fast'}
+          accessibilityLabel={selected ? t('data.deselectSession') : t('data.selectSession')}
           accessibilityState={{ selected }}
           onPress={onToggle}
           style={({ pressed }) => [
@@ -312,12 +319,12 @@ function HistoryItem({
           renderRightActions={() => (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Delete fast"
+              accessibilityLabel={t('data.deleteSession')}
               onPress={deleteSession}
               style={[styles.deleteAction, { backgroundColor: theme.danger }]}>
               <Trash2 size={22} color={theme.dangerForeground} strokeWidth={2} />
               <ThemedText type="smallBold" style={{ color: theme.dangerForeground }}>
-                Delete
+                {t('common.delete')}
               </ThemedText>
             </Pressable>
           )}>
@@ -336,7 +343,7 @@ function HistoryItem({
                 durationSeconds={getSessionDurationSeconds(session)}
                 showChevron={!selecting}
                 endedLabel={
-                  session.endedAt === null ? 'In progress' : formatLocaleDateTime(session.endedAt)
+                  session.endedAt === null ? t('common.inProgress') : formatLocaleDateTime(session.endedAt)
                 }
               />
             </View>
@@ -371,7 +378,7 @@ function HistorySummary({
       duration={formatDuration(durationSeconds)}
       goalLabel={
         session.goalDurationHours <= 0
-          ? 'Open-ended'
+          ? t('common.openEnded')
           : formatGoalDuration(session.goalDurationHours, goalDurationFormat)
       }
       progress={progress}
@@ -387,54 +394,54 @@ function StatsPanel({ history }: { history: HistoryState }) {
   const stats = useMemo(() => getFastingStats(history), [history]);
   const groups = [
     {
-      title: 'Overview',
-      description: 'Local totals from completed fasts.',
+      title: t('data.statsOverview'),
+      description: t('data.statsOverviewDescription'),
       rows: [
         {
-          label: 'Total fasts',
-          description: 'Completed fasts saved on this device.',
+          label: t('data.totalSessions'),
+          description: t('data.totalSessionsDescription'),
           value: `${stats.totalFasts}`,
         },
         {
-          label: 'Total hours',
-          description: 'Lifetime fasting hours saved on this device.',
+          label: t('data.totalHours'),
+          description: t('data.totalHoursDescription'),
           value: `${formatHours(stats.totalHours)} h`,
         },
       ],
     },
     {
-      title: 'Duration',
-      description: 'How long your fasts usually last.',
+      title: t('data.statsDuration'),
+      description: t('data.statsDurationDescription'),
       rows: [
         {
-          label: 'Average duration',
-          description: 'Average length across completed fasts.',
+          label: t('data.averageDuration'),
+          description: t('data.averageDurationDescription'),
           value: `${formatHours(stats.averageDurationHours)} h`,
         },
         {
-          label: 'Current streak',
-          description: 'Consecutive days with a completed fast.',
-          value: `${stats.currentStreakDays} days`,
+          label: t('data.currentStreak'),
+          description: t('data.currentStreakDescription'),
+          value: t('data.daysValue', { count: stats.currentStreakDays }),
         },
         {
-          label: 'Longest streak',
-          description: 'Best run of consecutive fasting days.',
-          value: `${stats.longestStreakDays} days`,
+          label: t('data.longestStreak'),
+          description: t('data.longestStreakDescription'),
+          value: t('data.daysValue', { count: stats.longestStreakDays }),
         },
         {
-          label: 'Longest fast',
-          description: 'Longest completed fast in your local history.',
+          label: t('data.longestFast'),
+          description: t('data.longestFastDescription'),
           value: `${formatHours(stats.longestFastHours)} h`,
         },
       ],
     },
     {
-      title: 'Goals',
-      description: 'Planned fast goal performance.',
+      title: t('data.statsGoals'),
+      description: t('data.statsGoalsDescription'),
       rows: [
         {
-          label: 'Completion rate',
-          description: 'How often planned fasts reached their goal. Open-ended fasts do not count.',
+          label: t('data.completionRate'),
+          description: t('data.completionRateDescription'),
           value: formatPercent(stats.completionRate),
         },
       ],

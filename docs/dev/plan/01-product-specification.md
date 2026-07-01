@@ -18,7 +18,7 @@ The product intentionally has:
 - no analytics SDK, event tracking, telemetry backend, or installation identifier;
 - native Apple App Store Connect and Google Play Console crash/vitals reporting where available through the platforms;
 - no required internet connection for fasting, history, statistics, goals, or local help;
-- local ownership through JSON and CSV export.
+- local ownership through JSON backup and CSV session export.
 
 ## Current Navigation
 
@@ -28,7 +28,7 @@ The native bottom tab order is:
 2. **Fast**
 3. **Settings**
 
-Fast is the center tab. Supporting pages use native Expo Router stack navigation with a system header and back button.
+Fast is the center tab and the default selected tab. Supporting pages use native Expo Router stack navigation with a system header and back button.
 
 ## Fast Screen
 
@@ -39,14 +39,14 @@ The ready screen is designed to fit in one normal phone viewport. Scrolling and 
 The screen provides:
 
 - standard presets: `12:12`, `14:10`, `16:8`, `18:6`, and `20:4`;
-- a one-off **This time** duration, with reusable custom goals managed in Settings;
+- a **Custom** duration, with reusable custom goals managed in Settings;
 - an open-ended fast;
-- an optional note;
+- an optional note up to 128 characters, with a visible character counter;
 - a Start fast action positioned above the native tab bar.
 
 The first fresh-install selection is `16:8`. Selecting a goal immediately persists its duration as `lastUsedGoalDurationHours`; the next visit restores that choice. There is no separate default-goal state.
 
-The selected goal is shown directly as its name and duration without a redundant “Your fasting goal” label. Enabled goals, **This time**, and **Open-ended fast** share one neutral selection surface; the current choice uses a checkmark instead of an accent-filled button. Tapping **This time** selects it, while tapping its displayed duration or chevron toggles the native Days/Hours wheel editor inline. Selecting another goal closes it. This-time duration is limited to seven days; selecting seven days forces hours to zero.
+The selected goal is shown directly as its name and duration without a redundant “Your fasting goal” label. Enabled goals, **Custom**, and **Open-ended** share one neutral selection surface; the current choice uses a checkmark instead of an accent-filled button. Tapping **Custom** selects it, while tapping its displayed duration or chevron toggles the native Days/Hours wheel editor inline. Custom duration is limited to seven days; selecting seven days forces hours to zero.
 
 ### Active state
 
@@ -75,7 +75,7 @@ Stats are presented in grouped metric cards with accent-colored values.
 - average duration;
 - completion rate;
 - total fasting hours;
-- total completed fasts.
+- total completed sessions.
 
 ### History
 
@@ -87,7 +87,7 @@ Stats are presented in grouped metric cards with accent-colored values.
 - selection mode with confirmation for bulk deletion;
 - native stack Edit Fast screen for changing dates, goal duration, and note.
 
-Edit Fast reuses the Fast screen’s goal selector, inline This-time editor, Open-ended action, and Note control. Only enabled goals are offered. Duration and Schedule are presented as grouped sections. Start and required End values use theme-aware native date/time controls without duplicate formatted timestamps. The screen has Save and ghost-style Delete actions; there is no redundant Cancel or Clear End action.
+Edit Fast reuses the Fast screen’s goal selector, inline Custom duration editor, Open-ended action, and Note control. Only enabled goals are offered. Duration and Schedule are presented as grouped sections. Start and required End values use theme-aware native date/time controls without duplicate formatted timestamps. The screen has Save and ghost-style Delete actions; there is no redundant Cancel or Clear End action.
 
 History is the source of truth for statistics. Charts remain deferred for the first version and hidden from the route tree. Bulk deletion is an explicit selection mode and always requires confirmation.
 
@@ -108,17 +108,18 @@ Goals is a native stack screen with a transparent large-title header.
 - goal time display format, defaulting to hours and optionally showing day-based labels; the preference is used consistently on Fast, Goals, History, widgets, and local fast-end reminder text;
 - standard goals can be enabled or disabled but not deleted;
 - custom goals can be enabled/disabled, created, edited, and deleted;
+- custom goal names are limited to 32 characters, with a visible character counter in the editor;
 - goals can be reordered with a visible drag handle and the order persists in MMKV;
 - custom goals expose edit navigation and swipe-to-delete; standard goals never expose deletion;
 - add goal is a floating plus action;
-- at least one goal must remain enabled;
+- all goals can be disabled; the Fast screen still offers Custom and Open-ended options;
 - the selected Fast-screen goal is persisted directly;
 - there is no Default badge or Make default action.
 
 ### Notifications
 
-- local fast-end reminder;
-- local daily fasting reminder;
+- local end reminder;
+- local daily reminder;
 - minimal grouped native Hours/Minutes wheel for reminder time with theme-aware item colors and no nested card or redundant label;
 - notification permission is read directly from the operating system at app launch, app foreground, and Settings open;
 - Settings shows reminder controls only when notifications are granted; otherwise it shows “Notifications are disabled” with an **Enable Notifications** action that opens the native app notification settings or requests permission when still undetermined;
@@ -128,8 +129,8 @@ No push-notification backend is used.
 
 ### Data
 
-- JSON import/export of app data and metadata;
-- CSV import/export of fasting history;
+- JSON import/export of sessions and important settings: theme, accent, goals, goal display format, Live Activity preference, and reminder preferences;
+- CSV import/export of session history;
 - import preserves existing history, skips duplicate IDs and sessions whose time ranges overlap existing or already accepted imported sessions, and reports saved/skipped counts;
 - native share sheet;
 - Clear data with destructive confirmation.
@@ -190,8 +191,9 @@ The application should feel calm, minimal, fast, and native.
 - Expo Router navigation, stack headers, native tab chrome, and picker items resolve from the same app theme and accent palette.
 - Native tab bars use an opaque themed background during tab transitions; native segmented and date/time controls receive the resolved app appearance explicitly.
 - Persisted MMKV settings are loaded before the first themed render, and explicit Light/Dark preferences are synchronized with native `Appearance` so UIKit/Android controls do not briefly use the wrong scheme.
+- English is the first official app language. Runtime strings live in `app/src/locales/en.json` and are read through the app i18n helper backed by `expo-localization` and `i18n-js`; native app metadata declares English through the Expo localization config.
 - The active timer and progress ring avoid JS interval ticks; elapsed time is calculated from the saved start time and refreshed by native/UI-thread timing with foreground resynchronization.
-- Native splash has no artificial delay and uses a minimal black/white mark. After local storage initialization, the app goes directly to onboarding or the home tabs without an additional branded animation.
+- Native splash has no artificial delay and uses system light/dark backgrounds with matching splash image assets. After local storage initialization, the app goes directly to onboarding or the home tabs without an additional branded animation.
 - First-run onboarding starts with a welcome screen explaining Simple Fasting, local/offline use, no tracking, accent colors, and simple reminders. Users must explicitly check agreement to the Terms of Use and Privacy Policy before continuing.
 - After agreement, onboarding shows the notification explanation screen: “Stay informed about your fasts,” with **Allow Notifications** and **Not Now** actions.
 - Neutral page background with consistent white/dark surfaces, thin borders, and grouped rows.

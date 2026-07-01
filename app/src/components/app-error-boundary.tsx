@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FeedbackState } from '@/components/feedback-state';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { t } from '@/locales/i18n';
 import { DiagnosticEventKind } from '@/storage/app-storage';
 import { recordDiagnosticError } from '@/storage/diagnostic-storage';
 
@@ -41,9 +42,9 @@ export class AppErrorBoundary extends Component<
         <SafeAreaView style={styles.safeArea}>
           <FeedbackState
             kind="error"
-            title="Simple Fasting stopped unexpectedly"
-            description="Your local fasting data is still on this device. Try opening the screen again, or share the local diagnostics from Settings if the problem repeats."
-            action={{ label: 'Try Again', onPress: this.retry, variant: 'primary' }}
+            title={t('errors.screenTitle')}
+            description={t('errors.screenDescription')}
+            action={{ label: t('errors.tryAgain'), onPress: this.retry, variant: 'primary' }}
           />
         </SafeAreaView>
       </ThemedView>

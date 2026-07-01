@@ -4,6 +4,7 @@ import * as MailComposer from 'expo-mail-composer';
 import * as Sharing from 'expo-sharing';
 import { Platform, Share } from 'react-native';
 
+import { t } from '@/locales/i18n';
 import {
   DiagnosticEventKind,
   StorageKey,
@@ -171,8 +172,7 @@ export const markRepeatedFailurePromptShown = (eventId: string): void => {
 export const createDiagnosticReport = (): string =>
   JSON.stringify(
     {
-      notice:
-        'Created locally by Simple Fasting and shared only after explicit user action. No fasting history, notes, settings, account data, or device identifiers are included.',
+      notice: t('exports.diagnosticNotice'),
       app: {
         version: Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.0',
         buildVersion: Constants.nativeBuildVersion ?? null,
@@ -203,10 +203,8 @@ export const emailDiagnosticReport = async (): Promise<void> => {
 
   await MailComposer.composeAsync({
     recipients: [bugReportEmail],
-    subject: 'Simple Fasting bug report',
-    body:
-      'Describe what happened and what you expected.\n\n' +
-      'A local diagnostic JSON file is attached. It is created only after your action and does not intentionally include fasting history, notes, settings, account data, or device identifiers.',
+    subject: t('exports.diagnosticEmailSubject'),
+    body: `${t('exports.diagnosticEmailPrompt')}\n\n${t('exports.diagnosticEmailBody')}`,
     attachments: [file.uri],
   });
 };
@@ -224,7 +222,7 @@ export const shareDiagnosticReport = async (): Promise<void> => {
 
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(file.uri, {
-      dialogTitle: 'Share Simple Fasting diagnostics',
+      dialogTitle: t('exports.diagnosticShareTitle'),
       mimeType: 'application/json',
       UTI: 'public.json',
     });

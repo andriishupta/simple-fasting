@@ -50,6 +50,7 @@ import { ScreenHeading } from '@/components/screen-heading';
 import { TabScreenShell } from '@/components/tab-screen-shell';
 import { TimerViewToggle } from '@/components/timer-view-toggle';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { t } from '@/locales/i18n';
 import {
   setAccentColorName,
   setGoalDurationFormat,
@@ -64,6 +65,7 @@ import {
   getLocalNotificationPermissionState,
   getStoreReviewUrl,
   LocalNotificationPermissionState,
+  mergeImportedSettings,
   openBugReportEmail,
   openFaq,
   openLocalNotificationSettings,
@@ -73,6 +75,7 @@ import {
   openTerms,
   openWebsite,
   requestLocalNotificationPermission,
+  reconcileDailyReminderNotification,
   setDailyReminderTimeAndSchedule,
   shareDataExport,
   SettingsExportFormat,
@@ -102,21 +105,21 @@ import {
   isDiagnosticEmailAvailable,
   shareDiagnosticReport,
 } from '@/storage/diagnostic-storage';
-import { parseImportSessions } from '@/storage/data-import';
+import { parseImportData } from '@/storage/data-import';
 
 const themeOptions = [
   {
-    label: 'System',
+    labelKey: 'settings.theme.system',
     value: ThemePreference.System,
     icon: Laptop,
   },
   {
-    label: 'Light',
+    labelKey: 'settings.theme.light',
     value: ThemePreference.Light,
     icon: Sun,
   },
   {
-    label: 'Dark',
+    labelKey: 'settings.theme.dark',
     value: ThemePreference.Dark,
     icon: Moon,
   },
@@ -135,13 +138,13 @@ const accentOptions = [
 
 const goalDurationFormatOptions = [
   {
-    label: 'Hours',
-    description: 'Show goals as 24 hours.',
+    labelKey: 'settings.goalDuration.hours',
+    descriptionKey: 'settings.goalDuration.hoursDescription',
     value: GoalDurationFormat.Hours,
   },
   {
-    label: 'Days + hours',
-    description: 'Show goals as 1d or 1d 4h.',
+    labelKey: 'settings.goalDuration.days',
+    descriptionKey: 'settings.goalDuration.daysDescription',
     value: GoalDurationFormat.Days,
   },
 ] as const;
@@ -161,7 +164,10 @@ export default function SettingsScreen() {
   const [installedAt] = useState(
     () => appStorage.get(StorageKey.Metadata)?.initializedAt ?? new Date().toISOString(),
   );
-  const buildDescription = `${getAppVersionLabel()} · Installed ${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(installedAt))}`;
+  const buildDescription = t('settings.installedBuild', {
+    version: getAppVersionLabel(),
+    date: new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(installedAt)),
+  });
   const notificationsAvailable =
     notificationPermissionState === LocalNotificationPermissionState.Granted;
 
@@ -200,15 +206,15 @@ export default function SettingsScreen() {
     try {
       await update();
     } catch {
-      Alert.alert('Notification update failed', 'Please try again.');
+      Alert.alert(t('settings.notificationUpdateFailedTitle'), t('settings.tryAgain'));
     }
   };
   const setFastEndReminderEnabled = async (fastEndReminderEnabled: boolean): Promise<void> => {
     await runNotificationUpdate(async () => {
       if (fastEndReminderEnabled && !(await requestLocalNotificationPermission())) {
         Alert.alert(
-          'Notifications are off',
-          'Enable notifications in system settings to use fasting reminders.',
+          t('settings.notificationsOffTitle'),
+          t('settings.notificationsOffEndMessage'),
         );
         return;
       }
@@ -225,8 +231,8 @@ export default function SettingsScreen() {
     await runNotificationUpdate(async () => {
       if (dailyReminderEnabled && !(await requestLocalNotificationPermission())) {
         Alert.alert(
-          'Notifications are off',
-          'Enable notifications in system settings to use daily reminders.',
+          t('settings.notificationsOffTitle'),
+          t('settings.notificationsOffDailyMessage'),
         );
         return;
       }
@@ -267,47 +273,47 @@ export default function SettingsScreen() {
     try {
       await shareDataExport(format);
     } catch {
-      Alert.alert('Export failed', 'The export file could not be created.');
+      Alert.alert(t('settings.exportFailedTitle'), t('settings.exportFailedMessage'));
     }
   };
   const exportDiagnostics = async (): Promise<void> => {
     try {
       await shareDiagnosticReport();
     } catch {
-      Alert.alert('Share failed', 'The local diagnostic report could not be created.');
+      Alert.alert(t('settings.shareFailedTitle'), t('settings.shareFailedMessage'));
     }
   };
   const emailDiagnostics = async (): Promise<void> => {
     try {
       await emailDiagnosticReport();
     } catch {
-      Alert.alert('Email failed', 'The local diagnostic email could not be created.');
+      Alert.alert(t('settings.emailFailedTitle'), t('settings.emailFailedMessage'));
     }
   };
   const reportBug = (): void => {
     const actionButtons: AlertButton[] = [
-      { text: 'Email', onPress: () => void openExternalAction(openBugReportEmail) },
+      { text: t('common.email'), onPress: () => void openExternalAction(openBugReportEmail) },
       ...(canEmailDiagnostics
-        ? [{ text: 'Email with diagnostics', onPress: () => void emailDiagnostics() }]
+        ? [{ text: t('settings.emailWithDiagnostics'), onPress: () => void emailDiagnostics() }]
         : []),
-      { text: 'Get diagnostics file', onPress: () => void exportDiagnostics() },
+      { text: t('settings.getDiagnosticsFile'), onPress: () => void exportDiagnostics() },
     ];
     const buttons =
       Platform.OS === 'android' && actionButtons.length >= 3
         ? actionButtons
-        : [{ text: 'Cancel', style: 'cancel' as const }, ...actionButtons];
+        : [{ text: t('common.cancel'), style: 'cancel' as const }, ...actionButtons];
 
     Alert.alert(
-      'Report a bug',
-      'You can email bugs@simplefasting.app directly, attach local diagnostics to an email, or get the diagnostic file. Diagnostics never include fasting history or notes.',
+      t('settings.reportBug'),
+      t('settings.reportBugMessage'),
       buttons,
     );
   };
   const importData = async (): Promise<void> => {
     if (getActiveFastState().session !== null) {
       Alert.alert(
-        'Import unavailable',
-        'End or cancel the active fast before importing history. This protects your data from overlapping sessions.',
+        t('settings.importUnavailableTitle'),
+        t('settings.importUnavailableMessage'),
       );
       return;
     }
@@ -320,33 +326,48 @@ export default function SettingsScreen() {
       if (result.canceled) return;
       const asset = result.assets[0];
       if (asset.size !== undefined && asset.size > 5_000_000) {
-        Alert.alert('File too large', 'Choose a Simple Fasting export smaller than 5 MB.');
+        Alert.alert(t('settings.fileTooLargeTitle'), t('settings.fileTooLargeMessage'));
         return;
       }
-      const sessions = parseImportSessions({
+      const imported = parseImportData({
         content: await new File(asset.uri).text(),
         filename: asset.name,
       });
-      const { saved, skipped } = mergeImportedFastSessions(sessions);
+      const { saved, skipped } = mergeImportedFastSessions(imported.sessions);
+      const importedSettings = mergeImportedSettings(imported.settings);
+      if (importedSettings !== null) {
+        await reconcileDailyReminderNotification();
+        await syncActiveFastingLiveActivity();
+      }
       Alert.alert(
-        'Import complete',
-        `${saved} fasting session${saved === 1 ? '' : 's'} saved. ${skipped} overlapping or duplicate entr${skipped === 1 ? 'y was' : 'ies were'} skipped.`,
+        t('settings.importCompleteTitle'),
+        [
+          t('settings.importCompleteMessage', {
+            saved,
+            savedLabel: saved === 1 ? t('data.sessionSingular') : t('data.sessionPlural'),
+            skipped,
+            skippedLabel: skipped === 1 ? 'entry was' : 'entries were',
+          }),
+          importedSettings === null
+            ? t('settings.importSettingsUnchanged')
+            : t('settings.importSettingsRestored'),
+        ].join('\n'),
       );
     } catch (error) {
       Alert.alert(
-        'Import failed',
-        error instanceof Error ? error.message : 'The selected file could not be imported.',
+        t('settings.importFailedTitle'),
+        error instanceof Error ? error.message : t('settings.importFailedMessage'),
       );
     }
   };
   const clearLocalData = (): void => {
     Alert.alert(
-      'Clear all data?',
-      'Clearing storage will remove all data on this device, including history, settings, and any active fast. Make sure to export a backup first. Continue with deletion?',
+      t('settings.clearAllTitle'),
+      t('settings.clearAllMessage'),
       [
-        { text: 'No', style: 'cancel' },
+        { text: t('settings.no'), style: 'cancel' },
         {
-          text: 'Yes, Delete',
+          text: t('settings.yesDelete'),
           style: 'destructive',
           onPress: () => {
             void (async () => {
@@ -364,7 +385,7 @@ export default function SettingsScreen() {
                 ]).catch(() => undefined);
                 router.replace('/');
               } catch {
-                Alert.alert('Clear failed', 'Local data could not be cleared.');
+                Alert.alert(t('settings.clearFailedTitle'), t('settings.clearFailedMessage'));
               }
             })();
           },
@@ -376,14 +397,14 @@ export default function SettingsScreen() {
     try {
       await action();
     } catch {
-      Alert.alert('Unable to open link', 'Please try again later.');
+      Alert.alert(t('settings.unableToOpenTitle'), t('settings.unableToOpenMessage'));
     }
   };
 
   return (
     <TabScreenShell maxWidth={Math.min(MaxContentWidth, 640)}>
-        <ScreenHeading>Settings</ScreenHeading>
-        <SettingsSection index={0} title="Goals">
+        <ScreenHeading>{t('settings.title')}</ScreenHeading>
+        <SettingsSection index={0} title={t('settings.sections.goals')}>
           <GoalDurationFormatPicker
             selectedValue={settings.goalDurationFormat}
             onSelect={(goalDurationFormat) => {
@@ -398,25 +419,28 @@ export default function SettingsScreen() {
           />
           <SettingsActionRow
             icon={Target}
-            title="Manage fasting goals"
-            description={`${settings.goals.filter((goal) => goal.isEnabled).length} active · ${settings.goals.length} total`}
+            title={t('settings.manageGoals')}
+            description={t('settings.manageGoalsDescription', {
+              active: settings.goals.filter((goal) => goal.isEnabled).length,
+              total: settings.goals.length,
+            })}
             onPress={() => router.push('/goals' as Href)}
           />
         </SettingsSection>
 
         <SettingsSection
           index={1}
-          title="Notifications"
+          title={t('settings.sections.notifications')}
           description={
             notificationsAvailable
-              ? 'Widgets are available from your Home Screen.'
-              : 'Widgets are available from your Home Screen. Notifications are disabled.'
+              ? t('settings.notificationsAvailable')
+              : t('settings.notificationsUnavailable')
           }>
           {Platform.OS === 'ios' ? (
             <SettingsSwitch
               icon={Activity}
-              title="Live Activity"
-              description="Show the active fast on the Lock Screen and Dynamic Island."
+              title={t('settings.liveActivity')}
+              description={t('settings.liveActivityDescription')}
               value={settings.liveActivitiesEnabled}
               onValueChange={(liveActivitiesEnabled) => {
                 setLiveActivitiesEnabled(liveActivitiesEnabled);
@@ -428,15 +452,15 @@ export default function SettingsScreen() {
             <>
               <SettingsSwitch
                 icon={Timer}
-                title="Fast end reminder"
-                description="Local notification when the goal is reached."
+                title={t('settings.endReminder')}
+                description={t('settings.endReminderDescription')}
                 value={settings.notifications.fastEndReminderEnabled}
                 onValueChange={setFastEndReminderEnabled}
               />
               <SettingsSwitch
                 icon={Bell}
-                title="Daily fasting reminder"
-                description="A local reminder to start your regular fast."
+                title={t('settings.dailyReminder')}
+                description={t('settings.dailyReminderDescription')}
                 value={settings.notifications.dailyReminderEnabled}
                 onValueChange={setDailyReminderEnabled}
               />
@@ -459,14 +483,14 @@ export default function SettingsScreen() {
           ) : (
             <SettingsActionRow
               icon={Bell}
-              title="Enable Notifications"
-              description="Open system notification settings for Simple Fasting."
+              title={t('settings.enableNotifications')}
+              description={t('settings.enableNotificationsDescription')}
               onPress={() => void enableNotificationsFromSettings()}
             />
           )}
         </SettingsSection>
 
-        <SettingsSection index={2} title="Theme & Accent Color">
+        <SettingsSection index={2} title={t('settings.sections.appearance')}>
           <ThemePicker
             selectedValue={settings.themePreference}
             onSelect={setThemePreference}
@@ -477,94 +501,94 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
 
-        <SettingsSection index={3} title="Data">
+        <SettingsSection index={3} title={t('settings.sections.data')}>
           <SettingsActionRow
             icon={FileInput}
-            title="Import JSON or CSV"
+            title={t('settings.import')}
             description={
               importDisabled
-                ? 'End or cancel the active fast before importing.'
-                : 'Add sessions from a Simple Fasting export.'
+                ? t('settings.importDisabledDescription')
+                : t('settings.importDescription')
             }
             disabled={importDisabled}
             onPress={() => void importData()}
           />
           <SettingsActionRow
             icon={FileText}
-            title="Export JSON"
-            description="Fasting data and app metadata."
+            title={t('settings.exportJson')}
+            description={t('settings.exportJsonDescription')}
             onPress={() => exportData(SettingsExportFormat.Json)}
           />
           <SettingsActionRow
             icon={Table2}
-            title="Export CSV"
-            description="Session history in spreadsheet format."
+            title={t('settings.exportCsv')}
+            description={t('settings.exportCsvDescription')}
             onPress={() => exportData(SettingsExportFormat.Csv)}
           />
           <SettingsActionRow
             icon={Trash2}
-            title="Clear data"
-            description="Delete local history, settings, and active fast."
+            title={t('settings.clearData')}
+            description={t('settings.clearDataDescription')}
             destructive
             onPress={clearLocalData}
           />
         </SettingsSection>
 
-        <SettingsSection index={4} title="About">
+        <SettingsSection index={4} title={t('settings.sections.about')}>
           <SettingsActionRow
             icon={Globe}
-            title="Website"
+            title={t('settings.website')}
             external
             onPress={() => openExternalAction(openWebsite)}
           />
           <SettingsLinkedDocumentRow
             icon={CircleHelp}
-            title="FAQ"
+            title={t('navigation.faq')}
             onOpenExternal={() => openExternalAction(openFaq)}
             onOpenLocal={() => router.push('/faq' as Href)}
           />
           <SettingsActionRow
             icon={Sparkles}
-            title="What's New"
-            description="Version history and release notes."
+            title={t('navigation.whatsNew')}
+            description={t('settings.versionHistory')}
             onPress={() => router.push('/whats-new' as Href)}
           />
           {canRateApp ? (
             <SettingsActionRow
               icon={Star}
-              title="Rate the app"
+              title={t('settings.rateApp')}
               onPress={() => openExternalAction(openRateApp)}
             />
           ) : null}
           <SettingsActionRow
             icon={Bug}
-            title="Report bug"
+            title={t('settings.reportBug')}
             description="bugs@simplefasting.app"
             onPress={reportBug}
           />
           <SettingsActionRow
             icon={Mail}
-            title="Support email"
+            title={t('settings.supportEmail')}
             description="support@simplefasting.app"
             onPress={() => openExternalAction(openSupportEmail)}
           />
           <SettingsRow
             icon={Info}
-            title="Build"
+            title={t('settings.build')}
             description={buildDescription}
           />
         </SettingsSection>
 
-        <SettingsSection index={5} title="Legal">
+        <SettingsSection index={5} title={t('settings.sections.legal')}>
           <SettingsLinkedDocumentRow
             icon={Shield}
-            title="Privacy Policy"
+            title={t('navigation.privacy')}
             onOpenExternal={() => openExternalAction(openPrivacyPolicy)}
             onOpenLocal={() => router.push('/privacy' as Href)}
           />
           <SettingsLinkedDocumentRow
             icon={FileText}
-            title="Terms of Use"
+            title={t('navigation.terms')}
             onOpenExternal={() => openExternalAction(openTerms)}
             onOpenLocal={() => router.push('/terms' as Href)}
           />
@@ -625,9 +649,9 @@ function TimerViewPreferencePicker({
   return (
     <View style={styles.timerViewControl}>
       <View style={styles.goalFormatHeading}>
-        <ThemedText type="smallBold">Timer view</ThemedText>
+        <ThemedText type="smallBold">{t('settings.timerView.heading')}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          Choose the default active fast timer display.
+          {t('settings.timerView.description')}
         </ThemedText>
       </View>
       <TimerViewToggle value={selectedValue} onChange={onSelect} iconPosition="right" />
@@ -649,12 +673,13 @@ function ThemePicker({
       {themeOptions.map((option) => {
         const selected = option.value === selectedValue;
         const Icon = option.icon;
+        const label = t(option.labelKey);
 
         return (
           <Pressable
             key={option.value}
             accessibilityRole="button"
-            accessibilityLabel={`${option.label} theme`}
+            accessibilityLabel={t('settings.theme.accessibility', { theme: label })}
             accessibilityState={{ selected }}
             onPress={() => onSelect(option.value)}
             style={({ pressed }) => [
@@ -670,7 +695,7 @@ function ThemePicker({
               strokeWidth={2}
             />
             <ThemedText type="smallBold" style={selected ? { color: theme.accent } : undefined}>
-              {option.label}
+              {label}
             </ThemedText>
           </Pressable>
         );
@@ -696,7 +721,7 @@ function TimePicker({
       <View style={styles.timePickers}>
         <View style={styles.timePickerColumn}>
           <ThemedText type="smallBold" themeColor="textSecondary" style={styles.timeLabel}>
-            HOURS
+            {t('common.hours').toUpperCase()}
           </ThemedText>
           <Picker
             key="daily-reminder-hours"
@@ -716,7 +741,7 @@ function TimePicker({
         </View>
         <View style={styles.timePickerColumn}>
           <ThemedText type="smallBold" themeColor="textSecondary" style={styles.timeLabel}>
-            MINUTES
+            {t('common.minutes').toUpperCase()}
           </ThemedText>
           <Picker
             key="daily-reminder-minutes"
@@ -758,11 +783,13 @@ function AccentPicker({
   return (
     <View style={styles.accentControl}>
       <CenteredWheelPicker
-        accessibilityLabel="Accent color"
+        accessibilityLabel={t('settings.accentAccessibility')}
         itemWidth={accentItemWidth}
         items={accentOptions}
         keyExtractor={(accentName) => accentName}
-        getItemAccessibilityLabel={(accentName) => `${accentColorLabels[accentName]} accent color`}
+        getItemAccessibilityLabel={(accentName) =>
+          t('settings.accentItemAccessibility', { color: accentColorLabels[accentName] })
+        }
         selectedIndex={selectedIndex}
         viewportStyle={styles.accentViewport}
         onSelectIndex={(index) => {
@@ -814,9 +841,9 @@ function GoalDurationFormatPicker({
   return (
     <View style={styles.goalFormatControl}>
       <View style={styles.goalFormatHeading}>
-        <ThemedText type="smallBold">Display format</ThemedText>
+        <ThemedText type="smallBold">{t('settings.goalDuration.heading')}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          Used across Fast, Goals, History, and widgets.
+          {t('settings.goalDuration.description')}
         </ThemedText>
       </View>
       <View style={styles.goalFormatOptions}>
@@ -838,10 +865,10 @@ function GoalDurationFormatPicker({
                 pressed && styles.pressed,
               ]}>
               <ThemedText type="smallBold" style={selected ? { color: theme.accent } : undefined}>
-                {option.label}
+                {t(option.labelKey)}
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                {option.description}
+                {t(option.descriptionKey)}
               </ThemedText>
             </Pressable>
           );
@@ -952,7 +979,7 @@ function SettingsLinkedDocumentRow({
         <View style={styles.rowActions}>
           <Pressable
             accessibilityRole="link"
-            accessibilityLabel={`Open ${title} website`}
+            accessibilityLabel={t('settings.openWebsiteAccessibility', { title })}
             hitSlop={4}
             onPress={onOpenExternal}
             style={({ pressed }) => [styles.rowAction, pressed && styles.pressed]}>
@@ -960,7 +987,7 @@ function SettingsLinkedDocumentRow({
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Open offline ${title}`}
+            accessibilityLabel={t('settings.openOfflineAccessibility', { title })}
             hitSlop={4}
             onPress={onOpenLocal}
             style={({ pressed }) => [styles.rowAction, pressed && styles.pressed]}>

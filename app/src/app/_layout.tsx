@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, AppState, StatusBar, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import * as SplashScreen from 'expo-splash-screen';
 
 import { FeedbackState } from '@/components/feedback-state';
 import { AppErrorBoundary } from '@/components/app-error-boundary';
@@ -12,6 +11,7 @@ import { FastSavedNoticeProvider } from '@/components/fast-saved-notice-context'
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { AppThemeProvider, useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
+import { t } from '@/locales/i18n';
 import { DiagnosticEventKind } from '@/storage/app-storage';
 import { recordDiagnosticError } from '@/storage/diagnostic-storage';
 import {
@@ -26,8 +26,6 @@ import {
 } from '@/storage/settings-storage';
 import { configureLocalNotificationBehavior } from '@/storage/notification-storage';
 import { initializeAppStorage, resetAppStorage } from '@/storage/storage-migrations';
-
-void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 type StartupState =
   | { status: 'loading' }
@@ -45,7 +43,7 @@ function RootLayout() {
       recordDiagnosticError({ kind: DiagnosticEventKind.StorageInitialization, error });
       return {
         status: 'error',
-        message: error instanceof Error ? error.message : 'Storage could not be initialized.',
+        message: error instanceof Error ? error.message : t('startup.storageInitFailed'),
       };
     }
   });
@@ -101,18 +99,18 @@ function RootLayoutContent({
       recordDiagnosticError({ kind: DiagnosticEventKind.StorageInitialization, error });
       setStartupState({
         status: 'error',
-        message: error instanceof Error ? error.message : 'Storage could not be initialized.',
+        message: error instanceof Error ? error.message : t('startup.storageInitFailed'),
       });
     }
   };
   const resetLocalAppData = (): void => {
     Alert.alert(
-      'Reset local data?',
-      'This removes local settings, active fast, and history from this device.',
+      t('startup.resetTitle'),
+      t('startup.resetMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Reset',
+          text: t('startup.resetAction'),
           style: 'destructive',
           onPress: () => {
             try {
@@ -121,8 +119,7 @@ function RootLayoutContent({
             } catch (error) {
               setStartupState({
                 status: 'error',
-                message:
-                  error instanceof Error ? error.message : 'Local app data could not be reset.',
+                message: error instanceof Error ? error.message : t('startup.resetFailed'),
               });
             }
           },
@@ -130,12 +127,6 @@ function RootLayoutContent({
       ],
     );
   };
-
-  useEffect(() => {
-    if (startupState.status === 'loading') return;
-
-    void SplashScreen.hideAsync().catch(() => undefined);
-  }, [startupState.status]);
 
   useEffect(() => {
     if (startupState.status !== 'ready') return;
@@ -151,8 +142,8 @@ function RootLayoutContent({
     })().catch((error: unknown) => {
       recordDiagnosticError({ kind: DiagnosticEventKind.ReminderReconciliation, error });
       Alert.alert(
-        'Reminders unavailable',
-        'Your fasting data is safe, but local reminders could not be restored. You can try again from Settings.',
+        t('startup.remindersUnavailableTitle'),
+        t('startup.remindersUnavailableMessage'),
       );
     });
   }, [startupState.status]);
@@ -203,10 +194,13 @@ function RootLayoutContent({
         backgroundColor="transparent"
         translucent
       />
-      {onboardingRequired ? (
-        <OnboardingStack initialRouteName={settings.legalConsentAccepted ? 'onboarding/notifications' : 'onboarding/index'} />
-      ) : startupState.status === 'ready' ? (
-        <MainAppStack />
+      {startupState.status === 'ready' ? (
+        <FastSavedNoticeProvider>
+          <AppStack
+            onboardingRequired={onboardingRequired}
+            legalConsentAccepted={settings.legalConsentAccepted}
+          />
+        </FastSavedNoticeProvider>
       ) : (
         <StartupScreen
           startupState={startupState}
@@ -227,102 +221,103 @@ const documentScreenOptions = {
   headerBackButtonDisplayMode: 'minimal' as const,
 };
 
-function OnboardingStack({
-  initialRouteName,
+function AppStack({
+  onboardingRequired,
+  legalConsentAccepted,
 }: {
-  initialRouteName: 'onboarding/index' | 'onboarding/notifications';
+  onboardingRequired: boolean;
+  legalConsentAccepted: boolean;
 }) {
   return (
-    <Stack initialRouteName={initialRouteName} screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="onboarding/index" />
-      <Stack.Screen
-        name="onboarding/notifications"
-        options={{
-          ...documentScreenOptions,
-          title: 'Notifications',
-        }}
-      />
-      <Stack.Screen
-        name="onboarding/privacy"
-        options={{
-          ...documentScreenOptions,
-          title: 'Privacy Policy',
-        }}
-      />
-      <Stack.Screen
-        name="onboarding/terms"
-        options={{
-          ...documentScreenOptions,
-          title: 'Terms of Use',
-        }}
-      />
-    </Stack>
-  );
-}
-
-function MainAppStack() {
-  return (
-    <FastSavedNoticeProvider>
-      <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={onboardingRequired && !legalConsentAccepted}>
+        <Stack.Screen name="onboarding/index" />
+      </Stack.Protected>
+      <Stack.Protected guard={onboardingRequired && legalConsentAccepted}>
+        <Stack.Screen
+          name="onboarding/notifications"
+          options={{
+            ...documentScreenOptions,
+            title: t('settings.sections.notifications'),
+          }}
+        />
+      </Stack.Protected>
+      <Stack.Protected guard={onboardingRequired}>
+        <Stack.Screen
+          name="onboarding/privacy"
+          options={{
+            ...documentScreenOptions,
+            title: t('navigation.privacy'),
+          }}
+        />
+        <Stack.Screen
+          name="onboarding/terms"
+          options={{
+            ...documentScreenOptions,
+            title: t('navigation.terms'),
+          }}
+        />
+      </Stack.Protected>
+      <Stack.Protected guard={!onboardingRequired}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="history/[id]"
           options={{
             ...documentScreenOptions,
-            title: 'Edit Fast',
+            title: t('navigation.editFast'),
           }}
         />
         <Stack.Screen
           name="goals"
           options={{
             ...documentScreenOptions,
-            title: 'Goals',
+            title: t('navigation.goals'),
           }}
         />
         <Stack.Screen
           name="goals/new"
           options={{
             ...documentScreenOptions,
-            title: 'New Goal',
+            title: t('navigation.newGoal'),
           }}
         />
         <Stack.Screen
           name="goals/[id]"
           options={{
             ...documentScreenOptions,
-            title: 'Edit Goal',
+            title: t('navigation.editGoal'),
           }}
         />
         <Stack.Screen
           name="faq"
           options={{
             ...documentScreenOptions,
-            title: 'FAQ',
+            title: t('navigation.faq'),
           }}
         />
         <Stack.Screen
           name="whats-new"
           options={{
             ...documentScreenOptions,
-            title: "What's New",
+            title: t('navigation.whatsNew'),
           }}
         />
         <Stack.Screen
           name="privacy"
           options={{
             ...documentScreenOptions,
-            title: 'Privacy Policy',
+            title: t('navigation.privacy'),
           }}
         />
         <Stack.Screen
           name="terms"
           options={{
             ...documentScreenOptions,
-            title: 'Terms of Use',
+            title: t('navigation.terms'),
           }}
         />
-      </Stack>
-    </FastSavedNoticeProvider>
+      </Stack.Protected>
+    </Stack>
   );
 }
 
@@ -342,17 +337,17 @@ function StartupScreen({
           {startupState.status === 'loading' ? (
             <FeedbackState
               kind="loading"
-              title="Starting Simple Fasting"
-              description="Preparing local settings and fasting history."
+              title={t('startup.loadingTitle')}
+              description={t('startup.loadingDescription')}
             />
           ) : (
             <FeedbackState
               kind="error"
-              title="App data could not load"
+              title={t('startup.errorTitle')}
               description={startupState.message}
-              action={{ label: 'Try Again', onPress: onRetry, variant: 'primary' }}
+              action={{ label: t('startup.tryAgain'), onPress: onRetry, variant: 'primary' }}
               secondaryAction={{
-                label: 'Reset Local Data',
+                label: t('startup.resetLocalData'),
                 onPress: onReset,
                 variant: 'danger',
               }}
