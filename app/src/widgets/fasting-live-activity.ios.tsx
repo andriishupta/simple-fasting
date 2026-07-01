@@ -1,10 +1,14 @@
 import { HStack, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import {
+  allowsTightening,
   font,
   foregroundStyle,
   frame,
+  lineLimit,
+  minimumScaleFactor,
   padding,
   progressViewStyle,
+  truncationMode,
 } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity, type LiveActivityEnvironment } from 'expo-widgets';
 
@@ -33,16 +37,13 @@ type FastingLiveActivityProps = {
 
 function FastingLiveActivityView(
   props: FastingLiveActivityProps,
-  environment: LiveActivityEnvironment,
+  _environment: LiveActivityEnvironment,
 ) {
   'widget';
 
-  const isDark = environment.colorScheme === 'dark';
-  const primaryColor = isDark ? '#F5F7FF' : '#17191F';
-  const secondaryColor = isDark ? '#A9AFBD' : '#626979';
-  const accentColor = isDark
-    ? props.accentColorDark || '#D97706'
-    : props.accentColorLight || '#F59E0B';
+  const primaryColor = '#F5F7FF';
+  const secondaryColor = '#A9AFBD';
+  const accentColor = props.accentColorDark || '#D97706';
   const islandPrimaryColor = '#F5F7FF';
   const islandSecondaryColor = '#A9AFBD';
   const distantFuture = new Date('2100-01-01T00:00:00.000Z');
@@ -61,18 +62,30 @@ function FastingLiveActivityView(
         padding({ all: 14 }),
       ]}>
       <HStack spacing={8} modifiers={[frame({ maxWidth: Infinity })]}>
-        <VStack alignment="leading" spacing={3}>
+        <VStack alignment="leading" spacing={3} modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' })]}>
           <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(accentColor)]}>
             SIMPLE FASTING
           </Text>
-          <HStack spacing={4}>
-            <Text modifiers={[font({ size: 16, weight: 'bold' }), foregroundStyle(primaryColor)]}>
+          <HStack spacing={4} modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' })]}>
+            <Text
+              modifiers={[
+                font({ size: 16, weight: 'bold' }),
+                foregroundStyle(primaryColor),
+                lineLimit(1),
+                truncationMode('tail'),
+                allowsTightening(true),
+              ]}>
               {props.goalName}
             </Text>
             <Text modifiers={[font({ size: 14, weight: 'semibold' }), foregroundStyle(secondaryColor)]}>
               ·
             </Text>
-            <Text modifiers={[font({ size: 16, weight: 'bold' }), foregroundStyle(accentColor)]}>
+            <Text
+              modifiers={[
+                font({ size: 16, weight: 'bold' }),
+                foregroundStyle(accentColor),
+                lineLimit(1),
+              ]}>
               {props.goalDurationLabel}
             </Text>
           </HStack>
@@ -92,6 +105,8 @@ function FastingLiveActivityView(
               modifiers={[
                 font({ size: 22, weight: 'bold', design: 'rounded' }),
                 foregroundStyle(primaryColor),
+                minimumScaleFactor(0.82),
+                lineLimit(1),
               ]}
             />
           </HStack>
@@ -110,7 +125,7 @@ function FastingLiveActivityView(
     banner,
     compactLeading: (
       <HStack spacing={3}>
-        <Text modifiers={[font({ size: 13, weight: 'bold' }), foregroundStyle(islandPrimaryColor)]}>
+        <Text modifiers={[font({ size: 13, weight: 'bold' }), foregroundStyle(islandPrimaryColor), lineLimit(1)]}>
           {compactGoalLabel}
         </Text>
         <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(accentColor)]}>
@@ -125,10 +140,12 @@ function FastingLiveActivityView(
           upper: showingRemaining ? goalEndsAt : distantFuture,
         }}
         countsDown={showingRemaining}
-        modifiers={[
-          font({ size: 16, weight: 'bold', design: 'rounded' }),
-          foregroundStyle(islandPrimaryColor),
-        ]}
+          modifiers={[
+            font({ size: 16, weight: 'bold', design: 'rounded' }),
+            foregroundStyle(islandPrimaryColor),
+            minimumScaleFactor(0.82),
+            lineLimit(1),
+          ]}
       />
     ),
     minimal: (
@@ -161,6 +178,8 @@ function FastingLiveActivityView(
             modifiers={[
               font({ size: 20, weight: 'bold', design: 'rounded' }),
               foregroundStyle(islandPrimaryColor),
+              minimumScaleFactor(0.82),
+              lineLimit(1),
             ]}
           />
         </HStack>
@@ -169,7 +188,14 @@ function FastingLiveActivityView(
     expandedBottom: (
       <VStack alignment="leading" spacing={7} modifiers={[padding({ horizontal: 8, bottom: 8 })]}>
         <HStack spacing={4}>
-          <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(islandPrimaryColor)]}>
+          <Text
+            modifiers={[
+              font({ size: 15, weight: 'bold' }),
+              foregroundStyle(islandPrimaryColor),
+              lineLimit(1),
+              truncationMode('tail'),
+              allowsTightening(true),
+            ]}>
             {props.goalName}
           </Text>
           <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(islandSecondaryColor)]}>
