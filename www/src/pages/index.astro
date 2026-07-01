@@ -1,33 +1,59 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import documents from '../content/generated/shared-documents.json';
+import Layout from "../layouts/Layout.astro";
+import generatedDocuments from "../content/generated/shared-documents.json";
+
+type SharedDocumentBlock =
+  { type: "paragraph"; text: string } | { type: "list"; items: string[] };
+
+type SharedDocument = {
+  id: string;
+  title: string;
+  version: string;
+  effectiveDate?: string;
+  description: string;
+  intro: string;
+  sections: {
+    id: string;
+    title: string;
+    blocks: SharedDocumentBlock[];
+  }[];
+};
+
+type SharedDocuments = {
+  privacy: SharedDocument;
+  terms: SharedDocument;
+  faq: SharedDocument;
+  whatsNew: SharedDocument;
+};
+
+const documents = generatedDocuments as SharedDocuments;
 
 const description =
-  'A private, offline fasting timer for iOS and Android with history, statistics, widgets, local reminders, and data export.';
+  "A private, offline fasting timer for iOS and Android with history, statistics, widgets, local reminders, and data export.";
 const structuredData = {
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
-  name: 'Simple Fasting',
-  applicationCategory: 'HealthApplication',
-  operatingSystem: 'iOS, Android',
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Simple Fasting",
+  applicationCategory: "HealthApplication",
+  operatingSystem: "iOS, Android",
   description,
   offers: {
-    '@type': 'Offer',
-    price: '0',
-    priceCurrency: 'USD',
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
   },
   featureList: [
-    'Fasting timer',
-    'Fasting history',
-    'Statistics',
-    'Local notifications',
-    'Home screen widgets',
-    'JSON and CSV export',
+    "Fasting timer",
+    "Fasting history",
+    "Statistics",
+    "Local notifications",
+    "Home screen widgets",
+    "JSON and CSV export",
   ],
 };
 const releaseIntroBlock = documents.whatsNew.sections[0]?.blocks[0];
 const releaseIntro =
-  releaseIntroBlock?.type === 'paragraph'
+  releaseIntroBlock?.type === "paragraph"
     ? releaseIntroBlock.text
     : documents.whatsNew.intro;
 ---
@@ -35,17 +61,20 @@ const releaseIntro =
 <Layout
   title="Simple Fasting — Private, offline fasting timer"
   description={description}
-  structuredData={structuredData}>
+  structuredData={structuredData}
+>
   <section class="hero shell">
     <div class="hero__copy">
       <h1>Fasting, without the noise.</h1>
       <p>
-        A private, offline fasting timer with history, statistics, widgets, and local reminders.
-        No account required.
+        A private, offline fasting timer with history, statistics, widgets, and
+        local reminders. No account required.
       </p>
       <div class="actions">
         <a class="button" href="#download">Get the app</a>
-        <a class="button button--secondary" href="#how-it-works">See how it works</a>
+        <a class="button button--secondary" href="#how-it-works"
+          >See how it works</a
+        >
       </div>
     </div>
     <figure class="hero__art">
@@ -99,8 +128,8 @@ const releaseIntro =
       <div class="split__copy">
         <h2>Your progress stays useful.</h2>
         <p>
-          Review completed fasts, understand your routine, and see patterns without sending your
-          history to a service.
+          Review completed fasts, understand your routine, and see patterns
+          without sending your history to a service.
         </p>
         <ul class="feature-list">
           <li>Editable fasting history with optional reasons</li>
@@ -125,10 +154,12 @@ const releaseIntro =
     <div class="privacy-statement">
       <h2>Your data stays yours.</h2>
       <p>
-        Fasting history and preferences stay on your device. There is no account, analytics SDK,
-        advertising SDK, cross-app tracking, or custom backend. Native store crash reports and
-        optional user-shared diagnostics are for reliability only and never intentionally include
-        fasting history or notes. Export your data as JSON or CSV, or delete it locally at any time.
+        Fasting history and preferences stay on your device. There is no
+        account, analytics SDK, advertising SDK, cross-app tracking, or custom
+        backend. Native store crash reports and optional user-shared diagnostics
+        are for reliability only and never intentionally include fasting history
+        or notes. Export your data as JSON or CSV, or delete it locally at any
+        time.
       </p>
     </div>
   </section>
@@ -148,8 +179,9 @@ const releaseIntro =
       <div class="split__copy">
         <h2>Made for the phone in your hand.</h2>
         <p>
-          Calm, native controls on iOS and Android. Use your system theme, choose an accent, and
-          configure only the reminders and widgets you want.
+          Calm, native controls on iOS and Android. Use your system theme,
+          choose an accent, and configure only the reminders and widgets you
+          want.
         </p>
         <ul class="feature-list">
           <li>Local fast-end and daily reminders</li>
@@ -163,16 +195,16 @@ const releaseIntro =
   <section class="section shell faq" id="faq">
     <h2>Frequently asked questions</h2>
     {
-      documents.faq.sections.map((section, sectionIndex) => (
-        <details key={`${section.title}-${sectionIndex}`}>
+      documents.faq.sections.map((section) => (
+        <details>
           <summary>{section.title}</summary>
           {section.blocks.map((block) =>
-            block.type === 'paragraph' ? (
+            block.type === "paragraph" ? (
               <p>{block.text}</p>
             ) : (
               <ul>
-                {block.items.map((item, itemIndex) => (
-                  <li key={`${item}-${itemIndex}`}>{item}</li>
+                {block.items.map((item) => (
+                  <li>{item}</li>
                 ))}
               </ul>
             ),
@@ -184,7 +216,9 @@ const releaseIntro =
 
   <section class="section section--soft">
     <div class="shell release-note">
-      <p class="release-note__version">Version {documents.whatsNew.version}</p>
+      <p class="release-note__version">
+        Version {documents.whatsNew.version}
+      </p>
       <h2>{documents.whatsNew.title}</h2>
       <p>{releaseIntro}</p>
       <a href="/whats-new">Read the full version history</a>
@@ -195,10 +229,13 @@ const releaseIntro =
     <div class="shell">
       <h2>Start a fast. Keep your data.</h2>
       <p>
-        Simple Fasting is being prepared for iOS and Android. Store links will appear here when the
-        first public release is available.
+        Simple Fasting is being prepared for iOS and Android. Store links will
+        appear here when the first public release is available.
       </p>
-      <a class="button" href="mailto:support@simplefasting.app?subject=Simple%20Fasting%20release">
+      <a
+        class="button"
+        href="mailto:support@simplefasting.app?subject=Simple%20Fasting%20release"
+      >
         Ask about the release
       </a>
     </div>

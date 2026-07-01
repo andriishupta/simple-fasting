@@ -1,12 +1,13 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import documents from '../content/generated/shared-documents.json';
+import Layout from "../layouts/Layout.astro";
+import documents from "../content/generated/shared-documents.json";
 
 const legalDocuments = [
-  { href: '/privacy', document: documents.privacy },
-  { href: '/terms', document: documents.terms },
+  { href: "/privacy", document: documents.privacy },
+  { href: "/terms", document: documents.terms },
 ];
-const description = 'Current privacy and terms documents for the Simple Fasting app and website.';
+const description =
+  "Current privacy and terms documents for the Simple Fasting app and website.";
 ---
 
 <Layout title="Legal — Simple Fasting" description={description} legal>
@@ -14,19 +15,29 @@ const description = 'Current privacy and terms documents for the Simple Fasting 
     <div class="shell">
       <p class="legal-meta">Current documents</p>
       <h1>Legal information</h1>
-      <p>Privacy, responsible-use, health, and data-responsibility terms for Simple Fasting.</p>
+      <p>
+        Privacy, responsible-use, health, and data-responsibility terms for
+        Simple Fasting.
+      </p>
     </div>
   </header>
 
   <div class="legal-content shell">
     <nav class="legal-toc" aria-label="Legal documents">
-      {legalDocuments.map(({ href, document }) => <a href={href}>{document.title}</a>)}
+      {
+        legalDocuments.map(({ href, document }) => (
+          <a href={href}>{document.title}</a>
+        ))
+      }
     </nav>
 
     <article class="prose">
       <section>
         <h2>Documents</h2>
-        <p>Each document shows its current version and effective date on its full page.</p>
+        <p>
+          Each document shows its current version and effective date on its full
+          page.
+        </p>
         <div class="legal-cards">
           {
             legalDocuments.map(({ href, document }) => (
