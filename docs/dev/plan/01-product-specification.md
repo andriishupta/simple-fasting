@@ -63,7 +63,7 @@ Ending a fast saves it to History immediately and returns to the ready state wit
 
 ## Data Screen
 
-Data contains a native segmented control with three views:
+Data contains a native segmented control with two V1 views:
 
 ### Stats
 
@@ -77,14 +77,6 @@ Stats are presented in grouped metric cards with accent-colored values.
 - total fasting hours;
 - total completed fasts.
 
-### Charts
-
-- recent completed-fast duration trend;
-- monthly fasting hours;
-- average planned-fast completion;
-- duration distribution;
-- weekly, monthly, and yearly heatmaps.
-
 ### History
 
 - completed fasting sessions;
@@ -97,7 +89,7 @@ Stats are presented in grouped metric cards with accent-colored values.
 
 Edit Fast reuses the Fast screen’s goal selector, inline This-time editor, Open-ended action, and Note control. Only enabled goals are offered. Duration and Schedule are presented as grouped sections. Start and required End values use theme-aware native date/time controls without duplicate formatted timestamps. The screen has Save and ghost-style Delete actions; there is no redundant Cancel or Clear End action.
 
-History is the source of truth for statistics and chart calculations. Bulk deletion is an explicit selection mode and always requires confirmation.
+History is the source of truth for statistics. Charts remain deferred for the first version and hidden from the route tree. Bulk deletion is an explicit selection mode and always requires confirmation.
 
 ## Settings Screen
 
@@ -146,7 +138,7 @@ No push-notification backend is used.
 
 - Website opens the external website;
 - FAQ has an external action and an offline local copy;
-- Report bug opens the device email flow for `bugs@simplefasting.app`;
+- Report bug opens the device email flow for `bugs@simplefasting.app`, offers email with diagnostics only when a native mail composer is available, and always offers the local diagnostic file;
 - Support email opens the device email flow for `support@simplefasting.app`;
 - Privacy Policy and Terms of Use have external actions and offline local copies;
 - app version/build is displayed locally.
@@ -178,11 +170,11 @@ MMKV keys:
 Settings stores `onboardingCompleted` and `notificationPromptShown`. It does not store `notificationsEnabled`; notification availability is derived from `Notifications.getPermissionsAsync()` because iOS and Android permissions can change outside the app.
 
 State management uses React state, small hooks, and MMKV subscriptions. No global state framework is used. The active timer derives elapsed time from `startedAt` and the device clock; it does not persist or accumulate elapsed seconds.
-Statistics and charts are derived directly from History; no unused persisted cache or speculative widget settings are kept.
+Statistics are derived directly from History; no unused persisted cache or speculative widget settings are kept.
 
 Storage initialization failures show retry and explicit reset controls. Optional notification restoration failures do not block access to fasting data or the core timer.
 
-Storage initialization, reminder restoration, render failures, and React Native fatal JS errors can add a limited local diagnostic event. Diagnostic exports exclude fasting history, notes, goals, settings, and device identifiers, redact common email/URL/file-path text, and are shared only through the diagnostic option inside Report bug.
+Storage initialization, reminder restoration, render failures, and React Native fatal or unhandled JS errors can add a limited local diagnostic event. Diagnostic exports exclude fasting history, notes, goals, settings, and device identifiers, redact common email/URL/file-path text, and are shared only through explicit diagnostic actions inside Report bug.
 
 The app does not add PostHog, Sentry, or another analytics/crash-reporting SDK in V1. Basic release reliability should use native Apple App Store Connect and Google Play Console crash/vitals reporting where available through the platforms. Missing platform reports never block startup or a local app operation.
 

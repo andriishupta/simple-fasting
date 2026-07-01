@@ -144,12 +144,14 @@ describe('storage validation', () => {
         },
         { id: 'invalid', kind: 'analytics_event', occurredAt: timestamp },
       ],
+      lastRepeatedFailurePromptEventId: 'valid',
       updatedAt: timestamp,
     }, timestamp);
 
     expect(result.value?.events).toEqual([
       expect.objectContaining({ id: 'valid', kind: DiagnosticEventKind.Render }),
     ]);
+    expect(result.value?.lastRepeatedFailurePromptEventId).toBe('valid');
     expect(repairDiagnostics('broken', timestamp).value?.events).toEqual([]);
   });
 });

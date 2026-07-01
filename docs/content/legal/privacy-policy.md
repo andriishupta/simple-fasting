@@ -1,8 +1,8 @@
 ---
 id: privacy-policy
 title: Privacy Policy
-version: 1.4
-effectiveDate: 2026-06-22
+version: 1.6
+effectiveDate: 2026-07-01
 description: How Simple Fasting handles local app data, native platform crash reports, website requests, support emails, exports, privacy rights, and future product changes.
 intro: Simple Fasting is built so fasting information can remain on your device. This policy describes the current app and website, what information may be handled, and the choices available to you.
 ---
@@ -20,7 +20,7 @@ The app stores the information needed to provide its features locally on your de
 - Active and completed fasting sessions, including dates, start and end times, and durations.
 - Fasting goals and optional notes you enter.
 - Reminder, appearance, accent, widget, and Live Activity preferences.
-- Statistics, charts, streaks, and heatmaps derived locally from fasting history.
+- Statistics and streaks derived locally from fasting history.
 - Local storage metadata needed to validate and maintain app data.
 - A limited local diagnostic log when storage initialization, reminder restoration, or app rendering fails.
 
@@ -68,7 +68,7 @@ Exports are created only when you request them. An export leaves the app when yo
 
 When certain app errors occur, Simple Fasting may keep up to 50 recent diagnostic events in local app storage. A diagnostic event can include its time and category, a sanitized error name and message, limited component context, app version, build version, and platform. The diagnostic report is designed not to include fasting history, goals, notes, settings, account identifiers, advertising identifiers, or device identifiers. Potential email addresses, web addresses, and local file paths in error text are redacted where recognized, but you should still review a report before sharing it.
 
-The local diagnostic log is separate from Apple and Google platform crash reporting. It remains on the device until removed by the rolling limit, app-data clearing, or uninstall behavior. Its optional JSON report leaves the app only when you choose the diagnostic option inside Report bug and select a destination in the operating-system share sheet. If you attach it to an email, the email practices in Section 5 apply.
+The local diagnostic log is separate from Apple and Google platform crash reporting. It remains on the device until removed by the rolling limit, app-data clearing, or uninstall behavior. Its optional JSON report leaves the app only when you choose a diagnostic action inside Report bug, such as emailing it through a native mail composer or selecting a destination in the operating-system share sheet. If you attach it to an email, the email practices in Section 5 apply.
 
 ## 7. Purposes and legal grounds
 

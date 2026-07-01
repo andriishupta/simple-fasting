@@ -2,8 +2,8 @@
   "privacy": {
     "id": "privacy-policy",
     "title": "Privacy Policy",
-    "version": "1.4",
-    "effectiveDate": "2026-06-22",
+    "version": "1.6",
+    "effectiveDate": "2026-07-01",
     "description": "How Simple Fasting handles local app data, native platform crash reports, website requests, support emails, exports, privacy rights, and future product changes.",
     "intro": "Simple Fasting is built so fasting information can remain on your device. This policy describes the current app and website, what information may be handled, and the choices available to you.",
     "sections": [
@@ -35,7 +35,7 @@
               "Active and completed fasting sessions, including dates, start and end times, and durations.",
               "Fasting goals and optional notes you enter.",
               "Reminder, appearance, accent, widget, and Live Activity preferences.",
-              "Statistics, charts, streaks, and heatmaps derived locally from fasting history.",
+              "Statistics and streaks derived locally from fasting history.",
               "Local storage metadata needed to validate and maintain app data.",
               "A limited local diagnostic log when storage initialization, reminder restoration, or app rendering fails."
             ]
@@ -138,7 +138,7 @@
           },
           {
             "type": "paragraph",
-            "text": "The local diagnostic log is separate from Apple and Google platform crash reporting. It remains on the device until removed by the rolling limit, app-data clearing, or uninstall behavior. Its optional JSON report leaves the app only when you choose the diagnostic option inside Report bug and select a destination in the operating-system share sheet. If you attach it to an email, the email practices in Section 5 apply."
+            "text": "The local diagnostic log is separate from Apple and Google platform crash reporting. It remains on the device until removed by the rolling limit, app-data clearing, or uninstall behavior. Its optional JSON report leaves the app only when you choose a diagnostic action inside Report bug, such as emailing it through a native mail composer or selecting a destination in the operating-system share sheet. If you attach it to an email, the email practices in Section 5 apply."
           }
         ]
       },
@@ -620,7 +620,7 @@
         "blocks": [
           {
             "type": "paragraph",
-            "text": "Your active fast, settings, goals, notes, and history are stored locally on your device. Statistics and charts are derived locally from that history."
+            "text": "Your active fast, settings, goals, notes, and history are stored locally on your device. Statistics are derived locally from that history."
           },
           {
             "type": "paragraph",
@@ -684,7 +684,7 @@
           },
           {
             "type": "paragraph",
-            "text": "In Settings, Report bug offers an optional local diagnostic JSON file through the operating-system share sheet. That file is not shared unless you choose it and a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the local diagnostic log."
+            "text": "In Settings, Report bug offers an optional local diagnostic JSON file. You can email it directly when a native mail composer is available, or get the file through the operating-system share sheet. That file is not shared unless you choose it and a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the local diagnostic log."
           }
         ]
       },
@@ -834,7 +834,7 @@
             "items": [
               "Start and track active fasts with elapsed or remaining time.",
               "Save completed fasts locally on your device.",
-              "Review fasting history, charts, and statistics.",
+              "Review fasting history and statistics.",
               "Create reusable fasting goals and custom fast durations.",
               "Add optional notes to fasts.",
               "Use local fast-end and daily reminder notifications.",

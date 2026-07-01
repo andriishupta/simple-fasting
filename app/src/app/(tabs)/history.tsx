@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -11,15 +11,8 @@ import { Check, ChevronRight, Circle, Trash2 } from 'lucide-react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
-import { AppSection } from '@/components/app-section';
 import { AppSurface } from '@/components/app-surface';
 import { FastingSummaryCard } from '@/components/fasting-summary-card';
-import {
-  CompletionDonut,
-  FastingBarChart,
-  FastingLineChart,
-  HeatmapGrid,
-} from '@/components/charts/fasting-charts';
 import { FeedbackState } from '@/components/feedback-state';
 import { ScreenHeading } from '@/components/screen-heading';
 import { TabScreenShell } from '@/components/tab-screen-shell';
@@ -43,15 +36,12 @@ import {
   setDataViewPreference,
   useSettingsSelector,
 } from '@/storage/settings-storage';
-import { getChartData, getFastingStats, type ChartData } from '@/utils/fasting-analytics';
+import { getFastingStats } from '@/utils/fasting-analytics';
 import { formatGoalDuration } from '@/utils/fast-goals';
-import { getLocalDayKey } from '@/utils/fasting-statistics';
 
-type DataView = DataViewPreference;
+type VisibleDataView = DataViewPreference.Stats | DataViewPreference.History;
 
 const formatPercent = (value: number): string => `${Math.round(value * 100)}%`;
-
-const formatChartHours = (hours: number): string => `${formatHours(hours)}h`;
 
 const formatLocaleDateTime = (timestamp: string): string =>
   new Intl.DateTimeFormat(undefined, {
@@ -59,32 +49,20 @@ const formatLocaleDateTime = (timestamp: string): string =>
     timeStyle: 'short',
   }).format(new Date(timestamp));
 
-let chartDataCache: {
-  dayKey: string;
-  history: HistoryState;
-  locale?: string;
-  value: ChartData;
-} | null = null;
+const visibleDataViews = [
+  { label: 'Stats', value: DataViewPreference.Stats },
+  { label: 'History', value: DataViewPreference.History },
+] as const;
 
-const getCachedChartData = (history: HistoryState, locale?: string): ChartData => {
-  const dayKey = getLocalDayKey(new Date());
-  if (
-    chartDataCache?.history === history &&
-    chartDataCache.dayKey === dayKey &&
-    chartDataCache.locale === locale
-  ) {
-    return chartDataCache.value;
-  }
-
-  const value = getChartData(history, new Date(), locale);
-  chartDataCache = { dayKey, history, locale, value };
-  return value;
-};
+const getVisibleDataView = (view: DataViewPreference): VisibleDataView =>
+  visibleDataViews.find((option) => option.value === view)?.value ?? visibleDataViews[0].value;
 
 export default function DataScreen() {
   const dataViewPreference = useSettingsSelector((settings) => settings.dataViewPreference);
-  const [selectedView, setSelectedView] = useState<DataView>(dataViewPreference);
-  const selectDataView = (view: DataView): void => {
+  const [selectedView, setSelectedView] = useState<VisibleDataView>(() =>
+    getVisibleDataView(dataViewPreference),
+  );
+  const selectDataView = (view: VisibleDataView): void => {
     setSelectedView(view);
 
     if (view !== dataViewPreference) {
@@ -109,8 +87,8 @@ function DataPanel({
   selectedView,
   onSelectView,
 }: {
-  selectedView: DataView;
-  onSelectView: (view: DataView) => void;
+  selectedView: VisibleDataView;
+  onSelectView: (view: VisibleDataView) => void;
 }) {
   const historyState = useHistoryState();
   const hasData = historyState.sessions.length > 0;
@@ -127,7 +105,6 @@ function DataPanel({
             <HistoryList sessions={historyState.sessions} />
           )}
           {selectedView === DataViewPreference.Stats && <StatsPanel history={historyState} />}
-          {selectedView === DataViewPreference.Charts ? <ChartsPanel history={historyState} /> : null}
         </>
       ) : (
         <View style={styles.emptyState}>
@@ -146,27 +123,22 @@ function DataViewPicker({
   selectedView,
   onSelect,
 }: {
-  selectedView: DataView;
-  onSelect: (view: DataView) => void;
+  selectedView: VisibleDataView;
+  onSelect: (view: VisibleDataView) => void;
 }) {
   const theme = useTheme();
   const colorScheme = useAppThemeColorScheme();
-  const dataViews: readonly { label: string; value: DataView }[] = [
-    { label: 'Stats', value: DataViewPreference.Stats },
-    { label: 'Charts', value: DataViewPreference.Charts },
-    { label: 'History', value: DataViewPreference.History },
-  ];
   const selectedIndex = Math.max(
     0,
-    dataViews.findIndex((view) => view.value === selectedView),
+    visibleDataViews.findIndex((view) => view.value === selectedView),
   );
 
   return (
     <ExpoSegmentedControl
-      values={dataViews.map((view) => view.label)}
+      values={visibleDataViews.map((view) => view.label)}
       selectedIndex={selectedIndex}
       onValueChange={(label) => {
-        const view = dataViews.find((option) => option.label === label);
+        const view = visibleDataViews.find((option) => option.label === label);
         if (view !== undefined) onSelect(view.value);
       }}
       tintColor={theme.accent}
@@ -556,64 +528,6 @@ function StatRow({
   );
 }
 
-const ChartsPanel = memo(function ChartsPanel({ history }: { history: HistoryState }) {
-  const chartData = getCachedChartData(history);
-
-  return (
-    <View style={styles.content}>
-      <ChartSection index={0} title="Recent fast duration" description="Your last seven completed fasts">
-        <FastingLineChart data={chartData.recentDurations} formatValue={formatChartHours} />
-      </ChartSection>
-
-      <ChartSection index={1} title="Monthly fasting hours" description="Total hours over the last six months">
-        <FastingBarChart data={chartData.monthlyHours} formatValue={formatChartHours} />
-      </ChartSection>
-
-      <ChartSection index={2} title="Goal completion" description="Average progress across planned fasts">
-        <CompletionDonut value={chartData.completionRate} />
-      </ChartSection>
-
-      <ChartSection index={3} title="This week">
-        <HeatmapGrid cells={chartData.weeklyHeatmap} columns={7} />
-      </ChartSection>
-
-      <ChartSection index={4} title="Last 30 days">
-        <HeatmapGrid cells={chartData.monthlyHeatmap} columns={10} />
-      </ChartSection>
-
-      <ChartSection index={5} title="Last year">
-        <HeatmapGrid cells={chartData.yearlyHeatmap} columns={26} compact />
-      </ChartSection>
-
-      <ChartSection index={6} title="Duration mix" description="Completed fasts grouped by length">
-        <FastingBarChart data={chartData.durationDistribution} formatValue={(value) => `${value}`} />
-      </ChartSection>
-    </View>
-  );
-}, (previous, next) => previous.history.updatedAt === next.history.updatedAt);
-
-function ChartSection({
-  index,
-  title,
-  description,
-  children,
-}: {
-  index: number;
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Animated.View entering={FadeInUp.delay(Math.min(index, 5) * 35).duration(180)}>
-      <AppSection title={title} description={description}>
-        <View style={styles.chartBody}>
-        {children}
-        </View>
-      </AppSection>
-    </Animated.View>
-  );
-}
-
 const styles = StyleSheet.create({
   panel: {
     flex: 1,
@@ -712,12 +626,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.rounded,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
-  },
-  content: {
-    gap: Spacing.md,
-  },
-  chartBody: {
-    padding: Spacing.md,
   },
   pressed: {
     opacity: 0.72,

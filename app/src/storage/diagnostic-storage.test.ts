@@ -1,10 +1,20 @@
 import { Platform, Share } from 'react-native';
+import * as MailComposer from 'expo-mail-composer';
 import * as Sharing from 'expo-sharing';
 
-import { DiagnosticEventKind, StorageKey, appStorage } from '@/storage/app-storage';
+import {
+  DiagnosticEventKind,
+  StorageKey,
+  appStorage,
+  type DiagnosticEvent,
+} from '@/storage/app-storage';
 import {
   createDiagnosticReport,
+  emailDiagnosticReport,
+  getRepeatedFailurePromptEventId,
   getDiagnostics,
+  isDiagnosticEmailAvailable,
+  markRepeatedFailurePromptShown,
   recordDiagnosticError,
   shareDiagnosticReport,
   shouldPromptForRepeatedFailures,
@@ -15,6 +25,28 @@ jest.mock('expo-sharing', () => ({
   isAvailableAsync: jest.fn(),
   shareAsync: jest.fn(),
 }));
+
+jest.mock('expo-mail-composer', () => ({
+  composeAsync: jest.fn(),
+  isAvailableAsync: jest.fn(),
+}));
+
+const createDiagnosticEvent = ({
+  id,
+  kind = DiagnosticEventKind.Render,
+  occurredAt,
+}: {
+  id: string;
+  kind?: DiagnosticEventKind;
+  occurredAt: string;
+}): DiagnosticEvent => ({
+  id,
+  kind,
+  occurredAt,
+  errorName: 'Error',
+  message: id,
+  context: null,
+});
 
 describe('privacy-safe local diagnostics', () => {
   const initialPlatform = Platform.OS;
@@ -98,73 +130,159 @@ describe('privacy-safe local diagnostics', () => {
     );
   });
 
-  test('prompts only after three recent app-stopping failures', () => {
-    const now = new Date('2026-06-21T12:01:00.000Z');
+  test('reports diagnostic email availability only when native mail is configured', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
+    const isAvailable = jest.mocked(MailComposer.isAvailableAsync).mockResolvedValue(true);
+
+    await expect(isDiagnosticEmailAvailable()).resolves.toBe(true);
+    expect(isAvailable).toHaveBeenCalled();
+
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
+
+    await expect(isDiagnosticEmailAvailable()).resolves.toBe(false);
+  });
+
+  test('opens a native email composer with diagnostics attached', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
+    const compose = jest.mocked(MailComposer.composeAsync).mockResolvedValue({
+      status: 'sent',
+    } as never);
+
+    await emailDiagnosticReport();
+
+    expect(compose).toHaveBeenCalledWith(expect.objectContaining({
+      recipients: ['bugs@simplefasting.app'],
+      subject: 'Simple Fasting bug report',
+      body: expect.stringContaining('A local diagnostic JSON file is attached'),
+      attachments: [expect.stringContaining('simple-fasting-diagnostics-2026-06-21.json')],
+    }));
+  });
+
+  test('remembers the latest repeated failure prompt locally', () => {
+    markRepeatedFailurePromptShown('event-1');
+
+    expect(getDiagnostics().lastRepeatedFailurePromptEventId).toBe('event-1');
+  });
+
+  test('prompts after repeated app-stopping failures across minute hour or day windows', () => {
+    const now = new Date('2026-06-21T12:05:00.000Z');
 
     expect(shouldPromptForRepeatedFailures({
       now,
       events: [
-        {
+        createDiagnosticEvent({
           id: '1',
-          kind: DiagnosticEventKind.Render,
           occurredAt: '2026-06-21T12:00:02.000Z',
-          errorName: 'Error',
-          message: 'one',
-          context: null,
-        },
-        {
+        }),
+        createDiagnosticEvent({
           id: '2',
           kind: DiagnosticEventKind.ReminderReconciliation,
           occurredAt: '2026-06-21T12:00:30.000Z',
-          errorName: 'Error',
-          message: 'ignored',
-          context: null,
-        },
-        {
+        }),
+        createDiagnosticEvent({
           id: '3',
-          kind: DiagnosticEventKind.Render,
-          occurredAt: '2026-06-21T12:00:45.000Z',
-          errorName: 'Error',
-          message: 'two',
-          context: null,
-        },
+          occurredAt: '2026-06-21T12:00:55.000Z',
+        }),
       ],
     })).toBe(false);
 
     expect(shouldPromptForRepeatedFailures({
       now,
       events: [
-        {
+        createDiagnosticEvent({
           id: '1',
           kind: DiagnosticEventKind.StorageInitialization,
           occurredAt: '2026-06-21T12:00:05.000Z',
-          errorName: 'Error',
-          message: 'one',
-          context: null,
-        },
-        {
+        }),
+        createDiagnosticEvent({
           id: '2',
-          kind: DiagnosticEventKind.Render,
           occurredAt: '2026-06-21T12:00:30.000Z',
-          errorName: 'Error',
-          message: 'two',
-          context: null,
-        },
-        {
+        }),
+        createDiagnosticEvent({
           id: '3',
-          kind: DiagnosticEventKind.Render,
           occurredAt: '2026-06-21T12:00:55.000Z',
-          errorName: 'Error',
-          message: 'three',
-          context: null,
-        },
+        }),
       ],
+    })).toBe(true);
+    expect(getRepeatedFailurePromptEventId({
+      now,
+      events: [
+        createDiagnosticEvent({
+          id: 'critical-1',
+          kind: DiagnosticEventKind.StorageInitialization,
+          occurredAt: '2026-06-21T12:00:05.000Z',
+        }),
+        createDiagnosticEvent({
+          id: 'critical-2',
+          occurredAt: '2026-06-21T12:00:30.000Z',
+        }),
+        createDiagnosticEvent({
+          id: 'critical-3',
+          occurredAt: '2026-06-21T12:00:55.000Z',
+        }),
+        createDiagnosticEvent({
+          id: 'non-critical-latest',
+          kind: DiagnosticEventKind.ReminderReconciliation,
+          occurredAt: '2026-06-21T12:00:59.000Z',
+        }),
+      ],
+    })).toBe('critical-3');
+
+    expect(getRepeatedFailurePromptEventId({
+      now,
+      lastPromptedEventId: 'critical-3',
+      events: [
+        createDiagnosticEvent({
+          id: 'critical-1',
+          kind: DiagnosticEventKind.StorageInitialization,
+          occurredAt: '2026-06-21T12:00:05.000Z',
+        }),
+        createDiagnosticEvent({
+          id: 'critical-2',
+          occurredAt: '2026-06-21T12:00:30.000Z',
+        }),
+        createDiagnosticEvent({
+          id: 'critical-3',
+          occurredAt: '2026-06-21T12:00:55.000Z',
+        }),
+      ],
+    })).toBeNull();
+
+    expect(shouldPromptForRepeatedFailures({
+      now,
+      events: [
+        '2026-06-21T11:10:00.000Z',
+        '2026-06-21T11:20:00.000Z',
+        '2026-06-21T11:30:00.000Z',
+        '2026-06-21T11:50:00.000Z',
+        '2026-06-21T12:00:55.000Z',
+      ].map((occurredAt, index) =>
+        createDiagnosticEvent({ id: `hour-${index}`, occurredAt }),
+      ),
+    })).toBe(true);
+
+    expect(shouldPromptForRepeatedFailures({
+      now,
+      events: [
+        '2026-06-20T13:00:00.000Z',
+        '2026-06-20T14:00:00.000Z',
+        '2026-06-20T15:00:00.000Z',
+        '2026-06-20T16:00:00.000Z',
+        '2026-06-20T17:00:00.000Z',
+        '2026-06-20T18:00:00.000Z',
+        '2026-06-20T19:00:00.000Z',
+        '2026-06-20T20:00:00.000Z',
+        '2026-06-20T21:00:00.000Z',
+        '2026-06-21T12:00:55.000Z',
+      ].map((occurredAt, index) =>
+        createDiagnosticEvent({ id: `day-${index}`, occurredAt }),
+      ),
     })).toBe(true);
   });
 
-  test('does not prompt for stale repeated failures', () => {
+  test('does not prompt for old repeated failures outside the diagnostic prompt window', () => {
     expect(shouldPromptForRepeatedFailures({
-      now: new Date('2026-06-21T12:03:00.000Z'),
+      now: new Date('2026-06-22T12:00:04.000Z'),
       events: [
         {
           id: '1',

@@ -19,7 +19,7 @@ const structuredData = {
   featureList: [
     'Fasting timer',
     'Fasting history',
-    'Statistics and heatmaps',
+    'Statistics',
     'Local notifications',
     'Home screen widgets',
     'JSON and CSV export',
@@ -105,13 +105,13 @@ const releaseIntro =
         <ul class="feature-list">
           <li>Editable fasting history with optional reasons</li>
           <li>Streaks, duration totals, averages, and completion rate</li>
-          <li>Weekly, monthly, and yearly heatmaps</li>
+          <li>Local streaks, duration totals, averages, and completion rate</li>
         </ul>
       </div>
       <figure class="product-frame">
         <img
           src="/images/data-screen.jpg"
-          alt="Simple Fasting statistics, graphs, and history screens"
+          alt="Simple Fasting statistics and history screens"
           width="1280"
           height="853"
           loading="lazy"
@@ -163,16 +163,16 @@ const releaseIntro =
   <section class="section shell faq" id="faq">
     <h2>Frequently asked questions</h2>
     {
-      documents.faq.sections.map((section) => (
-        <details>
+      documents.faq.sections.map((section, sectionIndex) => (
+        <details key={`${section.title}-${sectionIndex}`}>
           <summary>{section.title}</summary>
           {section.blocks.map((block) =>
             block.type === 'paragraph' ? (
               <p>{block.text}</p>
             ) : (
               <ul>
-                {block.items.map((item) => (
-                  <li>{item}</li>
+                {block.items.map((item, itemIndex) => (
+                  <li key={`${item}-${itemIndex}`}>{item}</li>
                 ))}
               </ul>
             ),

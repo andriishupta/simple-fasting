@@ -12,7 +12,7 @@ Initial release of Simple Fasting.
 
 - Start and track active fasts with elapsed or remaining time.
 - Save completed fasts locally on your device.
-- Review fasting history, charts, and statistics.
+- Review fasting history and statistics.
 - Create reusable fasting goals and custom fast durations.
 - Add optional notes to fasts.
 - Use local fast-end and daily reminder notifications.

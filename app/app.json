@@ -80,7 +80,8 @@
             }
           ]
         }
-      ]
+      ],
+      "expo-mail-composer"
     ],
     "experiments": {
       "typedRoutes": true,

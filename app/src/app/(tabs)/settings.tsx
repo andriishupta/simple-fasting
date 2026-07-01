@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   AppState,
   Alert,
+  type AlertButton,
   Platform,
   Pressable,
   StyleSheet,
@@ -96,7 +97,11 @@ import {
 } from '@/storage/fasting-storage';
 import { cancelScheduledNotification } from '@/storage/notification-storage';
 import { resetAppStorage } from '@/storage/storage-migrations';
-import { shareDiagnosticReport } from '@/storage/diagnostic-storage';
+import {
+  emailDiagnosticReport,
+  isDiagnosticEmailAvailable,
+  shareDiagnosticReport,
+} from '@/storage/diagnostic-storage';
 import { parseImportSessions } from '@/storage/data-import';
 
 const themeOptions = [
@@ -152,6 +157,7 @@ export default function SettingsScreen() {
   const canRateApp = getStoreReviewUrl() !== null;
   const [notificationPermissionState, setNotificationPermissionState] =
     useState<LocalNotificationPermissionState>(LocalNotificationPermissionState.Undetermined);
+  const [canEmailDiagnostics, setCanEmailDiagnostics] = useState(false);
   const [installedAt] = useState(
     () => appStorage.get(StorageKey.Metadata)?.initializedAt ?? new Date().toISOString(),
   );
@@ -172,6 +178,22 @@ export default function SettingsScreen() {
     return () => {
       clearTimeout(initialPromptTimer);
       subscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    isDiagnosticEmailAvailable()
+      .then((available) => {
+        if (active) setCanEmailDiagnostics(available);
+      })
+      .catch(() => {
+        if (active) setCanEmailDiagnostics(false);
+      });
+
+    return () => {
+      active = false;
     };
   }, []);
   const runNotificationUpdate = async (update: () => Promise<void>): Promise<void> => {
@@ -255,15 +277,30 @@ export default function SettingsScreen() {
       Alert.alert('Share failed', 'The local diagnostic report could not be created.');
     }
   };
+  const emailDiagnostics = async (): Promise<void> => {
+    try {
+      await emailDiagnosticReport();
+    } catch {
+      Alert.alert('Email failed', 'The local diagnostic email could not be created.');
+    }
+  };
   const reportBug = (): void => {
+    const actionButtons: AlertButton[] = [
+      { text: 'Email', onPress: () => void openExternalAction(openBugReportEmail) },
+      ...(canEmailDiagnostics
+        ? [{ text: 'Email with diagnostics', onPress: () => void emailDiagnostics() }]
+        : []),
+      { text: 'Get diagnostics file', onPress: () => void exportDiagnostics() },
+    ];
+    const buttons =
+      Platform.OS === 'android' && actionButtons.length >= 3
+        ? actionButtons
+        : [{ text: 'Cancel', style: 'cancel' as const }, ...actionButtons];
+
     Alert.alert(
       'Report a bug',
-      'You can email bugs@simplefasting.app directly, or share a local diagnostic file with the latest app errors through Mail. Diagnostics never include fasting history or notes.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Email', onPress: () => void openExternalAction(openBugReportEmail) },
-        { text: 'Share diagnostics', onPress: () => void exportDiagnostics() },
-      ],
+      'You can email bugs@simplefasting.app directly, attach local diagnostics to an email, or get the diagnostic file. Diagnostics never include fasting history or notes.',
+      buttons,
     );
   };
   const importData = async (): Promise<void> => {
@@ -487,6 +524,19 @@ export default function SettingsScreen() {
             onOpenLocal={() => router.push('/faq' as Href)}
           />
           <SettingsActionRow
+            icon={Sparkles}
+            title="What's New"
+            description="Version history and release notes."
+            onPress={() => router.push('/whats-new' as Href)}
+          />
+          {canRateApp ? (
+            <SettingsActionRow
+              icon={Star}
+              title="Rate the app"
+              onPress={() => openExternalAction(openRateApp)}
+            />
+          ) : null}
+          <SettingsActionRow
             icon={Bug}
             title="Report bug"
             description="bugs@simplefasting.app"
@@ -503,19 +553,6 @@ export default function SettingsScreen() {
             title="Build"
             description={buildDescription}
           />
-          <SettingsActionRow
-            icon={Sparkles}
-            title="What's New"
-            description="Version history and release notes."
-            onPress={() => router.push('/whats-new' as Href)}
-          />
-          {canRateApp ? (
-            <SettingsActionRow
-              icon={Star}
-              title="Rate the app"
-              onPress={() => openExternalAction(openRateApp)}
-            />
-          ) : null}
         </SettingsSection>
 
         <SettingsSection index={5} title="Legal">

@@ -1,5 +1,5 @@
 appId: app.simplefasting
-name: Review statistics charts and history
+name: Review statistics and history
 ---
 - launchApp:
     clearState: true
@@ -11,9 +11,6 @@ name: Review statistics charts and history
 - tapOn: Data
 - assertVisible: Stats
 - assertVisible: Total hours
-- tapOn: Charts
-- assertVisible: Recent fast duration
-- assertVisible: Monthly fasting hours
 - tapOn: History
 - assertVisible: 1 completed fast
 - assertVisible: Started

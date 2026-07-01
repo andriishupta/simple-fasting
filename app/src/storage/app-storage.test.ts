@@ -39,6 +39,7 @@ describe('app storage', () => {
     expect(createEmptyActiveFastState(timestamp).session).toBeNull();
     expect(createEmptyHistoryState(timestamp).sessions).toEqual([]);
     expect(createEmptyDiagnosticsState(timestamp).events).toEqual([]);
+    expect(createEmptyDiagnosticsState(timestamp).lastRepeatedFailurePromptEventId).toBeNull();
   });
 
   test('round-trips typed values and supplies defaults', () => {

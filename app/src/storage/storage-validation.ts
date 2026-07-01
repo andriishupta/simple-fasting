@@ -400,6 +400,9 @@ export const repairDiagnostics = (
     value: {
       schemaVersion: StorageSchemaVersion.V1,
       events,
+      lastRepeatedFailurePromptEventId: isNullableString(value.lastRepeatedFailurePromptEventId)
+        ? value.lastRepeatedFailurePromptEventId
+        : null,
       updatedAt: sanitizeTimestamp(value.updatedAt, timestamp),
     },
     repaired: true,

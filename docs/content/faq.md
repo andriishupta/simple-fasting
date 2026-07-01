@@ -26,7 +26,7 @@ Yes. Timing, history, statistics, reminders, supported widgets, optional iOS Liv
 
 ## Where is my data stored?
 
-Your active fast, settings, goals, notes, and history are stored locally on your device. Statistics and charts are derived locally from that history.
+Your active fast, settings, goals, notes, and history are stored locally on your device. Statistics are derived locally from that history.
 
 Your operating system may include app data in a device backup depending on your device and backup settings. Simple Fasting does not control or receive those backups.
 
@@ -54,7 +54,7 @@ The app does not include a third-party crash-reporting SDK. Apple App Store Conn
 
 Separately, after certain storage, reminder-restoration, or rendering errors, the app may keep up to 50 recent diagnostic events locally. These events contain limited error and app-build context and are designed not to contain fasting history, goals, notes, settings, advertising identifiers, or device identifiers.
 
-In Settings, Report bug offers an optional local diagnostic JSON file through the operating-system share sheet. That file is not shared unless you choose it and a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the local diagnostic log.
+In Settings, Report bug offers an optional local diagnostic JSON file. You can email it directly when a native mail composer is available, or get the file through the operating-system share sheet. That file is not shared unless you choose it and a destination. Review it before sharing; if you email it, your email address, message, and attachment are handled as described above. Clearing app data also clears the local diagnostic log.
 
 ## Can I export my data?
 

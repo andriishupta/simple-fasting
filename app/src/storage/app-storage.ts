@@ -65,6 +65,7 @@ export enum DiagnosticEventKind {
   ReminderReconciliation = 'reminder_reconciliation',
   Render = 'render',
   FatalJs = 'fatal_js',
+  UnhandledJs = 'unhandled_js',
 }
 
 export type Timestamp = string;
@@ -149,6 +150,7 @@ export type DiagnosticEvent = {
 export type DiagnosticsState = {
   schemaVersion: StorageSchemaVersion.V1;
   events: readonly DiagnosticEvent[];
+  lastRepeatedFailurePromptEventId: string | null;
   updatedAt: Timestamp;
 };
 
@@ -281,6 +283,7 @@ export const createEmptyHistoryState = (updatedAt: Timestamp): HistoryState => (
 export const createEmptyDiagnosticsState = (updatedAt: Timestamp): DiagnosticsState => ({
   schemaVersion: StorageSchemaVersion.V1,
   events: [],
+  lastRepeatedFailurePromptEventId: null,
   updatedAt,
 });
 
