@@ -66,7 +66,8 @@
               "description": "See your active fast or open the app to start one.",
               "ios": {
                 "supportedFamilies": [
-                  "systemSmall"
+                  "systemSmall",
+                  "systemMedium"
                 ]
               }
             }
@@ -75,24 +76,6 @@
       ],
       "./plugins/with-widget-version",
       "./plugins/with-ios-react-native-source-build",
-      [
-        "react-native-android-widget",
-        {
-          "widgets": [
-            {
-              "name": "FastingWidget",
-              "label": "Simple Fasting",
-              "description": "See your active fast or open the app to start one.",
-              "minWidth": "110dp",
-              "minHeight": "110dp",
-              "targetCellWidth": 2,
-              "targetCellHeight": 2,
-              "resizeMode": "none",
-              "updatePeriodMillis": 1800000
-            }
-          ]
-        }
-      ],
       "expo-mail-composer",
       [
         "expo-localization",

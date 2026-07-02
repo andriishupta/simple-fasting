@@ -9,9 +9,6 @@ const padDatePart = (value: number): string => String(value).padStart(2, '0');
 export const getLocalDayKey = (date: Date): string =>
   `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`;
 
-export const getLocalMonthKey = (date: Date): string =>
-  `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}`;
-
 export const getPreviousLocalDayKey = (dayKey: string): string => {
   const [year, month, day] = dayKey.split('-').map(Number);
   const date = new Date(year, month - 1, day);
@@ -19,35 +16,6 @@ export const getPreviousLocalDayKey = (dayKey: string): string => {
   date.setDate(date.getDate() - 1);
   return getLocalDayKey(date);
 };
-
-export const getRecentLocalDayKeys = (
-  days: number,
-  referenceDate = new Date(),
-): readonly string[] => {
-  const today = new Date(referenceDate);
-  today.setHours(0, 0, 0, 0);
-
-  return Array.from({ length: days }, (_, index) => {
-    const date = new Date(today);
-
-    date.setDate(date.getDate() - (days - index - 1));
-    return getLocalDayKey(date);
-  });
-};
-
-export const getRecentLocalMonthKeys = (
-  months: number,
-  referenceDate = new Date(),
-): readonly string[] =>
-  Array.from({ length: months }, (_, index) => {
-    const date = new Date(
-      referenceDate.getFullYear(),
-      referenceDate.getMonth() - (months - index - 1),
-      1,
-    );
-
-    return getLocalMonthKey(date);
-  });
 
 const getCompletedDurationHours = (session: StatisticalFastSession): number => {
   if (session.endedAt === null) return 0;

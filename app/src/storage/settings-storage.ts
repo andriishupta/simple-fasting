@@ -557,11 +557,21 @@ export const syncNotificationPermissionState = async (): Promise<LocalNotificati
 
   dailyReminderNotificationRevision += 1;
   const settings = getSettings();
+  const activeFast = appStorage.get(StorageKey.ActiveFast);
 
   await Promise.all([
     cancelScheduledNotification(settings.notifications.dailyReminderNotificationId),
-    cancelScheduledNotification(appStorage.get(StorageKey.ActiveFast)?.fastEndNotificationId ?? null),
+    cancelScheduledNotification(activeFast?.fastEndNotificationId ?? null),
   ]);
+
+  if (activeFast !== undefined) {
+    appStorage.insert(StorageKey.ActiveFast, {
+      ...activeFast,
+      fastEndNotificationId: null,
+      fastEndReminderEnabled: false,
+      updatedAt: now(),
+    });
+  }
 
   updateNotificationSettings((notifications) => ({
     ...notifications,

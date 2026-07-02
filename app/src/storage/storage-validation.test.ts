@@ -27,7 +27,7 @@ describe('storage validation', () => {
     expect(repairDiagnostics(undefined, timestamp)).toEqual({ value: undefined, repaired: false, reason: null });
   });
 
-  test('repairs settings enums, legacy charts name, notifications, and goals', () => {
+  test('repairs settings enums, notifications, and goals', () => {
     const result = repairSettings(
       {
         themePreference: 'invalid',
@@ -58,7 +58,7 @@ describe('storage validation', () => {
       schemaVersion: StorageSchemaVersion.V1,
       themePreference: ThemePreference.System,
       accentColorName: AccentColorName.Green,
-      dataViewPreference: DataViewPreference.Charts,
+      dataViewPreference: DataViewPreference.Stats,
       goalDurationFormat: GoalDurationFormat.Hours,
       liveActivitiesEnabled: true,
       legalConsentAccepted: true,

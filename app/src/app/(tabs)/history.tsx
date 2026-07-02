@@ -38,8 +38,6 @@ import {
 import { getFastingStats } from '@/utils/fasting-analytics';
 import { formatGoalDuration } from '@/utils/fast-goals';
 
-type VisibleDataView = DataViewPreference.Stats | DataViewPreference.History;
-
 const formatPercent = (value: number): string => `${Math.round(value * 100)}%`;
 
 const formatLocaleDateTime = (timestamp: string): string =>
@@ -53,15 +51,10 @@ const visibleDataViews = [
   { labelKey: 'data.history', value: DataViewPreference.History },
 ] as const;
 
-const getVisibleDataView = (view: DataViewPreference): VisibleDataView =>
-  visibleDataViews.find((option) => option.value === view)?.value ?? visibleDataViews[0].value;
-
 export default function DataScreen() {
   const dataViewPreference = useSettingsSelector((settings) => settings.dataViewPreference);
-  const [selectedView, setSelectedView] = useState<VisibleDataView>(() =>
-    getVisibleDataView(dataViewPreference),
-  );
-  const selectDataView = (view: VisibleDataView): void => {
+  const [selectedView, setSelectedView] = useState<DataViewPreference>(dataViewPreference);
+  const selectDataView = (view: DataViewPreference): void => {
     setSelectedView(view);
 
     if (view !== dataViewPreference) {
@@ -86,8 +79,8 @@ function DataPanel({
   selectedView,
   onSelectView,
 }: {
-  selectedView: VisibleDataView;
-  onSelectView: (view: VisibleDataView) => void;
+  selectedView: DataViewPreference;
+  onSelectView: (view: DataViewPreference) => void;
 }) {
   const historyState = useHistoryState();
   const hasData = historyState.sessions.length > 0;
@@ -122,8 +115,8 @@ function DataViewPicker({
   selectedView,
   onSelect,
 }: {
-  selectedView: VisibleDataView;
-  onSelect: (view: VisibleDataView) => void;
+  selectedView: DataViewPreference;
+  onSelect: (view: DataViewPreference) => void;
 }) {
   const theme = useTheme();
   const colorScheme = useAppThemeColorScheme();

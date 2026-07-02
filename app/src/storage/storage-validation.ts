@@ -172,12 +172,9 @@ export const repairSettings = (
     goalDurationFormat: isEnumValue(goalDurationFormats, value.goalDurationFormat)
       ? value.goalDurationFormat
       : defaults.goalDurationFormat,
-    dataViewPreference:
-      value.dataViewPreference === 'graphs'
-        ? DataViewPreference.Charts
-        : isEnumValue(dataViewPreferences, value.dataViewPreference)
-          ? value.dataViewPreference
-          : defaults.dataViewPreference,
+    dataViewPreference: isEnumValue(dataViewPreferences, value.dataViewPreference)
+      ? value.dataViewPreference
+      : defaults.dataViewPreference,
     liveActivitiesEnabled: isBoolean(value.liveActivitiesEnabled)
       ? value.liveActivitiesEnabled
       : defaults.liveActivitiesEnabled,

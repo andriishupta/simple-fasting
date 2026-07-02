@@ -323,6 +323,17 @@ describe('settings storage integration', () => {
   });
 
   test('syncs denied OS notification permission without prompting', async () => {
+    appStorage.insert(StorageKey.ActiveFast, {
+      ...createEmptyActiveFastState(timestamp),
+      session: createSession({
+        id: 'active',
+        startedAt: timestamp,
+        endedAt: null,
+        status: FastStatus.Active,
+      }),
+      fastEndNotificationId: 'fast-end-1',
+      fastEndReminderEnabled: true,
+    });
     updateNotificationSettings((notifications) => ({
       ...notifications,
       fastEndReminderEnabled: true,
@@ -337,10 +348,15 @@ describe('settings storage integration', () => {
 
     expect(mockRequestLocalNotificationPermission).not.toHaveBeenCalled();
     expect(mockCancelScheduledNotification).toHaveBeenCalledWith('daily-1');
+    expect(mockCancelScheduledNotification).toHaveBeenCalledWith('fast-end-1');
     expect(getSettings().notifications).toMatchObject({
       fastEndReminderEnabled: false,
       dailyReminderEnabled: false,
       dailyReminderNotificationId: null,
+    });
+    expect(appStorage.get(StorageKey.ActiveFast)).toMatchObject({
+      fastEndNotificationId: null,
+      fastEndReminderEnabled: false,
     });
   });
 

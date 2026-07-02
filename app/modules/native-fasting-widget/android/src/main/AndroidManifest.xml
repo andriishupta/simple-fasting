@@ -1,0 +1,18 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <receiver android:name="app.simplefasting.widget.NativeFastingWidgetProvider" android:exported="false" android:label="Simple Fasting">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+        <action android:name="app.simplefasting.widget.GOAL_REACHED"/>
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/native_fasting_widget_info"/>
+    </receiver>
+    <receiver android:name="app.simplefasting.widget.NativeFastingWideWidgetProvider" android:exported="false" android:label="Simple Fasting">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+        <action android:name="app.simplefasting.widget.GOAL_REACHED"/>
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/native_fasting_widget_wide_info"/>
+    </receiver>
+  </application>
+</manifest>

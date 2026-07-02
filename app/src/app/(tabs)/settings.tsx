@@ -18,6 +18,7 @@ import {
   Bell,
   Bug,
   ChevronRight,
+  ChevronUp,
   CircleHelp,
   ExternalLink,
   FileInput,
@@ -165,6 +166,7 @@ export default function SettingsScreen() {
   const [liveActivityUpdating, setLiveActivityUpdating] = useState(false);
   const [fastEndReminderUpdating, setFastEndReminderUpdating] = useState(false);
   const [dailyReminderUpdating, setDailyReminderUpdating] = useState(false);
+  const [dailyReminderTimeExpanded, setDailyReminderTimeExpanded] = useState(false);
   const [installedAt] = useState(
     () => appStorage.get(StorageKey.Metadata)?.initializedAt ?? new Date().toISOString(),
   );
@@ -242,6 +244,7 @@ export default function SettingsScreen() {
   };
   const setDailyReminderEnabled = async (dailyReminderEnabled: boolean): Promise<void> => {
     setDailyReminderUpdating(true);
+    setDailyReminderTimeExpanded(false);
     await runNotificationUpdate(async () => {
       if (dailyReminderEnabled && !(await requestLocalNotificationPermission())) {
         Alert.alert(
@@ -476,15 +479,15 @@ export default function SettingsScreen() {
                 onValueChange={setFastEndReminderEnabled}
                 disabled={fastEndReminderUpdating}
               />
-              <SettingsSwitch
-                icon={Bell}
-                title={t('settings.dailyReminder')}
-                description={t('settings.dailyReminderDescription')}
-                value={settings.notifications.dailyReminderEnabled}
+              <DailyReminderRow
+                value={settings.notifications.dailyReminderTime ?? '20:00'}
+                enabled={settings.notifications.dailyReminderEnabled}
+                expanded={dailyReminderTimeExpanded}
+                updating={dailyReminderUpdating}
                 onValueChange={setDailyReminderEnabled}
-                disabled={dailyReminderUpdating}
+                onToggleExpanded={() => setDailyReminderTimeExpanded((expanded) => !expanded)}
               />
-              {settings.notifications.dailyReminderEnabled && (
+              {settings.notifications.dailyReminderEnabled && dailyReminderTimeExpanded && (
                 <Animated.View
                   entering={FadeInDown.duration(180)}
                   exiting={FadeOutUp.duration(140)}
@@ -611,6 +614,61 @@ export default function SettingsScreen() {
         </SettingsSection>
 
     </TabScreenShell>
+  );
+}
+
+function DailyReminderRow({
+  value,
+  enabled,
+  expanded,
+  updating,
+  onValueChange,
+  onToggleExpanded,
+}: {
+  value: string;
+  enabled: boolean;
+  expanded: boolean;
+  updating: boolean;
+  onValueChange: (value: boolean) => void;
+  onToggleExpanded: () => void;
+}) {
+  const theme = useTheme();
+  const Chevron = expanded ? ChevronUp : ChevronRight;
+
+  return (
+    <SettingsRow
+      icon={Bell}
+      title={t('settings.dailyReminder')}
+      description={enabled
+        ? t('settings.dailyReminderTimeDescription', { time: value })
+        : t('settings.dailyReminderDescription')}
+      secondaryDescription={enabled ? t('settings.dailyReminderActiveFastNote') : undefined}
+      trailing={
+        <View style={styles.dailyReminderTrailing}>
+          <View style={styles.chevronSlot}>
+            {enabled ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={expanded
+                  ? t('settings.collapseDailyReminderTime')
+                  : t('settings.expandDailyReminderTime')}
+                hitSlop={8}
+                onPress={onToggleExpanded}
+                style={({ pressed }) => [styles.rowAction, pressed && styles.pressed]}>
+                <Chevron size={18} color={theme.textSecondary} strokeWidth={2} />
+              </Pressable>
+            ) : null}
+          </View>
+          <Switch
+            value={enabled}
+            onValueChange={onValueChange}
+            disabled={updating}
+            trackColor={{ true: theme.accent }}
+            thumbColor={Platform.OS === 'android' && enabled ? theme.accentForeground : undefined}
+          />
+        </View>
+      }
+    />
   );
 }
 
@@ -1034,12 +1092,14 @@ function SettingsRow({
   icon,
   title,
   description,
+  secondaryDescription,
   trailing,
   titleColor,
 }: {
   icon?: LucideIcon;
   title: string;
   description?: string;
+  secondaryDescription?: string;
   trailing?: React.ReactNode;
   titleColor?: string;
 }) {
@@ -1060,6 +1120,11 @@ function SettingsRow({
         {description !== undefined ? (
           <ThemedText type="small" themeColor="textSecondary">
             {description}
+          </ThemedText>
+        ) : null}
+        {secondaryDescription !== undefined ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {secondaryDescription}
           </ThemedText>
         ) : null}
       </View>
@@ -1111,6 +1176,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: Radius.control,
     borderCurve: 'continuous',
+  },
+  dailyReminderTrailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  chevronSlot: {
+    width: 36,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   themePicker: {
     flexDirection: 'row',

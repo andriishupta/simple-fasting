@@ -1,10 +1,8 @@
 import { createHistory, createSession } from '../../test/fixtures';
 import {
-  getChartData,
   getCompletedDayKeys,
   getCompletedSessions,
   getCurrentStreakDays,
-  getDurationDistribution,
   getFastingStats,
   getLongestStreakDays,
 } from '@/utils/fasting-analytics';
@@ -34,8 +32,7 @@ describe('fasting analytics', () => {
     expect(getLongestStreakDays([])).toBe(0);
   });
 
-  test('calculates totals, averages, goals, and distribution buckets', () => {
-    const completed = getCompletedSessions(createHistory(sessions));
+  test('calculates totals, averages, and goals', () => {
     const stats = getFastingStats(createHistory(sessions), referenceDate);
 
     expect(stats).toEqual({
@@ -47,20 +44,6 @@ describe('fasting analytics', () => {
       totalHours: 56,
       totalFasts: 4,
     });
-    expect(getDurationDistribution(completed).map(({ value }) => value)).toEqual([1, 1, 1, 1]);
-  });
-
-  test('builds bounded chart series using the supplied clock and locale', () => {
-    const charts = getChartData(createHistory(sessions), referenceDate, 'en-US');
-
-    expect(charts.weeklyHeatmap).toHaveLength(7);
-    expect(charts.monthlyHeatmap).toHaveLength(30);
-    expect(charts.yearlyHeatmap).toHaveLength(365);
-    expect(charts.monthlyHours).toHaveLength(6);
-    expect(charts.recentDurations).toHaveLength(4);
-    expect(charts.weeklyHeatmap.at(-1)).toEqual({ id: '2026-06-21', value: 20 });
-    expect(charts.monthlyHours.at(-1)).toEqual({ label: '06', value: 56 });
-    expect(charts.completionRate).toBeCloseTo((1 + 0.75 + 1) / 3);
   });
 
   test('returns safe empty analytics', () => {

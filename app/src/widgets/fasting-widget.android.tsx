@@ -1,158 +1,54 @@
-import {
-  FlexWidget,
-  registerWidgetTaskHandler,
-  requestWidgetUpdate,
-  TextWidget,
-  type WidgetRepresentation,
-} from 'react-native-android-widget';
+"use no memo";
+
+import NativeFastingWidget, {
+  type NativeFastingWidgetPayload,
+} from 'native-fasting-widget';
 
 import {
   AccentColorName,
   appStorage,
-  createEmptyActiveFastState,
   StorageKey,
   type ActiveFastState,
 } from '@/storage/app-storage';
 import { getAccentPalette } from '@/storage/settings-storage';
-import {
-  createFastingWidgetModel,
-  type FastingWidgetModel,
-} from '@/widgets/fasting-widget-model';
+import { createFastingWidgetModel } from '@/widgets/fasting-widget-model';
 
-const widgetName = 'FastingWidget';
-const appUrl = 'simple-fasting://';
-
-type WidgetTheme = {
-  accent: `#${string}`;
-  background: `#${string}`;
-  primary: `#${string}`;
-  secondary: `#${string}`;
-};
-
-const lightTheme: WidgetTheme = {
-  accent: '#F59E0B',
+const lightTheme = {
   background: '#F7F8FC',
   primary: '#17191F',
   secondary: '#626979',
-};
+} as const;
 
-const darkTheme: WidgetTheme = {
-  accent: '#D97706',
+const darkTheme = {
   background: '#15171C',
   primary: '#F5F7FF',
   secondary: '#A9AFBD',
-};
+} as const;
 
-function AndroidFastingWidget({
-  model,
-  theme,
-}: {
-  model: FastingWidgetModel;
-  theme: WidgetTheme;
-}) {
-  const isActive = model.status === 'active';
-
-  return (
-    <FlexWidget
-      clickAction="OPEN_URI"
-      clickActionData={{ uri: appUrl }}
-      accessibilityLabel={model.accessibilityLabel}
-      style={{
-        width: 'match_parent',
-        height: 'match_parent',
-        padding: 16,
-        borderRadius: 24,
-        backgroundColor: theme.background,
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-      }}>
-      <TextWidget
-        text="SIMPLE FASTING"
-        style={{ color: theme.accent, fontSize: 12, fontWeight: '700', letterSpacing: 0.08 }}
-      />
-      {isActive ? (
-        <FlexWidget style={{ flexDirection: 'column', alignItems: 'flex-start', width: 'match_parent' }}>
-          <TextWidget
-            text={model.headline}
-            maxLines={1}
-            style={{ color: theme.primary, fontSize: 14, fontWeight: '700' }}
-          />
-          <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', width: 'match_parent' }}>
-            <TextWidget
-              text={`${model.timerView === 'remaining' ? '↓' : '↑'} ${model.subtitle.toUpperCase()}`}
-              maxLines={1}
-              style={{ color: theme.accent, fontSize: 10, fontWeight: '700' }}
-            />
-            <FlexWidget style={{ flex: 1 }} />
-            {model.hasReachedGoal ? (
-              <TextWidget
-                text="✓"
-                maxLines={1}
-                style={{ color: theme.accent, fontSize: 13, fontWeight: '700' }}
-              />
-            ) : null}
-          </FlexWidget>
-          <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', width: 'match_parent' }}>
-            <TextWidget
-              text={model.displayTime}
-              maxLines={1}
-              style={{
-                color: theme.accent,
-                fontSize: 24,
-                fontWeight: '700',
-                adjustsFontSizeToFit: true,
-              }}
-            />
-          </FlexWidget>
-          {model.hasGoal ? (
-            <FlexWidget
-              style={{
-                width: 'match_parent',
-                height: 5,
-                borderRadius: 3,
-                backgroundColor: theme.secondary,
-              }}>
-              <FlexWidget
-                style={{
-                  flex: Math.max(0.001, model.progress),
-                  height: 5,
-                  borderRadius: 3,
-                  backgroundColor: theme.accent,
-                }}
-              />
-              <FlexWidget style={{ flex: Math.max(0.001, 1 - model.progress), height: 5 }} />
-            </FlexWidget>
-          ) : null}
-        </FlexWidget>
-      ) : (
-        <FlexWidget style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-          <TextWidget
-            text={model.headline}
-            maxLines={2}
-            style={{ color: theme.primary, fontSize: 21, fontWeight: '700' }}
-          />
-          <TextWidget
-            text={model.subtitle}
-            style={{ color: theme.secondary, fontSize: 12, fontWeight: '500' }}
-          />
-        </FlexWidget>
-      )}
-    </FlexWidget>
-  );
-}
-
-const renderFastingWidget = (state: ActiveFastState): WidgetRepresentation => {
+const getWidgetColors = () => {
   const settings = appStorage.get(StorageKey.Settings);
   const accentColorName = settings?.accentColorName ?? AccentColorName.Amber;
-  const lightAccentColor = getAccentPalette({
-    accentColorName,
-    colorScheme: 'light',
-  }).accent as `#${string}`;
-  const darkAccentColor = getAccentPalette({
-    accentColorName,
-    colorScheme: 'dark',
-  }).accent as `#${string}`;
+
+  return {
+    lightAccent: getAccentPalette({
+      accentColorName,
+      colorScheme: 'light',
+    }).accent as `#${string}`,
+    darkAccent: getAccentPalette({
+      accentColorName,
+      colorScheme: 'dark',
+    }).accent as `#${string}`,
+    lightBackground: lightTheme.background,
+    darkBackground: darkTheme.background,
+    lightPrimary: lightTheme.primary,
+    darkPrimary: darkTheme.primary,
+    lightSecondary: lightTheme.secondary,
+    darkSecondary: darkTheme.secondary,
+  };
+};
+
+const createNativeWidgetPayload = (state: ActiveFastState): NativeFastingWidgetPayload => {
+  const settings = appStorage.get(StorageKey.Settings);
   const goalName = settings?.goals.find(
     (goal) => goal.targetDurationHours === state.session?.goalDurationHours,
   )?.name;
@@ -162,31 +58,41 @@ const renderFastingWidget = (state: ActiveFastState): WidgetRepresentation => {
     goalName,
     settings?.goalDurationFormat,
   );
+  const colors = getWidgetColors();
+
+  if (model.status === 'inactive') {
+    return {
+      status: 'inactive',
+      headline: model.headline,
+      subtitle: model.subtitle,
+      startedAt: 0,
+      goalEndsAt: 0,
+      hasGoal: false,
+      hasReachedGoal: false,
+      progress: 0,
+      timerView: 'elapsed',
+      ...colors,
+    };
+  }
 
   return {
-    light: <AndroidFastingWidget model={model} theme={{ ...lightTheme, accent: lightAccentColor }} />,
-    dark: <AndroidFastingWidget model={model} theme={{ ...darkTheme, accent: darkAccentColor }} />,
+    status: 'active',
+    headline: model.headline,
+    subtitle: model.subtitle,
+    startedAt: model.startedAt,
+    goalEndsAt: model.goalEndsAt,
+    hasGoal: model.hasGoal,
+    hasReachedGoal: model.hasReachedGoal,
+    progress: model.progress,
+    timerView: model.timerView,
+    ...colors,
   };
 };
 
-registerWidgetTaskHandler(async ({ widgetInfo, widgetAction, renderWidget }) => {
-  if (widgetInfo.widgetName !== widgetName || widgetAction === 'WIDGET_DELETED') {
-    return;
-  }
-
-  const activeFastState = appStorage.getOrDefault(
-    StorageKey.ActiveFast,
-    createEmptyActiveFastState(new Date().toISOString()),
-  );
-
-  renderWidget(renderFastingWidget(activeFastState));
-});
-
 export const updateFastingWidget = (state: ActiveFastState): void => {
-  void requestWidgetUpdate({
-    widgetName,
-    renderWidget: () => renderFastingWidget(state),
-  }).catch(() => {
+  try {
+    NativeFastingWidget.update(createNativeWidgetPayload(state));
+  } catch {
     // Widget availability must never block local fasting state updates.
-  });
+  }
 };

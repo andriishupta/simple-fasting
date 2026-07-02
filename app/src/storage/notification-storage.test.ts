@@ -83,6 +83,15 @@ describe('notification storage', () => {
     expect(await hasLocalNotificationPermission()).toBe(false);
   });
 
+  test('fails closed when the Android notification channel cannot be created', async () => {
+    setPlatform('android');
+    jest.mocked(Notifications.setNotificationChannelAsync).mockRejectedValue(new Error('missing channel') as never);
+
+    expect(await requestLocalNotificationPermission()).toBe(false);
+    expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+    expect(await scheduleDailyReminderNotification('20:30')).toBeNull();
+  });
+
   test('fails closed when permission request APIs reject', async () => {
     jest.mocked(Notifications.getPermissionsAsync).mockRejectedValueOnce(new Error('broken') as never);
     jest.mocked(Notifications.requestPermissionsAsync).mockRejectedValueOnce(new Error('denied') as never);
@@ -179,6 +188,24 @@ describe('notification storage', () => {
         trigger: expect.objectContaining({ type: 'date', channelId: 'fasting-reminders' }),
       }),
     );
+  });
+
+  test('creates the Android channel before scheduling fast-end reminders', async () => {
+    setPlatform('android');
+    const session = createSession({
+      id: 'active',
+      status: FastStatus.Active,
+      startedAt: '2026-06-21T09:00:00.000Z',
+      endedAt: null,
+      goalDurationHours: 16,
+    });
+
+    expect(await scheduleFastEndNotification({ session, enabled: true })).toBe('notification-1');
+    expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledWith(
+      'fasting-reminders',
+      expect.objectContaining({ name: 'Fasting reminders' }),
+    );
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenCalled();
   });
 
   test('does not schedule disabled, open-ended, past, web, or unauthorized fast reminders', async () => {

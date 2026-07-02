@@ -63,7 +63,7 @@ describe('storage initialization and migration', () => {
     );
     createMMKV().set(
       StorageKey.Settings,
-      JSON.stringify({ dataViewPreference: 'graphs', goals: [], notifications: {} }),
+      JSON.stringify({ goals: [], notifications: {} }),
     );
 
     initializeAppStorage();
@@ -71,7 +71,7 @@ describe('storage initialization and migration', () => {
     expect(appStorage.get(StorageKey.Metadata)?.initializedAt).toBe('2026-01-01T00:00:00.000Z');
     expect(appStorage.get(StorageKey.Settings)).toMatchObject({
       schemaVersion: StorageSchemaVersion.V1,
-      dataViewPreference: DataViewPreference.Charts,
+      dataViewPreference: DataViewPreference.Stats,
     });
     expect(appStorage.get(StorageKey.Settings)?.goals).toHaveLength(5);
   });

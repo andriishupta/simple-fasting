@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,14 +28,15 @@ export function TabScreenShell({
   const theme = useTheme();
   const [viewportHeight, setViewportHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
-  const topOverlayHeight = Math.max(insets.top + Spacing.five, 84);
+  const topOverlayHeight = 84;
+  const showsTopOverlay = Platform.OS === 'ios';
   const blurTint = colorScheme === 'dark' ? 'systemMaterialDark' : 'systemMaterialLight';
   const autoScrollEnabled = contentHeight > viewportHeight + 1;
   const canScroll = scrollEnabled === 'auto' ? autoScrollEnabled : scrollEnabled;
   const usesScrollView = scrollEnabled !== false;
   const containerInsets = {
-    paddingTop: insets.top + Spacing.three,
-    paddingBottom: insets.bottom + FloatingTabBarClearance,
+    paddingTop: Platform.OS === 'android' ? insets.top + Spacing.three : Spacing.three,
+    paddingBottom: Spacing.three,
   };
   const content = <View style={[styles.content, { maxWidth }, contentStyle]}>{children}</View>;
   const updateViewportHeight = (event: LayoutChangeEvent): void => {
@@ -51,7 +52,7 @@ export function TabScreenShell({
           bounces={canScroll}
           onLayout={updateViewportHeight}
           onContentSizeChange={(_width, height) => setContentHeight(height)}
-          contentInsetAdjustmentBehavior="never"
+          contentInsetAdjustmentBehavior="automatic"
           keyboardShouldPersistTaps={keyboardShouldPersistTaps}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.container, containerInsets]}>
@@ -62,31 +63,30 @@ export function TabScreenShell({
           {content}
         </View>
       )}
-      <MaskedView
-        pointerEvents="none"
-        style={[styles.topOverlay, { height: topOverlayHeight }]}
-        maskElement={<TopFadeMask />}>
-        <LinearGradient
-          colors={[
-            theme.backgroundElement,
-            `${theme.backgroundElement}8F`,
-            `${theme.backgroundElement}00`,
-          ]}
-          locations={[0, 0.6, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-        <BlurView
-          intensity={36}
-          tint={blurTint}
-          blurMethod="dimezisBlurViewSdk31Plus"
-          style={StyleSheet.absoluteFill}
-        />
-      </MaskedView>
+      {showsTopOverlay ? (
+        <MaskedView
+          pointerEvents="none"
+          style={[styles.topOverlay, { height: topOverlayHeight }]}
+          maskElement={<TopFadeMask />}>
+          <LinearGradient
+            colors={[
+              theme.backgroundElement,
+              `${theme.backgroundElement}8F`,
+              `${theme.backgroundElement}00`,
+            ]}
+            locations={[0, 0.6, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+          <BlurView
+            intensity={36}
+            tint={blurTint}
+            style={StyleSheet.absoluteFill}
+          />
+        </MaskedView>
+      ) : null}
     </View>
   );
 }
-
-const FloatingTabBarClearance = 112;
 
 function TopFadeMask() {
   return (

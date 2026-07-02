@@ -31,7 +31,6 @@ export enum AccentColorName {
 
 export enum DataViewPreference {
   Stats = 'stats',
-  Charts = 'charts',
   History = 'history',
 }
 

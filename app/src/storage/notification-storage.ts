@@ -13,6 +13,22 @@ export enum LocalNotificationPermissionState {
   Undetermined = 'undetermined',
 }
 
+const ensureAndroidNotificationChannel = async (): Promise<boolean> => {
+  if (Platform.OS !== 'android') {
+    return true;
+  }
+
+  try {
+    await Notifications.setNotificationChannelAsync(notificationChannelId, {
+      name: t('notifications.channelName'),
+      importance: Notifications.AndroidImportance.DEFAULT,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const configureLocalNotificationBehavior = async (): Promise<void> => {
   if (Platform.OS === 'web') {
     return;
@@ -26,6 +42,8 @@ export const configureLocalNotificationBehavior = async (): Promise<void> => {
       shouldSetBadge: false,
     }),
   });
+
+  await ensureAndroidNotificationChannel();
 };
 
 export const parseReminderTime = (time: string): { hour: number; minute: number } | null => {
@@ -53,11 +71,8 @@ export const requestLocalNotificationPermission = async (): Promise<boolean> => 
     return false;
   }
 
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync(notificationChannelId, {
-      name: t('notifications.channelName'),
-      importance: Notifications.AndroidImportance.DEFAULT,
-    }).catch(() => undefined);
+  if (!(await ensureAndroidNotificationChannel())) {
+    return false;
   }
 
   const existingPermissions = await Notifications.getPermissionsAsync().catch(() => null);
@@ -137,7 +152,7 @@ export const scheduleFastEndNotification = async ({
     return null;
   }
 
-  if (!(await hasLocalNotificationPermission())) {
+  if (!(await ensureAndroidNotificationChannel()) || !(await hasLocalNotificationPermission())) {
     return null;
   }
 
@@ -150,12 +165,12 @@ export const scheduleFastEndNotification = async ({
   }
 
   return Notifications.scheduleNotificationAsync({
-      content: {
-        title: t('notifications.goalReachedTitle'),
-        body: t('notifications.goalReachedBody', {
-          goal: goalDurationLabel ?? `${session.goalDurationHours} ${t('durations.hourOther')}`,
-        }),
-      },
+    content: {
+      title: t('notifications.goalReachedTitle'),
+      body: t('notifications.goalReachedBody', {
+        goal: goalDurationLabel ?? `${session.goalDurationHours} ${t('durations.hourOther')}`,
+      }),
+    },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: triggerDate,
@@ -174,6 +189,10 @@ export const scheduleDailyReminderNotification = async (
   const reminderTime = parseReminderTime(dailyReminderTime);
 
   if (reminderTime === null || !(await hasLocalNotificationPermission())) {
+    return null;
+  }
+
+  if (!(await ensureAndroidNotificationChannel())) {
     return null;
   }
 

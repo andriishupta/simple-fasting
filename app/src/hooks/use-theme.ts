@@ -6,7 +6,7 @@ import {
   useMemo,
   type ReactNode,
 } from 'react';
-import { Appearance, useColorScheme } from 'react-native';
+import { Appearance, Platform, useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { ThemePreference } from '@/storage/app-storage';
@@ -48,6 +48,10 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     [accentColorName, colorScheme],
   );
   useLayoutEffect(() => {
+    if (Platform.OS === 'web' || typeof Appearance.setColorScheme !== 'function') {
+      return;
+    }
+
     Appearance.setColorScheme(
       themePreference === ThemePreference.System ? 'unspecified' : colorScheme,
     );

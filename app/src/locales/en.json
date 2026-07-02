@@ -178,19 +178,6 @@
     "ended": "Ended",
     "goalProgressAccessibility": "%{percent}% of goal"
   },
-  "charts": {
-    "recentDuration": "Recent duration",
-    "recentDurationDescription": "Your last seven completed sessions",
-    "monthlyHours": "Monthly hours",
-    "monthlyHoursDescription": "Total hours over the last six months",
-    "goalCompletion": "Goal completion",
-    "goalCompletionDescription": "Average progress across planned sessions",
-    "thisWeek": "This week",
-    "last30Days": "Last 30 days",
-    "lastYear": "Last year",
-    "durationMix": "Duration mix",
-    "durationMixDescription": "Completed sessions grouped by length"
-  },
   "settings": {
     "title": "Settings",
     "sections": {
@@ -230,6 +217,10 @@
     "endReminderDescription": "Local notification when the goal is reached.",
     "dailyReminder": "Daily reminder",
     "dailyReminderDescription": "A local reminder to start your regular fast.",
+    "dailyReminderTimeDescription": "Set for %{time}.",
+    "dailyReminderActiveFastNote": "Won't run if fasting is active.",
+    "expandDailyReminderTime": "Show daily reminder time picker",
+    "collapseDailyReminderTime": "Hide daily reminder time picker",
     "enableNotifications": "Enable Notifications",
     "enableNotificationsDescription": "Open system notification settings for Simple Fasting.",
     "import": "Import JSON or CSV",

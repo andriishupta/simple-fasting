@@ -49,8 +49,41 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
   const accentColor = isDark
     ? props.accentColorDark || '#D97706'
     : props.accentColorLight || '#F59E0B';
+  const isMedium = environment.widgetFamily === 'systemMedium';
 
   if (props.status !== 'active') {
+    if (isMedium) {
+      return (
+        <HStack
+          alignment="center"
+          spacing={16}
+          modifiers={[
+            frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: 'center' }),
+            containerBackground(backgroundColor, 'widget'),
+            widgetURL(appUrl),
+          ]}>
+          <VStack alignment="leading" spacing={5} modifiers={[frame({ maxWidth: Infinity })]}>
+            <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(accentColor)]}>
+              SIMPLE FASTING
+            </Text>
+            <Text
+              modifiers={[
+                font({ size: 24, weight: 'bold', design: 'rounded' }),
+                foregroundStyle(primaryColor),
+              ]}>
+              Ready to fast?
+            </Text>
+            <Text modifiers={[font({ size: 13, weight: 'medium' }), foregroundStyle(secondaryColor)]}>
+              Open to start
+            </Text>
+          </VStack>
+          <Text modifiers={[font({ size: 28, weight: 'bold' }), foregroundStyle(accentColor)]}>
+            +
+          </Text>
+        </HStack>
+      );
+    }
+
     return (
       <VStack
         alignment="leading"
@@ -81,6 +114,72 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
   const startedAt = new Date(props.startedAt);
   const hasGoal = props.goalDurationHours > 0;
   const goalEndsAt = new Date(props.goalEndsAt);
+
+  if (isMedium) {
+    return (
+      <HStack
+        alignment="center"
+        spacing={18}
+        modifiers={[
+          frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: 'center' }),
+          containerBackground(backgroundColor, 'widget'),
+          widgetURL(appUrl),
+        ]}>
+        <VStack alignment="leading" spacing={6} modifiers={[frame({ maxWidth: Infinity })]}>
+          <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(accentColor)]}>
+            SIMPLE FASTING
+          </Text>
+          <HStack spacing={4}>
+            {props.goalName ? (
+              <>
+                <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(primaryColor)]}>
+                  {props.goalName}
+                </Text>
+                <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(secondaryColor)]}>
+                  ·
+                </Text>
+              </>
+            ) : null}
+            <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(accentColor)]}>
+              {props.goalDurationLabel}
+            </Text>
+          </HStack>
+          <HStack spacing={4}>
+            <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(secondaryColor)]}>
+              {props.timerView === 'remaining' && hasGoal ? 'REMAINING' : 'ELAPSED'}
+            </Text>
+            {props.hasReachedGoal ? (
+              <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accentColor)]}>
+                ✓
+              </Text>
+            ) : null}
+          </HStack>
+          {hasGoal ? (
+            <ProgressView
+              value={props.progress}
+              modifiers={[progressViewStyle('linear'), tint(accentColor)]}
+            />
+          ) : null}
+        </VStack>
+        <VStack alignment="trailing" spacing={4}>
+          <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(accentColor)]}>
+            {props.timerView === 'remaining' && hasGoal ? '↓' : '↑'}
+          </Text>
+          <Text
+            timerInterval={{
+              lower: props.timerView === 'remaining' && hasGoal ? new Date() : startedAt,
+              upper: props.timerView === 'remaining' && hasGoal ? goalEndsAt : distantFuture,
+            }}
+            countsDown={hasGoal && props.timerView === 'remaining'}
+            modifiers={[
+              font({ size: 32, weight: 'bold', design: 'rounded' }),
+              foregroundStyle(primaryColor),
+            ]}
+          />
+        </VStack>
+      </HStack>
+    );
+  }
 
   return (
     <VStack
