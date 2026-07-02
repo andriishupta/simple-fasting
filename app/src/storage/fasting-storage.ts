@@ -35,6 +35,7 @@ const readHistoryState = (): HistoryState =>
 
 let activeFastSnapshot = createEmptyActiveFastState(now());
 let historySnapshot = createEmptyHistoryState(now());
+let fastEndNotificationRevision = 0;
 
 const createSessionId = (): string =>
   `fast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -95,6 +96,48 @@ const saveHistoryState = (historyState: HistoryState): HistoryState => {
   return historyState;
 };
 
+const scheduleCurrentFastEndNotification = async ({
+  activeFastState,
+  revision,
+}: {
+  activeFastState: ActiveFastState;
+  revision: number;
+}): Promise<ActiveFastState> => {
+  if (activeFastState.session === null || !activeFastState.fastEndReminderEnabled) {
+    return activeFastState;
+  }
+
+  const notificationId = await scheduleFastEndNotification({
+    session: activeFastState.session,
+    enabled: true,
+    goalDurationLabel: formatGoalDuration(
+      activeFastState.session.goalDurationHours,
+      getSettings().goalDurationFormat,
+    ),
+  }).catch(() => null);
+
+  const currentState = getActiveFastState();
+  const shouldKeepNotification =
+    revision === fastEndNotificationRevision &&
+    currentState.session?.id === activeFastState.session.id &&
+    currentState.fastEndReminderEnabled;
+
+  if (notificationId === null) {
+    return shouldKeepNotification ? activeFastState : currentState;
+  }
+
+  if (!shouldKeepNotification) {
+    await cancelScheduledNotification(notificationId).catch(() => undefined);
+    return currentState;
+  }
+
+  return saveActiveFastState({
+    ...currentState,
+    fastEndNotificationId: notificationId,
+    updatedAt: now(),
+  });
+};
+
 export const refreshFastSnapshots = (): void => {
   activeFastSnapshot = readActiveFastState();
   historySnapshot = readHistoryState();
@@ -134,6 +177,7 @@ export const startFast = async ({
   const settings = getSettings();
   const fastEndReminderEnabled = settings.notifications.fastEndReminderEnabled;
   setLastUsedGoalDurationHours(goalDurationHours);
+  const notificationRevision = ++fastEndNotificationRevision;
   const activeFastState = saveActiveFastState({
     schemaVersion: activeFastSnapshot.schemaVersion,
     session,
@@ -143,16 +187,12 @@ export const startFast = async ({
     updatedAt: timestamp,
   });
 
-  const fastEndNotificationId = await scheduleFastEndNotification({
-    session,
-    enabled: fastEndReminderEnabled,
-    goalDurationLabel: formatGoalDuration(goalDurationHours, settings.goalDurationFormat),
-  }).catch(() => null);
+  const savedState = await scheduleCurrentFastEndNotification({
+    activeFastState,
+    revision: notificationRevision,
+  });
   await cancelDailyReminderNotification().catch(() => undefined);
 
-  const savedState = fastEndNotificationId === null
-    ? activeFastState
-    : saveActiveFastState({ ...activeFastState, fastEndNotificationId, updatedAt: now() });
   return savedState;
 };
 
@@ -164,6 +204,7 @@ export const endFast = async (): Promise<FastSession | null> => {
   }
 
   const timestamp = now();
+  fastEndNotificationRevision += 1;
   const completedSession: FastSession = {
     ...activeFastState.session,
     status: FastStatus.Completed,
@@ -200,6 +241,7 @@ export const endFast = async (): Promise<FastSession | null> => {
 
 export const cancelFast = async (): Promise<ActiveFastState> => {
   const activeFastState = getActiveFastState();
+  fastEndNotificationRevision += 1;
 
   const nextActiveFastState = saveActiveFastState({
     ...activeFastState,
@@ -373,30 +415,27 @@ export const updateActiveFastStart = async (
     return { status: 'overlap', session: overlappingSession };
   }
 
+  const notificationRevision = ++fastEndNotificationRevision;
   await cancelScheduledNotification(activeFastState.fastEndNotificationId);
-
-  const fastEndNotificationId = await scheduleFastEndNotification({
+  const updatedActiveFastState = saveActiveFastState({
+    ...activeFastState,
     session: updatedSession,
-    enabled: activeFastState.fastEndReminderEnabled,
-    goalDurationLabel: formatGoalDuration(
-      updatedSession.goalDurationHours,
-      getSettings().goalDurationFormat,
-    ),
+    fastEndNotificationId: null,
+    updatedAt: timestamp,
   });
 
   return {
     status: 'updated',
-    activeFastState: saveActiveFastState({
-      ...activeFastState,
-      session: updatedSession,
-      fastEndNotificationId,
-      updatedAt: timestamp,
+    activeFastState: await scheduleCurrentFastEndNotification({
+      activeFastState: updatedActiveFastState,
+      revision: notificationRevision,
     }),
   };
 };
 
 export const reconcileActiveFastEndNotification = async (): Promise<ActiveFastState> => {
   const activeFastState = getActiveFastState();
+  const notificationRevision = ++fastEndNotificationRevision;
 
   if (activeFastState.session === null) {
     await cancelScheduledNotification(activeFastState.fastEndNotificationId);
@@ -411,21 +450,19 @@ export const reconcileActiveFastEndNotification = async (): Promise<ActiveFastSt
   const settings = getSettings();
 
   await cancelScheduledNotification(activeFastState.fastEndNotificationId);
-
-  const fastEndNotificationId = await scheduleFastEndNotification({
-    session: activeFastState.session,
-    enabled:
-      settings.notifications.fastEndReminderEnabled && activeFastState.fastEndReminderEnabled,
-    goalDurationLabel: formatGoalDuration(
-      activeFastState.session.goalDurationHours,
-      settings.goalDurationFormat,
-    ),
+  const reconciledState = saveActiveFastState({
+    ...activeFastState,
+    fastEndNotificationId: null,
+    updatedAt: now(),
   });
 
-  return saveActiveFastState({
-    ...activeFastState,
-    fastEndNotificationId,
-    updatedAt: now(),
+  if (!settings.notifications.fastEndReminderEnabled) {
+    return reconciledState;
+  }
+
+  return scheduleCurrentFastEndNotification({
+    activeFastState: reconciledState,
+    revision: notificationRevision,
   });
 };
 
@@ -433,32 +470,20 @@ export const setActiveFastEndReminderEnabled = async (
   fastEndReminderEnabled: boolean,
 ): Promise<ActiveFastState> => {
   const activeFastState = getActiveFastState();
+  const notificationRevision = ++fastEndNotificationRevision;
 
   await cancelScheduledNotification(activeFastState.fastEndNotificationId);
 
-  if (activeFastState.session === null) {
-    return saveActiveFastState({
-      ...activeFastState,
-      fastEndNotificationId: null,
-      fastEndReminderEnabled,
-      updatedAt: now(),
-    });
-  }
-
-  const fastEndNotificationId = await scheduleFastEndNotification({
-    session: activeFastState.session,
-    enabled: fastEndReminderEnabled,
-    goalDurationLabel: formatGoalDuration(
-      activeFastState.session.goalDurationHours,
-      getSettings().goalDurationFormat,
-    ),
-  });
-
-  return saveActiveFastState({
+  const nextActiveFastState = saveActiveFastState({
     ...activeFastState,
-    fastEndNotificationId,
+    fastEndNotificationId: null,
     fastEndReminderEnabled,
     updatedAt: now(),
+  });
+
+  return scheduleCurrentFastEndNotification({
+    activeFastState: nextActiveFastState,
+    revision: notificationRevision,
   });
 };
 

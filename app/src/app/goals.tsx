@@ -1,9 +1,8 @@
 import { useState, type ReactNode } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { router } from 'expo-router';
-import { ChevronRight, GripVertical, Plus, Trash2 } from 'lucide-react-native';
+import { ChevronRight, GripVertical, Plus } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
 import { AppSurface } from '@/components/app-surface';
 import { DraggableListRow } from '@/components/draggable-list-row';
@@ -14,7 +13,6 @@ import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/locales/i18n';
 import { FastingGoalType, type FastingGoal } from '@/storage/app-storage';
 import {
-  deleteFastingGoal,
   moveFastingGoal,
   setFastingGoalEnabled,
   useSettings,
@@ -28,31 +26,6 @@ export default function GoalsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [draggingGoalId, setDraggingGoalId] = useState<string | null>(null);
-
-  const confirmDelete = (goal: FastingGoal): void => {
-    if (goal.type === FastingGoalType.Standard) return;
-
-    Alert.alert(
-      t('goals.deleteTitle'),
-      t('goals.deleteMessage', { name: goal.name }),
-      [
-        { text: t('goals.cancelAction'), style: 'cancel' },
-        {
-          text: t('goals.deleteAction'),
-          style: 'destructive',
-          onPress: () => {
-            try {
-              if (!deleteFastingGoal(goal.id)) {
-                Alert.alert(t('goals.deleteFailedTitle'), t('goals.deleteRequiredMessage'));
-              }
-            } catch {
-              Alert.alert(t('goals.deleteFailedTitle'), t('goals.deleteFailedMessage'));
-            }
-          },
-        },
-      ],
-    );
-  };
 
   return (
     <View style={styles.root}>
@@ -78,7 +51,6 @@ export default function GoalsScreen() {
                 index={index}
                 itemCount={settings.goals.length}
                 isDragging={draggingGoalId === goal.id}
-                onDelete={() => confirmDelete(goal)}
                 onDragEnd={() => setDraggingGoalId(null)}
                 onDragStart={() => setDraggingGoalId(goal.id)}
                 onEdit={() => {
@@ -110,7 +82,6 @@ function GoalRow({
   index,
   itemCount,
   isDragging,
-  onDelete,
   onDragEnd,
   onDragStart,
   onEdit,
@@ -120,7 +91,6 @@ function GoalRow({
   index: number;
   itemCount: number;
   isDragging: boolean;
-  onDelete: () => void;
   onDragEnd: () => void;
   onDragStart: () => void;
   onEdit: () => void;
@@ -184,31 +154,7 @@ function GoalRow({
       onDragEnd={onDragEnd}
       onDragStart={onDragStart}
       onMove={onMove}>
-      {(wrappedDragHandle) => (
-        isCustom ? (
-          <ReanimatedSwipeable
-            containerStyle={styles.swipeable}
-            childrenContainerStyle={styles.swipeableChildren}
-            friction={2}
-            overshootRight={false}
-            renderRightActions={() => (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('goals.deleteAccessibilityLabel', { name: goal.name })}
-                onPress={onDelete}
-                style={[styles.deleteAction, { backgroundColor: theme.danger }]}>
-                <Trash2 size={20} color={theme.dangerForeground} />
-                <ThemedText type="smallBold" style={{ color: theme.dangerForeground }}>
-                  {t('goals.deleteAction')}
-                </ThemedText>
-              </Pressable>
-            )}>
-            {renderContent(wrappedDragHandle)}
-          </ReanimatedSwipeable>
-        ) : (
-          renderContent(wrappedDragHandle)
-        )
-      )}
+      {(wrappedDragHandle) => renderContent(wrappedDragHandle)}
     </DraggableListRow>
   );
 }
@@ -276,19 +222,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xs,
     paddingVertical: Spacing.half,
   },
-  actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-  },
-  deleteAction: {
-    width: 88,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xxs,
-  },
-  swipeable: { borderRadius: Radius.surface, borderCurve: 'continuous', overflow: 'hidden' },
-  swipeableChildren: { borderRadius: Radius.surface, borderCurve: 'continuous', overflow: 'hidden' },
   fab: {
     position: 'absolute',
     right: Spacing.xl,

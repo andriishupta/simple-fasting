@@ -8,6 +8,7 @@ import {
   minimumScaleFactor,
   padding,
   progressViewStyle,
+  tint,
   truncationMode,
 } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity, type LiveActivityEnvironment } from 'expo-widgets';
@@ -30,6 +31,7 @@ type FastingLiveActivityProps = {
   goalEndsAt: number;
   goalLabel: string;
   goalName: string;
+  hasReachedGoal: boolean;
   progress: number;
   startedAt: number;
   timerView: TimerViewPreference;
@@ -67,19 +69,23 @@ function FastingLiveActivityView(
             SIMPLE FASTING
           </Text>
           <HStack spacing={4} modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' })]}>
-            <Text
-              modifiers={[
-                font({ size: 16, weight: 'bold' }),
-                foregroundStyle(primaryColor),
-                lineLimit(1),
-                truncationMode('tail'),
-                allowsTightening(true),
-              ]}>
-              {props.goalName}
-            </Text>
-            <Text modifiers={[font({ size: 14, weight: 'semibold' }), foregroundStyle(secondaryColor)]}>
-              ·
-            </Text>
+            {props.goalName ? (
+              <>
+                <Text
+                  modifiers={[
+                    font({ size: 16, weight: 'bold' }),
+                    foregroundStyle(primaryColor),
+                    lineLimit(1),
+                    truncationMode('tail'),
+                    allowsTightening(true),
+                  ]}>
+                  {props.goalName}
+                </Text>
+                <Text modifiers={[font({ size: 14, weight: 'semibold' }), foregroundStyle(secondaryColor)]}>
+                  ·
+                </Text>
+              </>
+            ) : null}
             <Text
               modifiers={[
                 font({ size: 16, weight: 'bold' }),
@@ -109,13 +115,18 @@ function FastingLiveActivityView(
                 lineLimit(1),
               ]}
             />
+            {props.hasReachedGoal ? (
+              <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accentColor)]}>
+                ✓
+              </Text>
+            ) : null}
           </HStack>
         </VStack>
       </HStack>
       {props.goalDurationHours > 0 ? (
         <ProgressView
           value={props.progress}
-          modifiers={[progressViewStyle('linear'), foregroundStyle(accentColor)]}
+          modifiers={[progressViewStyle('linear'), tint(accentColor)]}
         />
       ) : null}
     </VStack>
@@ -134,19 +145,26 @@ function FastingLiveActivityView(
       </HStack>
     ),
     compactTrailing: (
-      <Text
-        timerInterval={{
-          lower: showingRemaining ? new Date() : startedAt,
-          upper: showingRemaining ? goalEndsAt : distantFuture,
-        }}
-        countsDown={showingRemaining}
+      <HStack spacing={4}>
+        <Text
+          timerInterval={{
+            lower: showingRemaining ? new Date() : startedAt,
+            upper: showingRemaining ? goalEndsAt : distantFuture,
+          }}
+          countsDown={showingRemaining}
           modifiers={[
             font({ size: 16, weight: 'bold', design: 'rounded' }),
             foregroundStyle(islandPrimaryColor),
             minimumScaleFactor(0.82),
             lineLimit(1),
           ]}
-      />
+        />
+        {props.hasReachedGoal ? (
+          <Text modifiers={[font({ size: 12, weight: 'bold' }), foregroundStyle(accentColor)]}>
+            ✓
+          </Text>
+        ) : null}
+      </HStack>
     ),
     minimal: (
       <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accentColor)]}>
@@ -182,25 +200,34 @@ function FastingLiveActivityView(
               lineLimit(1),
             ]}
           />
+          {props.hasReachedGoal ? (
+            <Text modifiers={[font({ size: 13, weight: 'bold' }), foregroundStyle(accentColor)]}>
+              ✓
+            </Text>
+          ) : null}
         </HStack>
       </VStack>
     ),
     expandedBottom: (
       <VStack alignment="leading" spacing={7} modifiers={[padding({ horizontal: 8, bottom: 8 })]}>
         <HStack spacing={4}>
-          <Text
-            modifiers={[
-              font({ size: 15, weight: 'bold' }),
-              foregroundStyle(islandPrimaryColor),
-              lineLimit(1),
-              truncationMode('tail'),
-              allowsTightening(true),
-            ]}>
-            {props.goalName}
-          </Text>
-          <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(islandSecondaryColor)]}>
-            ·
-          </Text>
+          {props.goalName ? (
+            <>
+              <Text
+                modifiers={[
+                  font({ size: 15, weight: 'bold' }),
+                  foregroundStyle(islandPrimaryColor),
+                  lineLimit(1),
+                  truncationMode('tail'),
+                  allowsTightening(true),
+                ]}>
+                {props.goalName}
+              </Text>
+              <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(islandSecondaryColor)]}>
+                ·
+              </Text>
+            </>
+          ) : null}
           <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(accentColor)]}>
             {props.goalDurationLabel}
           </Text>
@@ -208,7 +235,7 @@ function FastingLiveActivityView(
         {props.goalDurationHours > 0 ? (
           <ProgressView
             value={props.progress}
-            modifiers={[progressViewStyle('linear'), foregroundStyle(accentColor)]}
+            modifiers={[progressViewStyle('linear'), tint(accentColor)]}
           />
         ) : (
           <Spacer />
@@ -255,6 +282,7 @@ const createProps = (state: ActiveFastState): FastingLiveActivityProps | null =>
     goalEndsAt: model.goalEndsAt,
     goalLabel: model.headline,
     goalName: model.goalName,
+    hasReachedGoal: model.hasReachedGoal,
     progress: model.progress,
     startedAt: model.startedAt,
     timerView: model.timerView,

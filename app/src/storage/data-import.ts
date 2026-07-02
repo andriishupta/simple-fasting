@@ -4,6 +4,7 @@ import { repairHistory } from '@/storage/storage-validation';
 
 export type ParsedImportData = {
   sessions: readonly FastSession[];
+  skippedSessions: number;
   settings: unknown | null;
 };
 
@@ -79,30 +80,6 @@ const parseCsvSessions = (content: string): readonly unknown[] => {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
-const assertImportTimesArePossible = (source: readonly unknown[]): void => {
-  const currentTime = Date.now();
-  const hasImpossibleTime = source.some((value) => {
-    if (!isRecord(value) || value.status !== FastStatus.Completed || typeof value.startedAt !== 'string') {
-      return false;
-    }
-
-    const startedAt = Date.parse(value.startedAt);
-    const endedAt = typeof value.endedAt === 'string' ? Date.parse(value.endedAt) : Number.NaN;
-
-    return (
-      !Number.isFinite(startedAt) ||
-      !Number.isFinite(endedAt) ||
-      startedAt > currentTime ||
-      endedAt > currentTime ||
-      endedAt <= startedAt
-    );
-  });
-
-  if (hasImpossibleTime) {
-    throw new Error(t('imports.impossibleTime'));
-  }
-};
-
 export const parseImportData = ({
   content,
   filename,
@@ -123,22 +100,29 @@ export const parseImportData = ({
         ? parsed.sessions
         : 'data' in parsed
           ? parsed.data
-          : parsed;
+          : settings === null
+            ? parsed
+            : [];
     } else {
       source = parsed;
     }
   }
 
   if (!Array.isArray(source)) throw new Error(t('imports.invalidJson'));
-  assertImportTimesArePossible(source);
   const repaired = repairHistory({ sessions: source }, new Date().toISOString()).value?.sessions ?? [];
+  const currentTime = Date.now();
   const sessions = repaired.filter(
-    (session) => session.status === FastStatus.Completed && session.endedAt !== null,
+    (session) =>
+      session.status === FastStatus.Completed &&
+      session.endedAt !== null &&
+      Date.parse(session.startedAt) <= currentTime &&
+      Date.parse(session.endedAt) <= currentTime,
   );
-  if (source.length > 0 && sessions.length === 0) {
-    throw new Error(t('imports.noSessions'));
-  }
-  return { sessions, settings };
+  return {
+    sessions,
+    skippedSessions: Math.max(0, source.length - sessions.length),
+    settings,
+  };
 };
 
 export const parseImportSessions = ({

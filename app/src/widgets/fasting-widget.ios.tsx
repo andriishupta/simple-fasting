@@ -5,6 +5,7 @@ import {
   foregroundStyle,
   frame,
   progressViewStyle,
+  tint,
   widgetURL,
 } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
@@ -27,6 +28,7 @@ type FastingWidgetProps = {
   goalEndsAt: number;
   goalLabel: string;
   goalName: string;
+  hasReachedGoal: boolean;
   progress: number;
   startedAt: number;
   status: 'active' | 'inactive';
@@ -93,24 +95,34 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
         SIMPLE FASTING
       </Text>
       <HStack spacing={4}>
-        <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(primaryColor)]}>
-          {props.goalName}
-        </Text>
-        <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(secondaryColor)]}>
-          ·
-        </Text>
+        {props.goalName ? (
+          <>
+            <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(primaryColor)]}>
+              {props.goalName}
+            </Text>
+            <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(secondaryColor)]}>
+              ·
+            </Text>
+          </>
+        ) : null}
         <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accentColor)]}>
           {props.goalDurationLabel}
         </Text>
       </HStack>
       <Spacer />
-      <HStack spacing={4}>
+      <HStack spacing={4} modifiers={[frame({ maxWidth: Infinity })]}>
         <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(secondaryColor)]}>
           {props.timerView === 'remaining' && hasGoal ? 'REMAINING' : 'ELAPSED'}
         </Text>
         <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(accentColor)]}>
           {props.timerView === 'remaining' && hasGoal ? '↓' : '↑'}
         </Text>
+        <Spacer />
+        {props.hasReachedGoal ? (
+          <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accentColor)]}>
+            ✓
+          </Text>
+        ) : null}
       </HStack>
       <Text
         timerInterval={{
@@ -119,14 +131,14 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
         }}
         countsDown={hasGoal && props.timerView === 'remaining'}
         modifiers={[
-          font({ size: 27, weight: 'bold', design: 'rounded' }),
+          font({ size: 24, weight: 'bold', design: 'rounded' }),
           foregroundStyle(primaryColor),
         ]}
       />
       {hasGoal ? (
         <ProgressView
           value={props.progress}
-          modifiers={[progressViewStyle('linear'), foregroundStyle(accentColor)]}
+          modifiers={[progressViewStyle('linear'), tint(accentColor)]}
         />
       ) : null}
     </VStack>
@@ -159,6 +171,7 @@ export const updateFastingWidget = (state: ActiveFastState): void => {
           goalEndsAt: 0,
           goalLabel: '',
           goalName: '',
+          hasReachedGoal: false,
           progress: 0,
           startedAt: 0,
           status: 'inactive',
@@ -172,6 +185,7 @@ export const updateFastingWidget = (state: ActiveFastState): void => {
           goalEndsAt: model.goalEndsAt,
           goalLabel: model.headline,
           goalName: model.goalName,
+          hasReachedGoal: model.hasReachedGoal,
           progress: model.progress,
           startedAt: model.startedAt,
           status: 'active',

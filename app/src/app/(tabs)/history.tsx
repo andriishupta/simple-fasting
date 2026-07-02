@@ -7,8 +7,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SegmentedControl as ExpoSegmentedControl } from '@expo/ui/community/segmented-control';
-import { Check, ChevronRight, Circle, Trash2 } from 'lucide-react-native';
-import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import { Check, ChevronRight, Circle } from 'lucide-react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { AppSurface } from '@/components/app-surface';
@@ -19,7 +18,6 @@ import { TabScreenShell } from '@/components/tab-screen-shell';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
-  deleteFastSession,
   deleteFastSessions,
   formatDuration,
   formatHours,
@@ -175,9 +173,11 @@ function HistoryList({ sessions }: { sessions: readonly FastSession[] }) {
               label: sessions.length === 1 ? t('data.sessionSingular') : t('data.sessionPlural'),
             })}
           </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {selecting ? t('data.selectedCount', { count: selectedIds.size }) : t('data.swipeToDelete')}
-          </ThemedText>
+          {selecting ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              {t('data.selectedCount', { count: selectedIds.size })}
+            </ThemedText>
+          ) : null}
         </View>
         <View style={styles.listActionButtons}>
           {selecting ? (
@@ -274,17 +274,6 @@ function HistoryItem({
 }) {
   const theme = useTheme();
   const editSession = (): void => router.push(`/history/${session.id}`);
-  const deleteSession = (): void => {
-    Alert.alert(t('data.deleteSessionTitle'), t('data.deleteSessionMessage'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('common.delete'),
-        style: 'destructive',
-        onPress: () => deleteFastSession(session.id),
-      },
-    ]);
-  };
-
   return (
     <Animated.View
       entering={FadeInUp.delay(Math.min(index, 5) * 35).duration(180)}
@@ -308,47 +297,29 @@ function HistoryItem({
       ) : null}
       <View
         style={[
-          styles.swipeContainer,
+          styles.itemContainer,
           { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
         ]}>
-        <ReanimatedSwipeable
-          enabled={!selecting}
-          friction={1.5}
-          rightThreshold={44}
-          overshootRight={false}
-          renderRightActions={() => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('data.deleteSession')}
-              onPress={deleteSession}
-              style={[styles.deleteAction, { backgroundColor: theme.danger }]}>
-              <Trash2 size={22} color={theme.dangerForeground} strokeWidth={2} />
-              <ThemedText type="smallBold" style={{ color: theme.dangerForeground }}>
-                {t('common.delete')}
-              </ThemedText>
-            </Pressable>
-          )}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected }}
-            onPress={selecting ? onToggle : editSession}
-            style={({ pressed }) => [
-              styles.item,
-              { backgroundColor: theme.background },
-              pressed && styles.pressed,
-            ]}>
-            <View style={styles.itemText}>
-              <HistorySummary
-                session={session}
-                durationSeconds={getSessionDurationSeconds(session)}
-                showChevron={!selecting}
-                endedLabel={
-                  session.endedAt === null ? t('common.inProgress') : formatLocaleDateTime(session.endedAt)
-                }
-              />
-            </View>
-          </Pressable>
-        </ReanimatedSwipeable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected }}
+          onPress={selecting ? onToggle : editSession}
+          style={({ pressed }) => [
+            styles.item,
+            { backgroundColor: theme.background },
+            pressed && styles.pressed,
+          ]}>
+          <View style={styles.itemText}>
+            <HistorySummary
+              session={session}
+              durationSeconds={getSessionDurationSeconds(session)}
+              showChevron={!selecting}
+              endedLabel={
+                session.endedAt === null ? t('common.inProgress') : formatLocaleDateTime(session.endedAt)
+              }
+            />
+          </View>
+        </Pressable>
       </View>
     </Animated.View>
   );
@@ -571,7 +542,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.xs,
   },
-  swipeContainer: {
+  itemContainer: {
     flex: 1,
     overflow: 'hidden',
     borderWidth: 1,
@@ -585,12 +556,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1.5,
     borderRadius: 12,
-  },
-  deleteAction: {
-    width: 88,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.one,
   },
   itemText: {
     flex: 1,

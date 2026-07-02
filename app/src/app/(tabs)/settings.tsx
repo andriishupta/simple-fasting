@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   AppState,
   Alert,
@@ -152,6 +152,7 @@ const goalDurationFormatOptions = [
 const accentItemWidth = 64;
 const reminderHours = Array.from({ length: 24 }, (_, hour) => hour);
 const reminderMinutes = Array.from({ length: 60 }, (_, minute) => minute);
+const dailyReminderTimeCommitDelayMs = 600;
 
 export default function SettingsScreen() {
   const settings = useSettings();
@@ -161,6 +162,9 @@ export default function SettingsScreen() {
   const [notificationPermissionState, setNotificationPermissionState] =
     useState<LocalNotificationPermissionState>(LocalNotificationPermissionState.Undetermined);
   const [canEmailDiagnostics, setCanEmailDiagnostics] = useState(false);
+  const [liveActivityUpdating, setLiveActivityUpdating] = useState(false);
+  const [fastEndReminderUpdating, setFastEndReminderUpdating] = useState(false);
+  const [dailyReminderUpdating, setDailyReminderUpdating] = useState(false);
   const [installedAt] = useState(
     () => appStorage.get(StorageKey.Metadata)?.initializedAt ?? new Date().toISOString(),
   );
@@ -202,14 +206,23 @@ export default function SettingsScreen() {
       active = false;
     };
   }, []);
-  const runNotificationUpdate = async (update: () => Promise<void>): Promise<void> => {
+  const runNotificationUpdate = useCallback(async (update: () => Promise<void>): Promise<void> => {
     try {
       await update();
     } catch {
       Alert.alert(t('settings.notificationUpdateFailedTitle'), t('settings.tryAgain'));
     }
-  };
+  }, []);
+  const commitDailyReminderTime = useCallback(
+    (dailyReminderTime: string): void => {
+      void runNotificationUpdate(async () => {
+        await setDailyReminderTimeAndSchedule(dailyReminderTime);
+      });
+    },
+    [runNotificationUpdate],
+  );
   const setFastEndReminderEnabled = async (fastEndReminderEnabled: boolean): Promise<void> => {
+    setFastEndReminderUpdating(true);
     await runNotificationUpdate(async () => {
       if (fastEndReminderEnabled && !(await requestLocalNotificationPermission())) {
         Alert.alert(
@@ -225,9 +238,10 @@ export default function SettingsScreen() {
         fastEndReminderEnabled,
       }));
       await reconcileActiveFastEndNotification();
-    });
+    }).finally(() => setFastEndReminderUpdating(false));
   };
   const setDailyReminderEnabled = async (dailyReminderEnabled: boolean): Promise<void> => {
+    setDailyReminderUpdating(true);
     await runNotificationUpdate(async () => {
       if (dailyReminderEnabled && !(await requestLocalNotificationPermission())) {
         Alert.alert(
@@ -246,7 +260,12 @@ export default function SettingsScreen() {
             ? '20:00'
             : notifications.dailyReminderTime,
       }));
-    });
+    }).finally(() => setDailyReminderUpdating(false));
+  };
+  const setLiveActivityEnabled = (liveActivitiesEnabled: boolean): void => {
+    setLiveActivityUpdating(true);
+    setLiveActivitiesEnabled(liveActivitiesEnabled);
+    void syncActiveFastingLiveActivity().finally(() => setLiveActivityUpdating(false));
   };
   const enableNotificationsFromSettings = async (): Promise<void> => {
     await runNotificationUpdate(async () => {
@@ -333,7 +352,8 @@ export default function SettingsScreen() {
         content: await new File(asset.uri).text(),
         filename: asset.name,
       });
-      const { saved, skipped } = mergeImportedFastSessions(imported.sessions);
+      const { saved, skipped: mergeSkipped } = mergeImportedFastSessions(imported.sessions);
+      const skipped = imported.skippedSessions + mergeSkipped;
       const importedSettings = mergeImportedSettings(imported.settings);
       if (importedSettings !== null) {
         await reconcileDailyReminderNotification();
@@ -442,10 +462,8 @@ export default function SettingsScreen() {
               title={t('settings.liveActivity')}
               description={t('settings.liveActivityDescription')}
               value={settings.liveActivitiesEnabled}
-              onValueChange={(liveActivitiesEnabled) => {
-                setLiveActivitiesEnabled(liveActivitiesEnabled);
-                void syncActiveFastingLiveActivity();
-              }}
+              onValueChange={setLiveActivityEnabled}
+              disabled={liveActivityUpdating}
             />
           ) : null}
           {notificationsAvailable ? (
@@ -456,6 +474,7 @@ export default function SettingsScreen() {
                 description={t('settings.endReminderDescription')}
                 value={settings.notifications.fastEndReminderEnabled}
                 onValueChange={setFastEndReminderEnabled}
+                disabled={fastEndReminderUpdating}
               />
               <SettingsSwitch
                 icon={Bell}
@@ -463,6 +482,7 @@ export default function SettingsScreen() {
                 description={t('settings.dailyReminderDescription')}
                 value={settings.notifications.dailyReminderEnabled}
                 onValueChange={setDailyReminderEnabled}
+                disabled={dailyReminderUpdating}
               />
               {settings.notifications.dailyReminderEnabled && (
                 <Animated.View
@@ -471,11 +491,7 @@ export default function SettingsScreen() {
                   layout={LinearTransition.duration(180)}>
                   <TimePicker
                     value={settings.notifications.dailyReminderTime ?? '20:00'}
-                    onChange={(dailyReminderTime) => {
-                      void runNotificationUpdate(async () => {
-                        await setDailyReminderTimeAndSchedule(dailyReminderTime);
-                      });
-                    }}
+                    onChange={commitDailyReminderTime}
                   />
                 </Animated.View>
               )}
@@ -712,9 +728,26 @@ function TimePicker({
   onChange: (value: string) => void;
 }) {
   const theme = useTheme();
-  const [hour = '20', minute = '00'] = value.split(':');
+  const [draft, setDraft] = useState({ sourceValue: value, value });
+  const draftValue = draft.sourceValue === value ? draft.value : value;
+  const [hour = '20', minute = '00'] = draftValue.split(':');
   const updatePart = (nextHour: string, nextMinute: string): void =>
-    onChange(`${nextHour.padStart(2, '0')}:${nextMinute.padStart(2, '0')}`);
+    setDraft({
+      sourceValue: value,
+      value: `${nextHour.padStart(2, '0')}:${nextMinute.padStart(2, '0')}`,
+    });
+
+  useEffect(() => {
+    if (draftValue === value) return;
+
+    const commitTimer = setTimeout(() => {
+      onChange(draftValue);
+    }, dailyReminderTimeCommitDelayMs);
+
+    return () => {
+      clearTimeout(commitTimer);
+    };
+  }, [draftValue, onChange, value]);
 
   return (
     <View style={styles.timeControl}>
@@ -734,7 +767,6 @@ function TimePicker({
                 label={String(option).padStart(2, '0')}
                 value={String(option)}
                 color={theme.text}
-                style={styles.pickerItem}
               />
             ))}
           </Picker>
@@ -754,7 +786,6 @@ function TimePicker({
                 label={String(option).padStart(2, '0')}
                 value={String(option)}
                 color={theme.text}
-                style={styles.pickerItem}
               />
             ))}
           </Picker>
@@ -1074,8 +1105,13 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  timePicker: { width: '100%', minHeight: 116 },
-  pickerItem: { backgroundColor: 'transparent' },
+  timePicker: {
+    width: '100%',
+    minHeight: 116,
+    overflow: 'hidden',
+    borderRadius: Radius.control,
+    borderCurve: 'continuous',
+  },
   themePicker: {
     flexDirection: 'row',
     gap: Spacing.xs,

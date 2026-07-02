@@ -33,8 +33,9 @@ describe('fasting widget model', () => {
       status: 'active',
       displayTime: '02:30:00',
       goalDurationLabel: '2 hours',
-      goalName: 'Goal',
-      headline: 'Goal · 2 hours',
+      goalName: '',
+      headline: '2 hours',
+      hasReachedGoal: true,
       subtitle: 'Elapsed',
       progress: 1,
       goalEndsAt: Date.parse('2026-06-21T12:00:00.000Z'),
@@ -58,6 +59,7 @@ describe('fasting widget model', () => {
         displayTime: '01:30:00',
         goalDurationLabel: '4 hours',
         goalName: '18:6',
+        hasReachedGoal: false,
         headline: '18:6 · 4 hours',
         subtitle: 'Remaining',
         progress: 0.625,
@@ -77,6 +79,7 @@ describe('fasting widget model', () => {
     expect(createFastingWidgetModel(state, Date.parse('2026-06-22T10:00:00.000Z'))).toEqual(
       expect.objectContaining({
         displayTime: '24:00:00',
+        hasReachedGoal: true,
         progress: 1,
         subtitle: 'Elapsed',
         timerView: TimerViewPreference.Elapsed,
@@ -99,11 +102,12 @@ describe('fasting widget model', () => {
     expect(model).toEqual(expect.objectContaining({
       status: 'active',
       displayTime: '00:00:00',
-      goalDurationLabel: 'No time limit',
-      goalName: 'Open-ended',
+      goalDurationLabel: 'Unlimited',
+      goalName: '',
       hasGoal: false,
+      hasReachedGoal: false,
       progress: 0,
-      headline: 'Open-ended',
+      headline: 'Unlimited',
       subtitle: 'Elapsed',
     }));
   });

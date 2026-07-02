@@ -381,7 +381,6 @@ function PickerColumn({
             label={String(option)}
             value={String(option)}
             color={theme.text}
-            style={styles.pickerItem}
           />
         ))}
       </Picker>
@@ -461,8 +460,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
   },
   pickerColumn: { flex: 1, alignItems: 'center' },
-  picker: { width: '100%', minHeight: 152 },
-  pickerItem: { backgroundColor: 'transparent' },
+  picker: {
+    width: '100%',
+    minHeight: 152,
+    overflow: 'hidden',
+    borderRadius: Radius.control,
+    borderCurve: 'continuous',
+  },
   noteInputWrap: { gap: Spacing.half, paddingBottom: Spacing.xxs },
   input: {
     height: 112,

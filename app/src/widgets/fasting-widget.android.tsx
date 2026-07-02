@@ -78,21 +78,33 @@ function AndroidFastingWidget({
             maxLines={1}
             style={{ color: theme.primary, fontSize: 14, fontWeight: '700' }}
           />
-          <TextWidget
-            text={`${model.timerView === 'remaining' ? '↓' : '↑'} ${model.subtitle.toUpperCase()}`}
-            maxLines={1}
-            style={{ color: theme.accent, fontSize: 10, fontWeight: '700' }}
-          />
-          <TextWidget
-            text={model.displayTime}
-            maxLines={1}
-            style={{
-              color: theme.accent,
-              fontSize: 27,
-              fontWeight: '700',
-              adjustsFontSizeToFit: true,
-            }}
-          />
+          <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', width: 'match_parent' }}>
+            <TextWidget
+              text={`${model.timerView === 'remaining' ? '↓' : '↑'} ${model.subtitle.toUpperCase()}`}
+              maxLines={1}
+              style={{ color: theme.accent, fontSize: 10, fontWeight: '700' }}
+            />
+            <FlexWidget style={{ flex: 1 }} />
+            {model.hasReachedGoal ? (
+              <TextWidget
+                text="✓"
+                maxLines={1}
+                style={{ color: theme.accent, fontSize: 13, fontWeight: '700' }}
+              />
+            ) : null}
+          </FlexWidget>
+          <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', width: 'match_parent' }}>
+            <TextWidget
+              text={model.displayTime}
+              maxLines={1}
+              style={{
+                color: theme.accent,
+                fontSize: 24,
+                fontWeight: '700',
+                adjustsFontSizeToFit: true,
+              }}
+            />
+          </FlexWidget>
           {model.hasGoal ? (
             <FlexWidget
               style={{

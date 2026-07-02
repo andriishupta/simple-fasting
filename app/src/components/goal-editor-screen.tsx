@@ -13,6 +13,7 @@ import { t } from '@/locales/i18n';
 import { FastingGoalType, type FastingGoal } from '@/storage/app-storage';
 import {
   createFastingGoal,
+  deleteFastingGoal,
   updateFastingGoal,
   useSettings,
 } from '@/storage/settings-storage';
@@ -69,6 +70,35 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
 
   const showValidationError = (message: string): void => {
     Alert.alert(message);
+  };
+
+  const deleteGoal = (): void => {
+    if (existingGoal === null || existingGoal === undefined) return;
+
+    Alert.alert(
+      t('goals.deleteTitle'),
+      t('goals.deleteMessage', { name: existingGoal.name }),
+      [
+        { text: t('goals.cancelAction'), style: 'cancel' },
+        {
+          text: t('goals.deleteAction'),
+          style: 'destructive',
+          onPress: () => {
+            try {
+              if (!deleteFastingGoal(existingGoal.id)) {
+                Alert.alert(t('goals.deleteFailedTitle'), t('goals.deleteRequiredMessage'));
+                return;
+              }
+            } catch {
+              Alert.alert(t('goals.deleteFailedTitle'), t('goals.deleteFailedMessage'));
+              return;
+            }
+
+            router.back();
+          },
+        },
+      ],
+    );
   };
 
   const saveDraft = (): void => {
@@ -161,66 +191,86 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
       <Stack.Screen options={{ title: isEditing ? t('goals.editTitle') : t('goals.newTitle') }} />
       <GoalEditorShell>
         <View style={styles.editor}>
-          <View style={styles.field}>
-            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
-              {t('goals.nameLabel')}
+          <View style={styles.header}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+              {t('goals.editorTitle')}
             </ThemedText>
-            <TextInput
-              accessibilityLabel={t('goals.nameAccessibilityLabel')}
-              autoCapitalize="sentences"
-              maxLength={goalNameMaxLength}
-              value={draft.name}
-              onChangeText={(name) => setDraft((current) => ({ ...current, name }))}
-              placeholder={t('goals.namePlaceholder')}
-              placeholderTextColor={theme.textSecondary}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.background,
-                  borderColor: theme.backgroundSelected,
-                  color: theme.text,
-                },
-              ]}
-            />
-            <ThemedText type="small" themeColor="textSecondary" style={styles.characterCount}>
-              {t('common.characterCount', {
-                count: draft.name.length,
-                max: goalNameMaxLength,
-              })}
+            <ThemedText type="small" themeColor="textSecondary" style={styles.description}>
+              {t('goals.editorDescription')}
             </ThemedText>
           </View>
 
-          <View style={styles.field}>
-            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
-              {t('goals.durationLabel')}
-            </ThemedText>
-            <AppSurface padded={false} style={styles.durationCard}>
+          <AppSurface padded={false} style={styles.formCard}>
+            <View style={styles.cardRow}>
+              <View style={styles.rowHeader}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {t('goals.nameLabel')}
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.characterCount}>
+                  {t('common.characterCount', {
+                    count: draft.name.length,
+                    max: goalNameMaxLength,
+                  })}
+                </ThemedText>
+              </View>
+              <TextInput
+                accessibilityLabel={t('goals.nameAccessibilityLabel')}
+                autoCapitalize="sentences"
+                maxLength={goalNameMaxLength}
+                value={draft.name}
+                onChangeText={(name) => setDraft((current) => ({ ...current, name }))}
+                placeholder={t('goals.namePlaceholder')}
+                placeholderTextColor={theme.textSecondary}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: theme.backgroundSelected,
+                    color: theme.text,
+                  },
+                ]}
+              />
+            </View>
+
+            <View style={styles.cardRow}>
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('goals.durationLabel')}
+              </ThemedText>
               <DurationPicker
                 value={draft.targetDurationHours}
                 onChange={(targetDurationHours) =>
                   setDraft((current) => ({ ...current, targetDurationHours }))
                 }
               />
-            </AppSurface>
-          </View>
+            </View>
+          </AppSurface>
 
           <View style={styles.actions}>
-            <AppButton
-              label={t('goals.cancelAction')}
-              variant="dangerGhost"
-              fullWidth
-              onPress={() => {
-                if (isDirty) {
-                  Alert.alert(t('goals.discardTitle'), t('goals.discardMessage'), [
-                    { text: t('goals.keepEditingAction'), style: 'cancel' },
-                    { text: t('goals.discardAction'), style: 'destructive', onPress: () => router.back() },
-                  ]);
-                  return;
-                }
+            {isEditing ? (
+              <AppButton
+                label={t('goals.deleteEditorAction')}
+                variant="dangerGhost"
+                fullWidth
+                onPress={deleteGoal}
+              />
+            ) : (
+              <AppButton
+                label={t('goals.cancelAction')}
+                variant="neutralGhost"
+                fullWidth
+                onPress={() => {
+                  if (isDirty) {
+                    Alert.alert(t('goals.discardTitle'), t('goals.discardMessage'), [
+                      { text: t('goals.keepEditingAction'), style: 'cancel' },
+                      { text: t('goals.discardAction'), style: 'destructive', onPress: () => router.back() },
+                    ]);
+                    return;
+                  }
 
-                router.back();
-              }}
-            />
+                  router.back();
+                }}
+              />
+            )}
             <AppButton label={t('goals.saveAction')} fullWidth onPress={saveDraft} />
           </View>
         </View>
@@ -257,20 +307,34 @@ const styles = StyleSheet.create({
   editor: {
     gap: Spacing.three,
   },
-  field: {
+  header: {
     gap: Spacing.one,
   },
-  sectionLabel: { paddingHorizontal: Spacing.two, textTransform: 'uppercase' },
-  characterCount: { paddingHorizontal: Spacing.two, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  description: {
+    maxWidth: 420,
+  },
+  formCard: {
+    gap: Spacing.three,
+    overflow: 'hidden',
+    padding: Spacing.three,
+  },
+  cardRow: {
+    gap: Spacing.one,
+  },
+  rowHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.two,
+    justifyContent: 'space-between',
+  },
+  sectionTitle: { textTransform: 'uppercase' },
+  characterCount: { textAlign: 'right', fontVariant: ['tabular-nums'] },
   input: {
     minHeight: 44,
     borderWidth: 1,
     borderRadius: Spacing.two,
     paddingHorizontal: Spacing.three,
     fontSize: 16,
-  },
-  durationCard: {
-    overflow: 'hidden',
   },
   actions: {
     flexDirection: 'row',

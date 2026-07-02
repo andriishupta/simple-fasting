@@ -63,6 +63,7 @@ const readSettings = (): AppSettings =>
   appStorage.getOrDefault(StorageKey.Settings, createDefaultAppSettings(now()));
 
 let settingsSnapshot = createDefaultAppSettings(now());
+let dailyReminderNotificationRevision = 0;
 
 export const accentColorValues: Record<AccentColorName, string> = {
   [AccentColorName.Rose]: '#F43F5E',
@@ -554,6 +555,7 @@ export const syncNotificationPermissionState = async (): Promise<LocalNotificati
     return permissionState;
   }
 
+  dailyReminderNotificationRevision += 1;
   const settings = getSettings();
 
   await Promise.all([
@@ -572,6 +574,7 @@ export const syncNotificationPermissionState = async (): Promise<LocalNotificati
 };
 
 export const reconcileDailyReminderNotification = async (): Promise<AppSettings> => {
+  const revision = ++dailyReminderNotificationRevision;
   const settings = getSettings();
   const activeFast = appStorage.get(StorageKey.ActiveFast);
   const hasActiveFast = activeFast?.session !== undefined && activeFast.session !== null;
@@ -592,6 +595,30 @@ export const reconcileDailyReminderNotification = async (): Promise<AppSettings>
   const dailyReminderNotificationId = await scheduleDailyReminderNotification(
     settings.notifications.dailyReminderTime,
   );
+
+  const currentSettings = getSettings();
+  const currentActiveFast = appStorage.get(StorageKey.ActiveFast);
+  const hasCurrentActiveFast =
+    currentActiveFast?.session !== undefined && currentActiveFast.session !== null;
+  const shouldKeepNotification =
+    revision === dailyReminderNotificationRevision &&
+    currentSettings.notifications.dailyReminderEnabled &&
+    currentSettings.notifications.dailyReminderTime === settings.notifications.dailyReminderTime &&
+    !hasCurrentActiveFast;
+
+  if (dailyReminderNotificationId === null) {
+    return shouldKeepNotification
+      ? updateNotificationSettings((notifications) => ({
+          ...notifications,
+          dailyReminderNotificationId: null,
+        }))
+      : currentSettings;
+  }
+
+  if (!shouldKeepNotification) {
+    await cancelScheduledNotification(dailyReminderNotificationId).catch(() => undefined);
+    return currentSettings;
+  }
 
   return updateNotificationSettings((notifications) => ({
     ...notifications,
@@ -616,6 +643,7 @@ export const setDailyReminderTimeAndSchedule = async (
   }));
 
 export const cancelDailyReminderNotification = async (): Promise<AppSettings> => {
+  dailyReminderNotificationRevision += 1;
   const settings = getSettings();
 
   await cancelScheduledNotification(settings.notifications.dailyReminderNotificationId);

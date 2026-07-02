@@ -272,7 +272,7 @@ function DetailContent({ session }: { session: FastSession }) {
         duration={formatDuration(editedDurationSeconds)}
         goalLabel={
           goalDurationHours <= 0
-            ? t('common.openEnded')
+            ? t('common.unlimited')
             : formatGoalDuration(goalDurationHours, settings.goalDurationFormat)
         }
         progress={editedProgress}

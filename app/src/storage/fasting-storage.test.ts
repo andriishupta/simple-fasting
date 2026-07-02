@@ -1,5 +1,6 @@
 import {
   FastStatus,
+  GoalDurationFormat,
   StorageKey,
   TimerViewPreference,
   appStorage,
@@ -48,6 +49,15 @@ const mockScheduleFastEndNotification = jest.mocked(
 const mockUpdateFastingWidget = jest.mocked(fastingWidget.updateFastingWidget);
 const mockSyncFastingLiveActivity = jest.mocked(fastingLiveActivity.syncFastingLiveActivity);
 
+const createDeferred = <Value>() => {
+  let resolve!: (value: Value) => void;
+  const promise = new Promise<Value>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+
+  return { promise, resolve };
+};
+
 describe('fasting lifecycle integration', () => {
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(initialTime);
@@ -57,6 +67,8 @@ describe('fasting lifecycle integration', () => {
     appStorage.insert(StorageKey.History, createEmptyHistoryState(initialTime.toISOString()));
     refreshSettingsSnapshot();
     refreshFastSnapshots();
+    mockCancelScheduledNotification.mockReset();
+    mockScheduleFastEndNotification.mockReset();
     mockCancelScheduledNotification.mockResolvedValue(undefined);
     mockScheduleFastEndNotification.mockResolvedValue('fast-end-1');
     mockUpdateFastingWidget.mockClear();
@@ -107,6 +119,40 @@ describe('fasting lifecycle integration', () => {
     const active = await startFast({ goalDurationHours: 12, reason: null });
     expect(active.session?.status).toBe(FastStatus.Active);
     expect(getActiveFastState().fastEndNotificationId).toBeNull();
+  });
+
+  test('uses the current goal duration display format for fast-end reminders', async () => {
+    saveSettings({
+      ...getSettings(),
+      goalDurationFormat: GoalDurationFormat.Days,
+      notifications: {
+        ...getSettings().notifications,
+        fastEndReminderEnabled: true,
+      },
+    });
+
+    await startFast({ goalDurationHours: 77, reason: null });
+
+    expect(mockScheduleFastEndNotification).toHaveBeenLastCalledWith({
+      session: expect.objectContaining({ goalDurationHours: 77 }),
+      enabled: true,
+      goalDurationLabel: '3d 5h',
+    });
+
+    saveSettings({
+      ...getSettings(),
+      goalDurationFormat: GoalDurationFormat.Hours,
+    });
+    mockScheduleFastEndNotification.mockClear();
+
+    await setActiveFastEndReminderEnabled(false);
+    await setActiveFastEndReminderEnabled(true);
+
+    expect(mockScheduleFastEndNotification).toHaveBeenLastCalledWith({
+      session: expect.objectContaining({ goalDurationHours: 77 }),
+      enabled: true,
+      goalDurationLabel: '77 hours',
+    });
   });
 
   test('coalesces deferred timer view surface sync with the latest snapshot', async () => {
@@ -268,6 +314,13 @@ describe('fasting lifecycle integration', () => {
   });
 
   test('reconciles stale notification identifiers', async () => {
+    saveSettings({
+      ...getSettings(),
+      notifications: {
+        ...getSettings().notifications,
+        fastEndReminderEnabled: true,
+      },
+    });
     await startFast({ goalDurationHours: 16, reason: null });
     mockScheduleFastEndNotification.mockResolvedValueOnce('fast-end-2');
     const reconciled = await reconcileActiveFastEndNotification();
@@ -287,6 +340,30 @@ describe('fasting lifecycle integration', () => {
     expect(updated.fastEndReminderEnabled).toBe(false);
     expect(updated.fastEndNotificationId).toBeNull();
     expect(mockScheduleFastEndNotification).not.toHaveBeenCalled();
+  });
+
+  test('cancels a late fast-end notification after the reminder is toggled off', async () => {
+    await startFast({ goalDurationHours: 16, reason: null });
+    mockScheduleFastEndNotification.mockClear();
+    mockCancelScheduledNotification.mockClear();
+    const deferredSchedule = createDeferred<string | null>();
+    mockScheduleFastEndNotification.mockReturnValueOnce(deferredSchedule.promise);
+
+    const enablePromise = setActiveFastEndReminderEnabled(true);
+    await Promise.resolve();
+    expect(getActiveFastState().fastEndReminderEnabled).toBe(true);
+    expect(getActiveFastState().fastEndNotificationId).toBeNull();
+
+    await setActiveFastEndReminderEnabled(false);
+    expect(getActiveFastState().fastEndReminderEnabled).toBe(false);
+    expect(getActiveFastState().fastEndNotificationId).toBeNull();
+
+    deferredSchedule.resolve('late-fast-end');
+    await enablePromise;
+
+    expect(getActiveFastState().fastEndReminderEnabled).toBe(false);
+    expect(getActiveFastState().fastEndNotificationId).toBeNull();
+    expect(mockCancelScheduledNotification).toHaveBeenCalledWith('late-fast-end');
   });
 
   test('syncs live activity only while a fast is active', async () => {

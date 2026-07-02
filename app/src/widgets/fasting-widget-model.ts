@@ -23,6 +23,7 @@ export type FastingWidgetModel =
       goalDurationHours: number;
       goalEndsAt: number;
       hasGoal: boolean;
+      hasReachedGoal: boolean;
       goalName: string;
       progress: number;
       startedAt: number;
@@ -51,8 +52,9 @@ export const createFastingWidgetModel = (
   const elapsedSeconds = Math.max(0, Math.floor((currentTime - startedAt) / 1000));
   const goalSeconds = session.goalDurationHours * 3600;
   const hasGoal = goalSeconds > 0;
+  const hasReachedGoal = hasGoal && elapsedSeconds >= goalSeconds;
   const showsRemaining =
-    timerViewPreference === TimerViewPreference.Remaining && hasGoal && elapsedSeconds < goalSeconds;
+    timerViewPreference === TimerViewPreference.Remaining && hasGoal && !hasReachedGoal;
   const shownSeconds =
     showsRemaining
       ? goalSeconds - elapsedSeconds
@@ -60,19 +62,23 @@ export const createFastingWidgetModel = (
   const displayTime = formatDuration(shownSeconds);
   const goalDurationLabel = hasGoal
     ? formatGoalDuration(session.goalDurationHours, goalDurationFormat)
-    : t('common.noTimeLimit');
-  const displayGoalName = hasGoal ? (goalName ?? t('widgets.goalFallback')) : t('widgets.openEndedFast');
+    : t('common.unlimited');
+  const displayGoalName = hasGoal ? (goalName ?? '') : '';
+  const headline = displayGoalName.length > 0
+    ? `${displayGoalName} · ${goalDurationLabel}`
+    : goalDurationLabel;
 
   return {
     status: 'active',
-    accessibilityLabel: `${displayGoalName} ${displayTime}`,
+    accessibilityLabel: `${headline} ${displayTime}`,
     displayTime,
     goalDurationLabel,
-    headline: hasGoal ? `${displayGoalName} · ${goalDurationLabel}` : displayGoalName,
+    headline,
     goalDurationHours: session.goalDurationHours,
     goalEndsAt: startedAt + goalSeconds * 1000,
     goalName: displayGoalName,
     hasGoal,
+    hasReachedGoal,
     progress: hasGoal ? Math.min(1, elapsedSeconds / goalSeconds) : 0,
     startedAt,
     subtitle:

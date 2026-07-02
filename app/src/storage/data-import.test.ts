@@ -26,14 +26,32 @@ describe('data import', () => {
       filename: 'backup.json',
     });
 
-    expect(imported.sessions).toEqual([session]);
-    expect(imported.settings).toEqual(settings);
+    expect(imported).toEqual({
+      sessions: [session],
+      settings,
+      skippedSessions: 0,
+    });
   });
 
   it('keeps reading older JSON exports with data arrays', () => {
     expect(
       parseImportSessions({ content: JSON.stringify({ metadata: {}, data: [session] }), filename: 'backup.json' }),
     ).toEqual([session]);
+  });
+
+  it('allows JSON files that only contain settings', () => {
+    const settings = { accentColorName: 'teal' };
+
+    expect(
+      parseImportData({
+        content: JSON.stringify({ metadata: {}, settings }),
+        filename: 'settings.json',
+      }),
+    ).toEqual({
+      sessions: [],
+      settings,
+      skippedSessions: 0,
+    });
   });
 
   it('reads quoted values from the current CSV export shape', () => {
@@ -54,7 +72,7 @@ describe('data import', () => {
     expect(parseImportSessions({ content, filename: 'backup.csv' })).toEqual([session]);
   });
 
-  it('rejects files without valid completed sessions', () => {
+  it('skips files without valid completed sessions', () => {
     expect(() =>
       parseImportSessions({
         content: 'id,status\nfast-1,completed',
@@ -62,17 +80,21 @@ describe('data import', () => {
       }),
     ).toThrow('not a Simple Fasting export');
 
-    expect(() =>
-      parseImportSessions({
+    expect(
+      parseImportData({
         content: JSON.stringify([{ ...session, status: FastStatus.Active, endedAt: null }]),
         filename: 'backup.json',
       }),
-    ).toThrow('does not contain completed fasting sessions');
+    ).toEqual({
+      sessions: [],
+      settings: null,
+      skippedSessions: 1,
+    });
   });
 
-  it('rejects impossible imported session times', () => {
-    expect(() =>
-      parseImportSessions({
+  it('skips impossible imported session times', () => {
+    expect(
+      parseImportData({
         content: JSON.stringify([
           {
             ...session,
@@ -83,10 +105,14 @@ describe('data import', () => {
         ]),
         filename: 'backup.json',
       }),
-    ).toThrow('cannot be in the future');
+    ).toEqual({
+      sessions: [],
+      settings: null,
+      skippedSessions: 1,
+    });
 
-    expect(() =>
-      parseImportSessions({
+    expect(
+      parseImportData({
         content: JSON.stringify([
           {
             ...session,
@@ -97,6 +123,10 @@ describe('data import', () => {
         ]),
         filename: 'backup.json',
       }),
-    ).toThrow('end before they start');
+    ).toEqual({
+      sessions: [],
+      settings: null,
+      skippedSessions: 1,
+    });
   });
 });

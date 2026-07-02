@@ -49,6 +49,7 @@ import {
   setThemePreference,
   shareDataExport,
   syncNotificationPermissionState,
+  updateNotificationSettingsAndSchedule,
   updateFastingGoal,
   updateNotificationSettings,
 } from '@/storage/settings-storage';
@@ -108,6 +109,15 @@ const contrastRatio = (firstColor: string, secondColor: string): number => {
   return (lighter + 0.05) / (darker + 0.05);
 };
 
+const createDeferred = <Value>() => {
+  let resolve!: (value: Value) => void;
+  const promise = new Promise<Value>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+
+  return { promise, resolve };
+};
+
 describe('settings storage integration', () => {
   const initialPlatform = Platform.OS;
   beforeEach(() => {
@@ -117,6 +127,8 @@ describe('settings storage integration', () => {
     appStorage.insert(StorageKey.History, createEmptyHistoryState(timestamp));
     saveSettings(createDefaultAppSettings(timestamp));
     refreshSettingsSnapshot();
+    mockCancelScheduledNotification.mockReset();
+    mockScheduleDailyReminderNotification.mockReset();
     mockCancelScheduledNotification.mockResolvedValue(undefined);
     mockScheduleDailyReminderNotification.mockResolvedValue('daily-1');
     mockGetLocalNotificationPermissionState.mockResolvedValue(
@@ -263,6 +275,34 @@ describe('settings storage integration', () => {
     });
     await setDailyReminderTimeAndSchedule('22:00');
     expect(getSettings().notifications.dailyReminderNotificationId).toBeNull();
+  });
+
+  test('cancels a late daily reminder after the reminder is toggled off', async () => {
+    const deferredSchedule = createDeferred<string | null>();
+    mockScheduleDailyReminderNotification.mockReturnValueOnce(deferredSchedule.promise);
+
+    const enablePromise = updateNotificationSettingsAndSchedule((notifications) => ({
+      ...notifications,
+      dailyReminderEnabled: true,
+      dailyReminderTime: '20:00',
+    }));
+    await Promise.resolve();
+    expect(getSettings().notifications.dailyReminderEnabled).toBe(true);
+    expect(getSettings().notifications.dailyReminderNotificationId).toBeNull();
+
+    await updateNotificationSettingsAndSchedule((notifications) => ({
+      ...notifications,
+      dailyReminderEnabled: false,
+    }));
+    expect(getSettings().notifications.dailyReminderEnabled).toBe(false);
+    expect(getSettings().notifications.dailyReminderNotificationId).toBeNull();
+
+    deferredSchedule.resolve('late-daily');
+    await enablePromise;
+
+    expect(getSettings().notifications.dailyReminderEnabled).toBe(false);
+    expect(getSettings().notifications.dailyReminderNotificationId).toBeNull();
+    expect(mockCancelScheduledNotification).toHaveBeenCalledWith('late-daily');
   });
 
   test('completes notification onboarding and enables only fast-end reminders when allowed', () => {

@@ -165,10 +165,17 @@ describe('notification storage', () => {
       goalDurationHours: 16,
     });
 
-    expect(await scheduleFastEndNotification({ session, enabled: true })).toBe('notification-1');
+    expect(await scheduleFastEndNotification({
+      session,
+      enabled: true,
+      goalDurationLabel: '3d 5h',
+    })).toBe('notification-1');
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: expect.objectContaining({ title: 'Fast goal reached' }),
+        content: expect.objectContaining({
+          title: 'Fast goal reached',
+          body: 'Your 3d 5h fast is complete.',
+        }),
         trigger: expect.objectContaining({ type: 'date', channelId: 'fasting-reminders' }),
       }),
     );

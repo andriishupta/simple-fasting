@@ -190,6 +190,7 @@ export default function HomeScreen() {
   const [noteVisible, setNoteVisible] = useState(false);
   const [customDurationExpanded, setCustomDurationExpanded] = useState(false);
   const [operationError, setOperationError] = useState<string | null>(null);
+  const [activeReminderUpdating, setActiveReminderUpdating] = useState(false);
   const activeSession = activeFastState.session;
   const shouldScroll =
     height < (activeSession === null ? 700 : 760) ||
@@ -351,13 +352,15 @@ export default function HomeScreen() {
                 activeSession.goalDurationHours > 0 ? getGoalSeconds(activeSession) : null
               }
               reminderEnabled={activeFastState.fastEndReminderEnabled}
+              reminderUpdating={activeReminderUpdating}
               timerView={activeFastState.timerViewPreference}
               onTimerViewChange={setActiveFastTimerView}
               onStartedAtChange={updateActiveFastStartedAt}
               onReminderChange={(enabled) => {
-                void setActiveFastEndReminderEnabled(enabled).catch(() =>
-                  setOperationError(t('fast.reminderUpdateFailed')),
-                );
+                setActiveReminderUpdating(true);
+                void setActiveFastEndReminderEnabled(enabled)
+                  .catch(() => setOperationError(t('fast.reminderUpdateFailed')))
+                  .finally(() => setActiveReminderUpdating(false));
               }}
               onEnd={() => {
                 void endActiveFast();
@@ -494,6 +497,7 @@ function ActiveFast({
   reason,
   goalSeconds,
   reminderEnabled,
+  reminderUpdating,
   timerView,
   onTimerViewChange,
   onStartedAtChange,
@@ -508,6 +512,7 @@ function ActiveFast({
   reason: string | null;
   goalSeconds: number | null;
   reminderEnabled: boolean;
+  reminderUpdating: boolean;
   timerView: TimerViewPreference;
   onTimerViewChange: (timerView: TimerViewPreference) => void;
   onStartedAtChange: (startedAt: Date) => Promise<boolean>;
@@ -582,6 +587,12 @@ function ActiveFast({
               <ThemedText type="smallBold" themeColor="accent" style={styles.activeGoalSummaryDuration}>
                 {goalSubtitle}
               </ThemedText>
+              <LiveGoalReachedCheck
+                elapsedSeconds={elapsedSeconds}
+                goalSeconds={goalSeconds}
+                color={theme.accent}
+                initialElapsedSeconds={initialElapsedSeconds}
+              />
             </View>
           </View>
           <LinearTimerProgress
@@ -613,6 +624,7 @@ function ActiveFast({
                   accessibilityLabel={t('fast.reminderAccessibility')}
                   value={reminderEnabled}
                   onValueChange={onReminderChange}
+                  disabled={reminderUpdating}
                   trackColor={{ true: theme.accent }}
                 />
               </View>
@@ -770,6 +782,31 @@ function LiveTimerText({
       defaultValue={getText(initialElapsedSeconds)}
       style={[styles.timer, { color }]}
     />
+  );
+}
+
+function LiveGoalReachedCheck({
+  elapsedSeconds,
+  goalSeconds,
+  color,
+  initialElapsedSeconds,
+}: {
+  elapsedSeconds: SharedValue<number>;
+  goalSeconds: number | null;
+  color: string;
+  initialElapsedSeconds: number;
+}) {
+  const initialReached = goalSeconds !== null && initialElapsedSeconds >= goalSeconds;
+  const checkStyle = useAnimatedStyle(() => ({
+    opacity: goalSeconds !== null && elapsedSeconds.value >= goalSeconds ? 1 : 0,
+  }), [goalSeconds]);
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.timerGoalReachedIcon, { opacity: initialReached ? 1 : 0 }, checkStyle]}>
+      <CheckCircle2 size={22} color={color} strokeWidth={2.4} />
+    </Animated.View>
   );
 }
 
@@ -975,6 +1012,12 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.rounded,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
+  },
+  timerGoalReachedIcon: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   timerProgressTrack: {
     width: '100%',
