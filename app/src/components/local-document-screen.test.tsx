@@ -7,7 +7,7 @@ describe('LocalDocumentScreen shared-content integration', () => {
   test('renders canonical legal metadata, sections, paragraphs, and lists', async () => {
     const screen = await render(<LocalDocumentScreen document={sharedDocuments.privacy} />);
 
-    expect(screen.getByText('Effective 2026-07-01 - Version 1.6')).toBeOnTheScreen();
+    expect(screen.getByText('Effective 2026-07-07 - Version 1.0')).toBeOnTheScreen();
     expect(screen.getByText('3. Analytics and native crash reporting')).toBeOnTheScreen();
     expect(screen.getByText(/does not use an analytics SDK/)).toBeOnTheScreen();
     expect(screen.getByText(/up to 50 recent diagnostic events/)).toBeOnTheScreen();
@@ -17,7 +17,7 @@ describe('LocalDocumentScreen shared-content integration', () => {
   test('renders the version-only FAQ metadata and diagnostic answer', async () => {
     const screen = await render(<LocalDocumentScreen document={sharedDocuments.faq} />);
 
-    expect(screen.getByText('Version 1.3')).toBeOnTheScreen();
+    expect(screen.getByText('Version 1.0')).toBeOnTheScreen();
     expect(screen.getByText('Does the app collect crash or diagnostic information?')).toBeOnTheScreen();
     expect(screen.getByText(/That file is not shared unless you choose it and a destination/)).toBeOnTheScreen();
   });

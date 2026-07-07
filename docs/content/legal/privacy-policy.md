@@ -1,8 +1,8 @@
 ---
 id: privacy-policy
 title: Privacy Policy
-version: 1.6
-effectiveDate: 2026-07-01
+version: 1.0
+effectiveDate: 2026-07-07
 description: How Simple Fasting handles local app data, native platform crash reports, website requests, support emails, exports, privacy rights, and future product changes.
 intro: Simple Fasting is built so fasting information can remain on your device. This policy describes the current app and website, what information may be handled, and the choices available to you.
 ---

@@ -1,7 +1,7 @@
 ---
 id: faq
 title: Frequently Asked Questions
-version: 1.3
+version: 1.0
 description: Answers about Simple Fasting accounts, privacy, tracking, email, local diagnostics, exports, health, availability, and future changes.
 intro: Practical answers about the current Simple Fasting app. Features described as future or planned are not part of the current release.
 ---
