@@ -54,10 +54,10 @@ export const createFastingWidgetModel = (
   const hasGoal = goalSeconds > 0;
   const hasReachedGoal = hasGoal && elapsedSeconds >= goalSeconds;
   const showsRemaining =
-    timerViewPreference === TimerViewPreference.Remaining && hasGoal && !hasReachedGoal;
+    timerViewPreference === TimerViewPreference.Remaining && hasGoal;
   const shownSeconds =
     showsRemaining
-      ? goalSeconds - elapsedSeconds
+      ? Math.max(0, goalSeconds - elapsedSeconds)
       : elapsedSeconds;
   const displayTime = formatDuration(shownSeconds);
   const goalDurationLabel = hasGoal

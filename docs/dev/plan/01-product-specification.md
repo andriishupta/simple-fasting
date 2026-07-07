@@ -54,6 +54,7 @@ An active fast shows:
 
 - elapsed time and progress;
 - persisted elapsed/remaining toggle for planned fasts, retained in MMKV between fasts and shared with widgets;
+- remaining view remains selectable after the planned goal is reached and clamps at zero instead of switching to elapsed automatically;
 - start and planned end times;
 - optional note;
 - local end reminder control that schedules a notification when the planned goal is reached;

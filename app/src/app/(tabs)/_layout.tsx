@@ -5,8 +5,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/locales/i18n';
 
 export const unstable_settings = {
-  anchor: 'index',
-  initialRouteName: 'index',
+  anchor: 'fast',
+  initialRouteName: 'fast',
 };
 
 export default function TabLayout() {
@@ -33,7 +33,7 @@ export default function TabLayout() {
         />
         <NativeTabs.Trigger.Label>{t('tabs.data')}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="index" contentStyle={contentStyle}>
+      <NativeTabs.Trigger name="fast" contentStyle={contentStyle}>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'timer', selected: 'timer' }}
           md="timer"

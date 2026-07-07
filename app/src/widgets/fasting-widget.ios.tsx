@@ -114,6 +114,8 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
   const startedAt = new Date(props.startedAt);
   const hasGoal = props.goalDurationHours > 0;
   const goalEndsAt = new Date(props.goalEndsAt);
+  const showingRemaining = props.timerView === 'remaining' && hasGoal;
+  const remainingReachedGoal = showingRemaining && goalEndsAt.getTime() <= Date.now();
 
   if (isMedium) {
     return (
@@ -146,7 +148,7 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
           </HStack>
           <HStack spacing={4}>
             <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(secondaryColor)]}>
-              {props.timerView === 'remaining' && hasGoal ? 'REMAINING' : 'ELAPSED'}
+              {showingRemaining ? 'REMAINING' : 'ELAPSED'}
             </Text>
             {props.hasReachedGoal ? (
               <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accentColor)]}>
@@ -156,26 +158,37 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
           </HStack>
           {hasGoal ? (
             <ProgressView
-              value={props.progress}
+              timerInterval={{ lower: startedAt, upper: goalEndsAt }}
+              countsDown={false}
               modifiers={[progressViewStyle('linear'), tint(accentColor)]}
             />
           ) : null}
         </VStack>
         <VStack alignment="trailing" spacing={4}>
           <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(accentColor)]}>
-            {props.timerView === 'remaining' && hasGoal ? '↓' : '↑'}
+            {showingRemaining ? '↓' : '↑'}
           </Text>
-          <Text
-            timerInterval={{
-              lower: props.timerView === 'remaining' && hasGoal ? new Date() : startedAt,
-              upper: props.timerView === 'remaining' && hasGoal ? goalEndsAt : distantFuture,
-            }}
-            countsDown={hasGoal && props.timerView === 'remaining'}
-            modifiers={[
-              font({ size: 32, weight: 'bold', design: 'rounded' }),
-              foregroundStyle(primaryColor),
-            ]}
-          />
+          {remainingReachedGoal ? (
+            <Text
+              modifiers={[
+                font({ size: 32, weight: 'bold', design: 'rounded' }),
+                foregroundStyle(primaryColor),
+              ]}>
+              00:00:00
+            </Text>
+          ) : (
+            <Text
+              timerInterval={{
+                lower: showingRemaining ? new Date() : startedAt,
+                upper: showingRemaining ? goalEndsAt : distantFuture,
+              }}
+              countsDown={showingRemaining}
+              modifiers={[
+                font({ size: 32, weight: 'bold', design: 'rounded' }),
+                foregroundStyle(primaryColor),
+              ]}
+            />
+          )}
         </VStack>
       </HStack>
     );
@@ -211,10 +224,10 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
       <Spacer />
       <HStack spacing={4} modifiers={[frame({ maxWidth: Infinity })]}>
         <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(secondaryColor)]}>
-          {props.timerView === 'remaining' && hasGoal ? 'REMAINING' : 'ELAPSED'}
+          {showingRemaining ? 'REMAINING' : 'ELAPSED'}
         </Text>
         <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(accentColor)]}>
-          {props.timerView === 'remaining' && hasGoal ? '↓' : '↑'}
+          {showingRemaining ? '↓' : '↑'}
         </Text>
         <Spacer />
         {props.hasReachedGoal ? (
@@ -223,20 +236,31 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
           </Text>
         ) : null}
       </HStack>
-      <Text
-        timerInterval={{
-          lower: props.timerView === 'remaining' && hasGoal ? new Date() : startedAt,
-          upper: props.timerView === 'remaining' && hasGoal ? goalEndsAt : distantFuture,
-        }}
-        countsDown={hasGoal && props.timerView === 'remaining'}
-        modifiers={[
-          font({ size: 24, weight: 'bold', design: 'rounded' }),
-          foregroundStyle(primaryColor),
-        ]}
-      />
+      {remainingReachedGoal ? (
+        <Text
+          modifiers={[
+            font({ size: 24, weight: 'bold', design: 'rounded' }),
+            foregroundStyle(primaryColor),
+          ]}>
+          00:00:00
+        </Text>
+      ) : (
+        <Text
+          timerInterval={{
+            lower: showingRemaining ? new Date() : startedAt,
+            upper: showingRemaining ? goalEndsAt : distantFuture,
+          }}
+          countsDown={showingRemaining}
+          modifiers={[
+            font({ size: 24, weight: 'bold', design: 'rounded' }),
+            foregroundStyle(primaryColor),
+          ]}
+        />
+      )}
       {hasGoal ? (
         <ProgressView
-          value={props.progress}
+          timerInterval={{ lower: startedAt, upper: goalEndsAt }}
+          countsDown={false}
           modifiers={[progressViewStyle('linear'), tint(accentColor)]}
         />
       ) : null}

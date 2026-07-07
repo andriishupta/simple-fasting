@@ -53,6 +53,7 @@ function FastingLiveActivityView(
   const hasGoal = props.goalDurationHours > 0;
   const goalEndsAt = new Date(props.goalEndsAt);
   const showingRemaining = props.timerView === 'remaining' && hasGoal;
+  const remainingReachedGoal = showingRemaining && goalEndsAt.getTime() <= Date.now();
   const icon = showingRemaining ? '↓' : '↑';
   const compactGoalLabel = hasGoal ? props.goalDurationLabel : 'Fast';
 
@@ -102,19 +103,31 @@ function FastingLiveActivityView(
             <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(accentColor)]}>
               {icon}
             </Text>
-            <Text
-              timerInterval={{
-                lower: showingRemaining ? new Date() : startedAt,
-                upper: showingRemaining ? goalEndsAt : distantFuture,
-              }}
-              countsDown={showingRemaining}
-              modifiers={[
-                font({ size: 22, weight: 'bold', design: 'rounded' }),
-                foregroundStyle(primaryColor),
-                minimumScaleFactor(0.82),
-                lineLimit(1),
-              ]}
-            />
+            {remainingReachedGoal ? (
+              <Text
+                modifiers={[
+                  font({ size: 22, weight: 'bold', design: 'rounded' }),
+                  foregroundStyle(primaryColor),
+                  minimumScaleFactor(0.82),
+                  lineLimit(1),
+                ]}>
+                00:00:00
+              </Text>
+            ) : (
+              <Text
+                timerInterval={{
+                  lower: showingRemaining ? new Date() : startedAt,
+                  upper: showingRemaining ? goalEndsAt : distantFuture,
+                }}
+                countsDown={showingRemaining}
+                modifiers={[
+                  font({ size: 22, weight: 'bold', design: 'rounded' }),
+                  foregroundStyle(primaryColor),
+                  minimumScaleFactor(0.82),
+                  lineLimit(1),
+                ]}
+              />
+            )}
             {props.hasReachedGoal ? (
               <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accentColor)]}>
                 ✓
@@ -125,7 +138,8 @@ function FastingLiveActivityView(
       </HStack>
       {props.goalDurationHours > 0 ? (
         <ProgressView
-          value={props.progress}
+          timerInterval={{ lower: startedAt, upper: goalEndsAt }}
+          countsDown={false}
           modifiers={[progressViewStyle('linear'), tint(accentColor)]}
         />
       ) : null}
@@ -146,19 +160,31 @@ function FastingLiveActivityView(
     ),
     compactTrailing: (
       <HStack spacing={4}>
-        <Text
-          timerInterval={{
-            lower: showingRemaining ? new Date() : startedAt,
-            upper: showingRemaining ? goalEndsAt : distantFuture,
-          }}
-          countsDown={showingRemaining}
-          modifiers={[
-            font({ size: 16, weight: 'bold', design: 'rounded' }),
-            foregroundStyle(islandPrimaryColor),
-            minimumScaleFactor(0.82),
-            lineLimit(1),
-          ]}
-        />
+        {remainingReachedGoal ? (
+          <Text
+            modifiers={[
+              font({ size: 16, weight: 'bold', design: 'rounded' }),
+              foregroundStyle(islandPrimaryColor),
+              minimumScaleFactor(0.82),
+              lineLimit(1),
+            ]}>
+            00:00:00
+          </Text>
+        ) : (
+          <Text
+            timerInterval={{
+              lower: showingRemaining ? new Date() : startedAt,
+              upper: showingRemaining ? goalEndsAt : distantFuture,
+            }}
+            countsDown={showingRemaining}
+            modifiers={[
+              font({ size: 16, weight: 'bold', design: 'rounded' }),
+              foregroundStyle(islandPrimaryColor),
+              minimumScaleFactor(0.82),
+              lineLimit(1),
+            ]}
+          />
+        )}
         {props.hasReachedGoal ? (
           <Text modifiers={[font({ size: 12, weight: 'bold' }), foregroundStyle(accentColor)]}>
             ✓
@@ -187,19 +213,31 @@ function FastingLiveActivityView(
           <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accentColor)]}>
             {icon}
           </Text>
-          <Text
-            timerInterval={{
-              lower: showingRemaining ? new Date() : startedAt,
-              upper: showingRemaining ? goalEndsAt : distantFuture,
-            }}
-            countsDown={showingRemaining}
-            modifiers={[
-              font({ size: 20, weight: 'bold', design: 'rounded' }),
-              foregroundStyle(islandPrimaryColor),
-              minimumScaleFactor(0.82),
-              lineLimit(1),
-            ]}
-          />
+          {remainingReachedGoal ? (
+            <Text
+              modifiers={[
+                font({ size: 20, weight: 'bold', design: 'rounded' }),
+                foregroundStyle(islandPrimaryColor),
+                minimumScaleFactor(0.82),
+                lineLimit(1),
+              ]}>
+              00:00:00
+            </Text>
+          ) : (
+            <Text
+              timerInterval={{
+                lower: showingRemaining ? new Date() : startedAt,
+                upper: showingRemaining ? goalEndsAt : distantFuture,
+              }}
+              countsDown={showingRemaining}
+              modifiers={[
+                font({ size: 20, weight: 'bold', design: 'rounded' }),
+                foregroundStyle(islandPrimaryColor),
+                minimumScaleFactor(0.82),
+                lineLimit(1),
+              ]}
+            />
+          )}
           {props.hasReachedGoal ? (
             <Text modifiers={[font({ size: 13, weight: 'bold' }), foregroundStyle(accentColor)]}>
               ✓
@@ -234,7 +272,8 @@ function FastingLiveActivityView(
         </HStack>
         {props.goalDurationHours > 0 ? (
           <ProgressView
-            value={props.progress}
+            timerInterval={{ lower: startedAt, upper: goalEndsAt }}
+            countsDown={false}
             modifiers={[progressViewStyle('linear'), tint(accentColor)]}
           />
         ) : (

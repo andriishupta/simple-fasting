@@ -94,10 +94,9 @@ const getShownTimerSecondsWorklet = ({
 
   if (
     timerView === TimerViewPreference.Remaining &&
-    goalSeconds !== null &&
-    elapsedSeconds < goalSeconds
+    goalSeconds !== null
   ) {
-    return goalSeconds - elapsedSeconds;
+    return Math.max(0, goalSeconds - elapsedSeconds);
   }
 
   return elapsedSeconds;
@@ -119,8 +118,7 @@ const getShownTimerLabelWorklet = ({
   'worklet';
 
   return timerView === TimerViewPreference.Remaining &&
-    goalSeconds !== null &&
-    elapsedSeconds < goalSeconds
+    goalSeconds !== null
     ? remainingLabel
     : elapsedLabel;
 };

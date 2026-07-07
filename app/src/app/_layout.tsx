@@ -259,6 +259,7 @@ function AppStack({
         />
       </Stack.Protected>
       <Stack.Protected guard={!onboardingRequired}>
+        <Stack.Screen name="index" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="history/[id]"

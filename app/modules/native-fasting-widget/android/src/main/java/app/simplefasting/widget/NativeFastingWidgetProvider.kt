@@ -17,12 +17,17 @@ class NativeFastingWidgetProvider : AppWidgetProvider() {
     for (appWidgetId in appWidgetIds) {
       updateWidget(context, appWidgetManager, appWidgetId, R.layout.native_fasting_widget)
     }
+    NativeFastingWidgetScheduler.scheduleActiveUpdates(context)
   }
 
   override fun onReceive(context: Context, intent: Intent) {
     super.onReceive(context, intent)
-    if (intent.action == NativeFastingWidgetScheduler.actionGoalReached) {
+    if (
+      intent.action == NativeFastingWidgetScheduler.actionGoalReached ||
+      intent.action == NativeFastingWidgetScheduler.actionProgressTick
+    ) {
       updateAll(context)
+      NativeFastingWidgetScheduler.scheduleActiveUpdates(context)
     }
   }
 
@@ -81,8 +86,10 @@ class NativeFastingWidgetProvider : AppWidgetProvider() {
       views.setViewVisibility(R.id.widget_timer, if (isActive) View.VISIBLE else View.GONE)
 
       if (isActive) {
-        val showsRemaining = snapshot.timerView == "remaining" && snapshot.hasGoal && !snapshot.hasReachedGoal
-        val timerBase = if (showsRemaining) {
+        val hasReachedGoal = snapshot.hasGoal && snapshot.goalEndsAt <= System.currentTimeMillis()
+        val progress = calculateProgress(snapshot)
+        val showsRemaining = snapshot.timerView == "remaining" && snapshot.hasGoal
+        val timerBase = if (showsRemaining && !hasReachedGoal) {
           wallClockToElapsedRealtime(snapshot.goalEndsAt)
         } else {
           wallClockToElapsedRealtime(snapshot.startedAt)
@@ -90,11 +97,14 @@ class NativeFastingWidgetProvider : AppWidgetProvider() {
 
         views.setTextViewText(R.id.widget_headline, snapshot.headline)
         views.setTextViewText(R.id.widget_mode, if (showsRemaining) "REMAINING" else "ELAPSED")
-        views.setChronometer(R.id.widget_timer, timerBase, null, true)
-        views.setChronometerCountDown(R.id.widget_timer, showsRemaining)
-        views.setViewVisibility(R.id.widget_goal_check, if (snapshot.hasReachedGoal) View.VISIBLE else View.GONE)
+        views.setChronometer(R.id.widget_timer, timerBase, null, !hasReachedGoal || !showsRemaining)
+        views.setChronometerCountDown(R.id.widget_timer, showsRemaining && !hasReachedGoal)
+        if (showsRemaining && hasReachedGoal) {
+          views.setTextViewText(R.id.widget_timer, "00:00:00")
+        }
+        views.setViewVisibility(R.id.widget_goal_check, if (hasReachedGoal) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widget_progress, if (snapshot.hasGoal) View.VISIBLE else View.GONE)
-        views.setProgressBar(R.id.widget_progress, 1000, snapshot.progress, false)
+        views.setProgressBar(R.id.widget_progress, 1000, progress, false)
       } else {
         views.setTextViewText(R.id.widget_ready_headline, snapshot.headline)
         views.setTextViewText(R.id.widget_ready_subtitle, snapshot.subtitle)
@@ -107,6 +117,16 @@ class NativeFastingWidgetProvider : AppWidgetProvider() {
 
     private fun wallClockToElapsedRealtime(wallClockMillis: Long): Long {
       return SystemClock.elapsedRealtime() + (wallClockMillis - System.currentTimeMillis())
+    }
+
+    private fun calculateProgress(snapshot: NativeFastingWidgetSnapshot): Int {
+      if (!snapshot.hasGoal || snapshot.startedAt <= 0L || snapshot.goalEndsAt <= snapshot.startedAt) {
+        return 0
+      }
+
+      val elapsed = System.currentTimeMillis() - snapshot.startedAt
+      val duration = snapshot.goalEndsAt - snapshot.startedAt
+      return ((elapsed.toDouble() / duration.toDouble()).coerceIn(0.0, 1.0) * 1000).toInt()
     }
 
     private fun openAppIntent(context: Context): PendingIntent {
@@ -130,12 +150,17 @@ class NativeFastingWideWidgetProvider : AppWidgetProvider() {
         R.layout.native_fasting_widget_wide,
       )
     }
+    NativeFastingWidgetScheduler.scheduleActiveUpdates(context)
   }
 
   override fun onReceive(context: Context, intent: Intent) {
     super.onReceive(context, intent)
-    if (intent.action == NativeFastingWidgetScheduler.actionGoalReached) {
+    if (
+      intent.action == NativeFastingWidgetScheduler.actionGoalReached ||
+      intent.action == NativeFastingWidgetScheduler.actionProgressTick
+    ) {
       NativeFastingWidgetProvider.updateAll(context)
+      NativeFastingWidgetScheduler.scheduleActiveUpdates(context)
     }
   }
 }
