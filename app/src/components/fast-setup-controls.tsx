@@ -210,9 +210,10 @@ export function FastGoalSelector({
                 maxLength={noteMaxLength}
                 placeholder={t('setup.notePlaceholder')}
                 placeholderTextColor={theme.textSecondary}
-                returnKeyType="default"
+                returnKeyType="done"
                 multiline
                 scrollEnabled
+                submitBehavior="blurAndSubmit"
                 textAlignVertical="top"
                 style={[
                   styles.input,

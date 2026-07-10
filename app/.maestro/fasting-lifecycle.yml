@@ -8,9 +8,15 @@ name: Complete a fasting lifecycle
 - tapOn: Not Now
 - assertVisible: Simple Fasting
 - assertVisible: 16:8
+- tapOn: Note
+- tapOn: Fast note
+- inputText: Morning plan
+- hideKeyboard
+- assertVisible: Morning plan
 - tapOn: Start fast
 - assertVisible: End fast
 - assertVisible: Cancel fast
+- assertVisible: Morning plan
 - tapOn: End fast
 - assertVisible: Start fast
 - assertVisible: View fast

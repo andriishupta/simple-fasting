@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react-native';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { TabScreenShell } from '@/components/tab-screen-shell';
@@ -24,6 +24,11 @@ describe('TabScreenShell', () => {
     expect(scrollView).toBeDefined();
     expect(scrollView.props.scrollEnabled).toBe(false);
     expect(scrollView.props.bounces).toBe(false);
+    expect(scrollView.props.automaticallyAdjustKeyboardInsets).toBe(true);
+    expect(scrollView.props.keyboardDismissMode).toBe(
+      Platform.OS === 'ios' ? 'interactive' : 'on-drag',
+    );
+    expect(scrollView.props.scrollsChildToFocus).toBe(true);
     expect(scrollView.props.contentInsetAdjustmentBehavior).toBe('automatic');
   });
 });

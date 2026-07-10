@@ -146,6 +146,8 @@ const findStringByKey = (value, names) => {
 for (const device of devices) {
   const allText = stringsFrom(device).join(' ').toLowerCase();
   const connectionText = stringsFrom(device.connectionProperties ?? {}).join(' ').toLowerCase();
+  const stateText = stringsFrom(device.state ?? device.availability ?? {}).join(' ').toLowerCase();
+  const availabilityText = `${connectionText} ${stateText} ${allText}`;
   const platform = String(device?.hardwareProperties?.platform ?? '').toLowerCase();
   const productType = String(device?.hardwareProperties?.productType ?? '').toLowerCase();
   const isSimulator = allText.includes('simulator') || productType.includes('simulator');
@@ -158,16 +160,18 @@ for (const device of devices) {
     productType.startsWith('ipod') ||
     (!isSimulator && /\b(iphone|ipad|ipod)\b/.test(allText));
   const unavailable =
-    connectionText.includes('disconnected') ||
-    connectionText.includes('not connected') ||
-    connectionText.includes('unavailable') ||
-    connectionText.includes('offline');
+    /\bdisconnected\b/.test(availabilityText) ||
+    /\bnot connected\b/.test(availabilityText) ||
+    /\bunavailable\b/.test(availabilityText) ||
+    /\boffline\b/.test(availabilityText);
   const connected =
     !unavailable &&
-    (connectionText.includes('connected') ||
-      connectionText.includes('wired') ||
-      connectionText.includes('usb') ||
-      connectionText.includes('network'));
+    (/\bavailable\b/.test(availabilityText) ||
+      /\bpaired\b/.test(availabilityText) ||
+      /\bconnected\b/.test(availabilityText) ||
+      /\bwired\b/.test(availabilityText) ||
+      /\busb\b/.test(availabilityText) ||
+      /\bnetwork\b/.test(availabilityText));
 
   if (!isIos || isSimulator || isMac || !connected) continue;
 
@@ -195,6 +199,36 @@ NODE
       ios_device_names+=("${name:-$identifier}")
     fi
   done <<<"$output"
+
+  if [[ "${#ios_device_ids[@]}" -gt 0 ]]; then
+    return 0
+  fi
+
+  local table_output
+  table_output="$(xcrun devicectl list devices --timeout 10 2>/dev/null || true)"
+  while IFS=$'\t' read -r identifier name; do
+    if [[ -n "$identifier" ]]; then
+      ios_device_ids+=("$identifier")
+      ios_device_names+=("${name:-$identifier}")
+    fi
+  done < <(
+    printf '%s\n' "$table_output" | awk -F '  +' '
+      NR <= 2 { next }
+      NF >= 5 {
+        name = $1
+        identifier = $3
+        state = tolower($4)
+        model = tolower($5)
+        has_identifier = identifier ~ /^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$/
+        is_ios = model ~ /(iphone|ipad|ipod)/
+        is_physical = model !~ /(simulator|mac)/
+        is_available = state !~ /(unavailable|offline|disconnected|not connected)/ && state ~ /(available|paired|connected)/
+        if (has_identifier && is_ios && is_physical && is_available) {
+          print identifier "\t" name
+        }
+      }
+    '
+  )
 }
 
 require_ios_device() {
@@ -220,7 +254,9 @@ release_ios() {
   require_ios_device
   sync_content
 
-  echo "==> Building iOS Release app"
+  local build_device_id="${ios_device_ids[0]}"
+  local build_device_name="${ios_device_names[0]}"
+  echo "==> Building iOS Release app for $build_device_name ($build_device_id)"
   (
     cd "$IOS_DIR"
     NODE_ENV=production xcodebuild \
@@ -228,7 +264,7 @@ release_ios() {
       -scheme "$IOS_SCHEME" \
       -configuration Release \
       -sdk iphoneos \
-      -destination 'generic/platform=iOS' \
+      -destination "id=$build_device_id" \
       -derivedDataPath "$IOS_DERIVED_DATA" \
       build
   )

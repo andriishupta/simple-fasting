@@ -289,12 +289,16 @@ export default function HomeScreen() {
 
   return (
     <TabScreenShell
-      scrollEnabled={activeSession === null ? 'auto' : shouldScroll}
+      scrollEnabled={shouldScroll ? true : 'auto'}
       keyboardShouldPersistTaps="handled"
       maxWidth={Math.min(MaxContentWidth, 560)}
       contentStyle={styles.homeContent}>
         <ScreenHeading align="center">{t('common.appName')}</ScreenHeading>
-        <View style={styles.fastStateShell}>
+        <View
+          style={[
+            styles.fastStateShell,
+            activeSession !== null && styles.activeFastStateShell,
+          ]}>
           {activeSession === null ? (
             <ReadyToFast
               goals={enabledGoals}
@@ -841,6 +845,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingVertical: Spacing.xl,
+  },
+  activeFastStateShell: {
+    paddingBottom: Spacing.xl + Typography.screenTitle.lineHeight + Spacing.three,
   },
   savedNotice: {
     minHeight: 64,
