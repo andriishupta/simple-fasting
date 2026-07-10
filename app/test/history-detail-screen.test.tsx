@@ -11,7 +11,7 @@ import {
 } from '@/storage/app-storage';
 import { refreshFastSnapshots } from '@/storage/fasting-storage';
 import { refreshSettingsSnapshot, saveSettings } from '@/storage/settings-storage';
-import { createHistory, createSession } from '../../../test/fixtures';
+import { createHistory, createSession } from './fixtures';
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn() },
