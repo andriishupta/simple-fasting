@@ -99,7 +99,6 @@ function DetailContent({ session }: { session: FastSession }) {
   const settings = useSettings();
   const enabledGoals = settings.goals.filter((goal) => goal.isEnabled);
   const [editState, setEditState] = useState<EditState>(() => createEditState(session));
-  const [editError, setEditError] = useState<string | null>(null);
   const [customDurationExpanded, setCustomDurationExpanded] = useState(false);
   const [noteEnabled, setNoteEnabled] = useState(session.reason !== null);
   const goalDurationHours = Number(editState.goalDurationHours);
@@ -112,6 +111,9 @@ function DetailContent({ session }: { session: FastSession }) {
   const [selectedGoalId, setSelectedGoalId] = useState(() =>
     getGoalSelectionId(enabledGoals, goalDurationHours),
   );
+  const showValidationError = (message: string): void => {
+    Alert.alert(message);
+  };
 
   const deleteSession = (): void => {
     Alert.alert(t('historyEdit.deleteTitle'), t('historyEdit.deleteMessage'), [
@@ -134,42 +136,42 @@ function DetailContent({ session }: { session: FastSession }) {
     const currentTime = Date.now();
 
     if (startedAt === null) {
-      setEditError(t('historyEdit.startRequired'));
+      showValidationError(t('historyEdit.startRequired'));
       return;
     }
 
     if (startedAt.getTime() > currentTime) {
-      setEditError(t('historyEdit.startFuture'));
+      showValidationError(t('historyEdit.startFuture'));
       return;
     }
 
     if (endedAt === null) {
-      setEditError(t('historyEdit.endRequired'));
+      showValidationError(t('historyEdit.endRequired'));
       return;
     }
 
     if (endedAt.getTime() > currentTime) {
-      setEditError(t('historyEdit.endFuture'));
+      showValidationError(t('historyEdit.endFuture'));
       return;
     }
 
     if (selectedGoalId === customGoalId && goalDurationText === '') {
-      setEditError(t('historyEdit.goalRequired'));
+      showValidationError(t('historyEdit.goalRequired'));
       return;
     }
 
     if (!Number.isInteger(goalDurationHours) || goalDurationHours < 0) {
-      setEditError(t('historyEdit.goalRequired'));
+      showValidationError(t('historyEdit.goalRequired'));
       return;
     }
 
     if (goalDurationHours > maxCustomDurationHours) {
-      setEditError(t('historyEdit.goalMax'));
+      showValidationError(t('historyEdit.goalMax'));
       return;
     }
 
     if (endedAt.getTime() <= startedAt.getTime()) {
-      setEditError(t('historyEdit.dateInvalidMessage'));
+      showValidationError(t('historyEdit.dateInvalidMessage'));
       return;
     }
 
@@ -184,9 +186,7 @@ function DetailContent({ session }: { session: FastSession }) {
     });
 
     if (overlappingSession !== undefined) {
-      setEditError(
-        t('historyEdit.overlapMessage'),
-      );
+      showValidationError(t('historyEdit.overlapMessage'));
       return;
     }
 
@@ -202,11 +202,10 @@ function DetailContent({ session }: { session: FastSession }) {
     });
 
     if (updatedSession === undefined) {
-      setEditError(t('historyEdit.missingSaveTarget'));
+      showValidationError(t('historyEdit.missingSaveTarget'));
       return;
     }
 
-    setEditError(null);
     router.back();
   };
 
@@ -248,15 +247,6 @@ function DetailContent({ session }: { session: FastSession }) {
         }}
         onNoteChangeText={(reason: string) => setEditState((state) => ({ ...state, reason }))}
       />
-
-      {editError !== null && (
-        <FeedbackState
-          kind="error"
-          title={t('historyEdit.saveFailedTitle')}
-          description={editError}
-          action={{ label: t('common.dismiss'), onPress: () => setEditError(null) }}
-        />
-      )}
 
       <FastingSummaryCard
         duration={formatDuration(editedDurationSeconds)}
