@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { router } from 'expo-router';
 import { ChevronRight, GripVertical, Plus } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,6 +26,10 @@ export default function GoalsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [draggingGoalId, setDraggingGoalId] = useState<string | null>(null);
+  const screenStyle = [
+    styles.screen,
+    Platform.OS === 'android' ? { paddingTop: insets.top + Spacing.six } : null,
+  ];
 
   return (
     <View style={styles.root}>
@@ -33,7 +37,7 @@ export default function GoalsScreen() {
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.screen}>
+        contentContainerStyle={screenStyle}>
         <View style={styles.content}>
           <View style={styles.sectionHeading}>
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>

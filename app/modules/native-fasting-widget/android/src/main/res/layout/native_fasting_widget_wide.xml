@@ -3,6 +3,7 @@
   android:id="@+id/widget_root"
   android:layout_width="match_parent"
   android:layout_height="match_parent"
+  android:background="#15171C"
   android:gravity="center_vertical"
   android:orientation="horizontal"
   android:paddingStart="16dp"
@@ -16,7 +17,8 @@
     android:layout_height="match_parent"
     android:layout_weight="1"
     android:gravity="center_vertical"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:visibility="gone">
 
     <TextView
       android:id="@+id/widget_brand"
@@ -27,6 +29,7 @@
       android:maxLines="1"
       android:text="SIMPLE FASTING"
       android:textAllCaps="true"
+      android:textColor="#F97316"
       android:textSize="10sp"
       android:textStyle="bold" />
 
@@ -37,6 +40,7 @@
       android:ellipsize="end"
       android:fontFamily="sans"
       android:maxLines="1"
+      android:textColor="#F5F7FF"
       android:textSize="14sp"
       android:textStyle="bold" />
 
@@ -53,6 +57,7 @@
         android:ellipsize="end"
         android:fontFamily="sans"
         android:maxLines="1"
+        android:textColor="#F97316"
         android:textSize="10sp"
         android:textStyle="bold" />
 
@@ -88,8 +93,10 @@
     android:fontFamily="sans"
     android:gravity="end"
     android:maxLines="1"
+    android:textColor="#F97316"
     android:textSize="24sp"
-    android:textStyle="bold" />
+    android:textStyle="bold"
+    android:visibility="gone" />
 
   <LinearLayout
     android:id="@+id/widget_ready_group"
@@ -99,12 +106,27 @@
     android:orientation="vertical">
 
     <TextView
+      android:id="@+id/widget_ready_brand"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:ellipsize="end"
+      android:fontFamily="sans"
+      android:maxLines="1"
+      android:text="SIMPLE FASTING"
+      android:textAllCaps="true"
+      android:textColor="#F97316"
+      android:textSize="10sp"
+      android:textStyle="bold" />
+
+    <TextView
       android:id="@+id/widget_ready_headline"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:ellipsize="end"
       android:fontFamily="sans"
       android:maxLines="1"
+      android:text="Ready to fast?"
+      android:textColor="#F5F7FF"
       android:textSize="22sp"
       android:textStyle="bold" />
 
@@ -115,6 +137,8 @@
       android:ellipsize="end"
       android:fontFamily="sans"
       android:maxLines="1"
+      android:text="Open the app to start one."
+      android:textColor="#A9AFBD"
       android:textSize="12sp" />
   </LinearLayout>
 </LinearLayout>

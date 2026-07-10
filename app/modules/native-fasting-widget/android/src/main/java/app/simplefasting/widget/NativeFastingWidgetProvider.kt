@@ -6,8 +6,10 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.net.Uri
+import android.os.Build
 import android.os.SystemClock
 import android.view.View
 import android.widget.RemoteViews
@@ -78,8 +80,21 @@ class NativeFastingWidgetProvider : AppWidgetProvider() {
       views.setTextColor(R.id.widget_mode, colors.accent)
       views.setTextColor(R.id.widget_timer, colors.accent)
       views.setTextColor(R.id.widget_goal_check, colors.accent)
+      views.setTextColor(R.id.widget_ready_brand, colors.accent)
       views.setTextColor(R.id.widget_ready_headline, colors.primary)
       views.setTextColor(R.id.widget_ready_subtitle, colors.secondary)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        views.setColorStateList(
+          R.id.widget_progress,
+          "setProgressTintList",
+          ColorStateList.valueOf(colors.accent),
+        )
+        views.setColorStateList(
+          R.id.widget_progress,
+          "setProgressBackgroundTintList",
+          ColorStateList.valueOf(colors.secondary),
+        )
+      }
 
       views.setViewVisibility(R.id.widget_active_group, if (isActive) View.VISIBLE else View.GONE)
       views.setViewVisibility(R.id.widget_ready_group, if (isActive) View.GONE else View.VISIBLE)
@@ -130,7 +145,7 @@ class NativeFastingWidgetProvider : AppWidgetProvider() {
     }
 
     private fun openAppIntent(context: Context): PendingIntent {
-      val intent = Intent(Intent.ACTION_VIEW, Uri.parse("simple-fasting://")).apply {
+      val intent = Intent(Intent.ACTION_VIEW, Uri.parse("simple-fasting://fast")).apply {
         setPackage(context.packageName)
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
       }

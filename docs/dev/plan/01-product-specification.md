@@ -149,7 +149,7 @@ No push-notification backend is used.
 
 Small home-screen widgets are implemented for iOS and Android. iOS also supports an optional active-fast Live Activity for the Lock Screen and Dynamic Island.
 
-When inactive, the widget invites the user to open the app and start a fast. When active, it shows the app identity, goal name and formatted goal duration, the persisted elapsed/remaining label, one timer, and planned-goal progress without redundant timer or goal labels. Tapping opens the app through `simple-fasting://`.
+When inactive, the widget invites the user to open the app and start a fast. When active, it shows the app identity, goal name and formatted goal duration, the persisted elapsed/remaining label, one timer, and planned-goal progress without redundant timer or goal labels. Tapping opens the Fast tab through `simple-fasting://fast`.
 
 - iOS uses `expo-widgets` and SwiftUI-backed Expo UI for home-screen widgets and Live Activities.
 - Android uses `react-native-android-widget`.

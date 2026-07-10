@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
 import {
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/app-button';
 import { FeedbackState } from '@/components/feedback-state';
@@ -20,8 +19,8 @@ import {
   maxCustomDurationHours,
   unlimitedGoalId,
 } from '@/components/fast-setup-controls';
+import { NativeDateTimeField } from '@/components/native-date-time-field';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useAppThemeColorScheme, useTheme } from '@/hooks/use-theme';
 import { t } from '@/locales/i18n';
 import {
   deleteFastSession,
@@ -53,20 +52,6 @@ const toDateValue = (timestamp: string | null): Date | null => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
-const mergeDatePart = ({ current, selected }: { current: Date | null; selected: Date }): Date => {
-  const next = current === null ? new Date() : new Date(current);
-
-  next.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
-  return next;
-};
-
-const mergeTimePart = ({ current, selected }: { current: Date | null; selected: Date }): Date => {
-  const next = current === null ? new Date() : new Date(current);
-
-  next.setHours(selected.getHours(), selected.getMinutes());
-  return next;
-};
-
 const createEditState = (session: FastSession): EditState => ({
   startedAt: toDateValue(session.startedAt),
   endedAt: toDateValue(session.endedAt),
@@ -76,14 +61,19 @@ const createEditState = (session: FastSession): EditState => ({
 
 export default function HistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const insets = useSafeAreaInsets();
   useHistoryState();
   const session = typeof id === 'string' ? getFastSession(id) : undefined;
+  const screenStyle = [
+    styles.screen,
+    Platform.OS === 'android' ? { paddingTop: insets.top + Spacing.six } : null,
+  ];
 
   if (session === undefined) {
     return (
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={styles.screen}>
+        contentContainerStyle={screenStyle}>
         <FeedbackState
           kind="error"
           title={t('historyEdit.missingTitle')}
@@ -99,7 +89,7 @@ export default function HistoryDetailScreen() {
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.screen}>
+      contentContainerStyle={screenStyle}>
       <DetailContent session={session} />
     </ScrollView>
   );
@@ -299,57 +289,6 @@ function DetailContent({ session }: { session: FastSession }) {
   );
 }
 
-function NativeDateTimeField({
-  value,
-  fallbackDate,
-  onChange,
-}: {
-  value: Date | null;
-  fallbackDate?: Date;
-  onChange: (value: Date | null) => void;
-}) {
-  const theme = useTheme();
-  const colorScheme = useAppThemeColorScheme();
-  const pickerValue = value ?? fallbackDate ?? new Date();
-  const updateDate = (_event: DateTimePickerEvent, selectedDate?: Date): void => {
-    if (selectedDate !== undefined) {
-      onChange(mergeDatePart({ current: value, selected: selectedDate }));
-    }
-  };
-  const updateTime = (_event: DateTimePickerEvent, selectedDate?: Date): void => {
-    if (selectedDate !== undefined) {
-      onChange(mergeTimePart({ current: value, selected: selectedDate }));
-    }
-  };
-
-  return (
-    <View style={styles.timeField}>
-      <View style={styles.dateTimeControls}>
-        <DateTimePicker
-          mode="date"
-          display={process.env.EXPO_OS === 'ios' ? 'compact' : 'default'}
-          value={pickerValue}
-          maximumDate={new Date()}
-          themeVariant={colorScheme}
-          accentColor={theme.accent}
-          textColor={theme.text}
-          onChange={updateDate}
-        />
-        <DateTimePicker
-          mode="time"
-          display={process.env.EXPO_OS === 'ios' ? 'compact' : 'default'}
-          value={pickerValue}
-          maximumDate={new Date()}
-          themeVariant={colorScheme}
-          accentColor={theme.accent}
-          textColor={theme.text}
-          onChange={updateTime}
-        />
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: {
     flexGrow: 1,
@@ -360,15 +299,6 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: Spacing.three,
-  },
-  timeField: {
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  dateTimeControls: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xs,
   },
   actions: {
     flexDirection: 'row',

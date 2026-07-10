@@ -116,7 +116,7 @@ Legal, FAQ, and What's New changes are special because the app also renders offl
 - inactive and active small widget states;
 - elapsed timer and goal/open-ended label;
 - refresh after start, end, cancel, and clear data;
-- tap opens the app through `simple-fasting://`;
+- tap opens the Fast tab through `simple-fasting://fast`;
 - widget failure never blocks fasting-state persistence;
 - light and dark widget appearance.
 

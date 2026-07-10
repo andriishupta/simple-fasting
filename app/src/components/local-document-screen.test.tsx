@@ -1,11 +1,24 @@
 import { render } from '@testing-library/react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import type { ComponentProps } from 'react';
 
 import { LocalDocumentScreen } from '@/components/local-document-screen';
 import { sharedDocuments } from '@/content/shared-documents';
 
+const renderLocalDocument = (document: ComponentProps<typeof LocalDocumentScreen>['document']) =>
+  render(
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 390, height: 844 },
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      }}>
+      <LocalDocumentScreen document={document} />
+    </SafeAreaProvider>,
+  );
+
 describe('LocalDocumentScreen shared-content integration', () => {
   test('renders canonical legal metadata, sections, paragraphs, and lists', async () => {
-    const screen = await render(<LocalDocumentScreen document={sharedDocuments.privacy} />);
+    const screen = await renderLocalDocument(sharedDocuments.privacy);
 
     expect(screen.getByText('Effective 2026-07-07 - Version 1.0')).toBeOnTheScreen();
     expect(screen.getByText('3. Analytics and native crash reporting')).toBeOnTheScreen();
@@ -15,7 +28,7 @@ describe('LocalDocumentScreen shared-content integration', () => {
   });
 
   test('renders the version-only FAQ metadata and diagnostic answer', async () => {
-    const screen = await render(<LocalDocumentScreen document={sharedDocuments.faq} />);
+    const screen = await renderLocalDocument(sharedDocuments.faq);
 
     expect(screen.getByText('Version 1.0')).toBeOnTheScreen();
     expect(screen.getByText('Does the app collect crash or diagnostic information?')).toBeOnTheScreen();
@@ -23,7 +36,7 @@ describe('LocalDocumentScreen shared-content integration', () => {
   });
 
   test("renders what's new release notes", async () => {
-    const screen = await render(<LocalDocumentScreen document={sharedDocuments.whatsNew} />);
+    const screen = await renderLocalDocument(sharedDocuments.whatsNew);
 
     expect(screen.getAllByText('Version 1.0.0')).toHaveLength(2);
     expect(screen.getByText(/Initial release of Simple Fasting/)).toBeOnTheScreen();

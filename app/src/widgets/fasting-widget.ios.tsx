@@ -4,6 +4,7 @@ import {
   font,
   foregroundStyle,
   frame,
+  labelsHidden,
   progressViewStyle,
   tint,
   widgetURL,
@@ -40,7 +41,7 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
 
   // Widget views are serialized and evaluated outside the app's JS module scope.
   // Keep every runtime value inside this function so WidgetKit can resolve it.
-  const appUrl = 'simple-fasting://';
+  const appUrl = 'simple-fasting://fast';
   const distantFuture = new Date('2100-01-01T00:00:00.000Z');
   const isDark = environment.colorScheme === 'dark';
   const backgroundColor = isDark ? '#15171C' : '#F7F8FC';
@@ -160,7 +161,7 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
             <ProgressView
               timerInterval={{ lower: startedAt, upper: goalEndsAt }}
               countsDown={false}
-              modifiers={[progressViewStyle('linear'), tint(accentColor)]}
+              modifiers={[progressViewStyle('linear'), tint(accentColor), labelsHidden()]}
             />
           ) : null}
         </VStack>
@@ -261,7 +262,7 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
         <ProgressView
           timerInterval={{ lower: startedAt, upper: goalEndsAt }}
           countsDown={false}
-          modifiers={[progressViewStyle('linear'), tint(accentColor)]}
+          modifiers={[progressViewStyle('linear'), tint(accentColor), labelsHidden()]}
         />
       ) : null}
     </VStack>

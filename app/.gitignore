@@ -24,6 +24,9 @@ expo-env.d.ts
 # Gradle
 .gradle/
 
+# Android modules
+modules/native-fasting-widget/android/build
+
 # Metro
 .metro-health-check*
 

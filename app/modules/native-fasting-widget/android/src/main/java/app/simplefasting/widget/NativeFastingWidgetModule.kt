@@ -8,14 +8,14 @@ class NativeFastingWidgetModule : Module() {
     Name("NativeFastingWidget")
 
     Function("update") { state: Map<String, Any?> ->
-      val context = appContext.reactContext ?: return@Function
+      val context = appContext.reactContext ?: return@Function null
       NativeFastingWidgetState.save(context, state)
       NativeFastingWidgetScheduler.scheduleActiveUpdates(context)
       NativeFastingWidgetProvider.updateAll(context)
     }
 
     Function("clear") {
-      val context = appContext.reactContext ?: return@Function
+      val context = appContext.reactContext ?: return@Function null
       NativeFastingWidgetState.clear(context)
       NativeFastingWidgetScheduler.cancelActiveUpdates(context)
       NativeFastingWidgetProvider.updateAll(context)

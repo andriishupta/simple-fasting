@@ -9,6 +9,7 @@ import {
   SquarePen,
 } from 'lucide-react-native';
 import {
+  Platform,
   Pressable,
   StyleSheet,
   Switch,
@@ -327,6 +328,17 @@ export function DurationPicker({
     }
   }, [days, hours, onChange]);
 
+  if (Platform.OS === 'android') {
+    return (
+      <AndroidDurationPicker
+        days={days}
+        hours={shownHours}
+        hourValues={hourValues}
+        onChange={onChange}
+      />
+    );
+  }
+
   return (
     <View style={styles.durationEditor}>
       <View style={styles.pickers}>
@@ -348,6 +360,104 @@ export function DurationPicker({
           }
         />
       </View>
+    </View>
+  );
+}
+
+function AndroidDurationPicker({
+  days,
+  hours,
+  hourValues,
+  onChange,
+}: {
+  days: number;
+  hours: number;
+  hourValues: readonly number[];
+  onChange: (value: number) => void;
+}) {
+  return (
+    <View style={styles.androidDurationEditor}>
+      <AndroidDurationWheel
+        label={t('setup.days').toUpperCase()}
+        value={days}
+        values={durationDays}
+        onChange={(nextDays) => {
+          const nextHours = nextDays === 7 ? 0 : nextDays === 0 && hours === 0 ? 1 : hours;
+          onChange(Math.min(maxCustomDurationHours, nextDays * 24 + nextHours));
+        }}
+      />
+      <AndroidDurationWheel
+        label={t('setup.hours').toUpperCase()}
+        value={hours}
+        values={hourValues}
+        onChange={(nextHours) =>
+          onChange(days >= 7 ? maxCustomDurationHours : days * 24 + nextHours)
+        }
+      />
+    </View>
+  );
+}
+
+function AndroidDurationWheel({
+  label,
+  value,
+  values,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  values: readonly number[];
+  onChange: (value: number) => void;
+}) {
+  const theme = useTheme();
+  const selectedIndex = Math.max(0, values.indexOf(value));
+
+  return (
+    <View style={styles.androidDurationWheel}>
+      <ThemedText type="smallBold" themeColor="textSecondary" style={styles.centeredText}>
+        {label}
+      </ThemedText>
+      <CenteredWheelPicker
+        accessibilityLabel={label}
+        itemGap={Spacing.xs}
+        itemWidth={48}
+        items={values}
+        keyExtractor={(option) => String(option)}
+        selectedIndex={selectedIndex}
+        viewportStyle={styles.androidDurationWheelViewport}
+        onSelectIndex={(index) => {
+          const nextValue = values[index];
+          if (nextValue !== undefined) onChange(nextValue);
+        }}
+        renderItem={(option, { selected }) => (
+          <View
+            style={[
+              styles.androidDurationWheelItem,
+              {
+                backgroundColor: selected ? theme.accent : theme.backgroundElement,
+                borderColor: selected ? theme.accent : theme.backgroundSelected,
+              },
+            ]}>
+            <ThemedText
+              type="smallBold"
+              style={{ color: selected ? theme.accentForeground : theme.text }}>
+              {option}
+            </ThemedText>
+          </View>
+        )}
+        renderOverlay={({ sideInset }) => (
+          <View
+            pointerEvents="none"
+            style={[
+              styles.androidDurationWheelSelection,
+              {
+                left: sideInset,
+                borderColor: theme.accentBorder,
+              },
+            ]}
+          />
+        )}
+      />
     </View>
   );
 }
@@ -449,6 +559,34 @@ const styles = StyleSheet.create({
   switchWrap: { width: 60, alignItems: 'flex-end', justifyContent: 'center' },
   durationEditor: {
     overflow: 'hidden',
+  },
+  androidDurationEditor: {
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  androidDurationWheel: {
+    gap: Spacing.xs,
+  },
+  androidDurationWheelViewport: {
+    minHeight: 50,
+  },
+  androidDurationWheelItem: {
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: Radius.control,
+    borderCurve: 'continuous',
+  },
+  androidDurationWheelSelection: {
+    position: 'absolute',
+    top: 0,
+    width: 48,
+    height: 46,
+    borderWidth: 2,
+    borderRadius: Radius.control,
+    borderCurve: 'continuous',
   },
   customDurationBlock: { gap: Spacing.xs, paddingVertical: Spacing.xs },
   customDurationHelp: { gap: Spacing.half },

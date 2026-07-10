@@ -886,7 +886,7 @@ export const openPrivacyPolicy = async (): Promise<void> => openWebsitePath('/pr
 export const openTerms = async (): Promise<void> => openWebsitePath('/terms');
 
 export const openSupportEmail = async (): Promise<void> =>
-  Linking.openURL(`mailto:${supportEmail}?subject=Simple%20Fasting%20support`);
+  Linking.openURL(`mailto:${supportEmail}?subject=%5BSUPPORT%5D%20Simple%20Fasting%3A%20Support%20request`);
 
 export const openBugReportEmail = async (): Promise<void> =>
-  Linking.openURL(`mailto:${bugReportEmail}?subject=Simple%20Fasting%20bug%20report`);
+  Linking.openURL(`mailto:${bugReportEmail}?subject=%5BBUG%5D%20Simple%20Fasting%3A%20Bug%20report`);

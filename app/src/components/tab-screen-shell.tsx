@@ -35,7 +35,7 @@ export function TabScreenShell({
   const canScroll = scrollEnabled === 'auto' ? autoScrollEnabled : scrollEnabled;
   const usesScrollView = scrollEnabled !== false;
   const containerInsets = {
-    paddingTop: Platform.OS === 'android' ? insets.top + Spacing.three : Spacing.three,
+    paddingTop: insets.top + Spacing.three,
     paddingBottom: Spacing.three,
   };
   const content = <View style={[styles.content, { maxWidth }, contentStyle]}>{children}</View>;

@@ -72,7 +72,7 @@ Small home-screen widgets are implemented on both platforms.
 
 - Inactive: “Ready to fast?” and an action to open the app.
 - Active: app identity, goal name/formatted duration, one elapsed-or-remaining timer, and planned-goal progress.
-- Tap: opens `simple-fasting://`.
+- Tap: opens the Fast tab through `simple-fasting://fast`.
 - Refresh: requested whenever active fasting state changes.
 
 iOS uses `expo-widgets` for small home-screen widgets and the optional active-fast Live Activity on the Lock Screen/Dynamic Island. Android uses `react-native-android-widget`. Medium/large widgets, iOS lock-screen widgets, and Android ongoing notifications are not implemented.

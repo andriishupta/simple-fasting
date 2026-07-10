@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Alert,
+  Platform,
   Pressable,
   StyleSheet,
   View,
@@ -124,6 +125,47 @@ function DataViewPicker({
     0,
     visibleDataViews.findIndex((view) => view.value === selectedView),
   );
+
+  if (Platform.OS === 'android') {
+    return (
+      <View
+        accessibilityRole="tablist"
+        style={[
+          styles.androidViewPicker,
+          {
+            backgroundColor: theme.backgroundElement,
+            borderColor: theme.backgroundSelected,
+          },
+        ]}>
+        {visibleDataViews.map((view) => {
+          const selected = selectedView === view.value;
+          const label = t(view.labelKey);
+
+          return (
+            <Pressable
+              key={view.value}
+              accessibilityRole="tab"
+              accessibilityLabel={label}
+              accessibilityState={{ selected }}
+              onPress={() => onSelect(view.value)}
+              style={({ pressed }) => [
+                styles.androidViewPickerOption,
+                {
+                  backgroundColor: selected ? theme.accent : 'transparent',
+                },
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText
+                type="smallBold"
+                style={{ color: selected ? theme.accentForeground : theme.textSecondary }}>
+                {label}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
+    );
+  }
 
   return (
     <ExpoSegmentedControl
@@ -507,6 +549,25 @@ const styles = StyleSheet.create({
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   viewPicker: {
     minHeight: 36,
+  },
+  androidViewPicker: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.half,
+    borderWidth: 1,
+    borderRadius: Radius.control,
+    borderCurve: 'continuous',
+    padding: Spacing.half,
+  },
+  androidViewPickerOption: {
+    minHeight: 34,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.sm,
+    borderCurve: 'continuous',
+    paddingHorizontal: Spacing.xs,
   },
   list: {
     gap: Spacing.xs,

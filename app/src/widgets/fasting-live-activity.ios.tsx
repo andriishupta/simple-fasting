@@ -4,6 +4,7 @@ import {
   font,
   foregroundStyle,
   frame,
+  labelsHidden,
   lineLimit,
   minimumScaleFactor,
   padding,
@@ -140,7 +141,7 @@ function FastingLiveActivityView(
         <ProgressView
           timerInterval={{ lower: startedAt, upper: goalEndsAt }}
           countsDown={false}
-          modifiers={[progressViewStyle('linear'), tint(accentColor)]}
+          modifiers={[progressViewStyle('linear'), tint(accentColor), labelsHidden()]}
         />
       ) : null}
     </VStack>
@@ -274,7 +275,7 @@ function FastingLiveActivityView(
           <ProgressView
             timerInterval={{ lower: startedAt, upper: goalEndsAt }}
             countsDown={false}
-            modifiers={[progressViewStyle('linear'), tint(accentColor)]}
+            modifiers={[progressViewStyle('linear'), tint(accentColor), labelsHidden()]}
           />
         ) : (
           <Spacer />
@@ -339,7 +340,7 @@ export const syncFastingLiveActivity = async (state: ActiveFastState): Promise<v
     }
 
     if (instances.length === 0) {
-      fastingLiveActivity.start(props, 'simple-fasting://');
+      fastingLiveActivity.start(props, 'simple-fasting://fast');
       return;
     }
 

@@ -11,9 +11,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { router } from 'expo-router';
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
 import { ArrowDown, ArrowUp, CheckCircle2, ChevronRight } from 'lucide-react-native';
 import Animated, {
   cancelAnimation,
@@ -31,6 +28,7 @@ import Animated, {
 import { AppSection } from '@/components/app-section';
 import { AppButton } from '@/components/app-button';
 import { useFastSavedNotice } from '@/components/fast-saved-notice-context';
+import { NativeDateTimeField } from '@/components/native-date-time-field';
 import { ScreenHeading } from '@/components/screen-heading';
 import { TabScreenShell } from '@/components/tab-screen-shell';
 import {
@@ -100,27 +98,6 @@ const getShownTimerSecondsWorklet = ({
   }
 
   return elapsedSeconds;
-};
-
-const getShownTimerLabelWorklet = ({
-  elapsedSeconds,
-  goalSeconds,
-  timerView,
-  elapsedLabel,
-  remainingLabel,
-}: {
-  elapsedSeconds: number;
-  goalSeconds: number | null;
-  timerView: TimerViewPreference;
-  elapsedLabel: string;
-  remainingLabel: string;
-}): string => {
-  'worklet';
-
-  return timerView === TimerViewPreference.Remaining &&
-    goalSeconds !== null
-    ? remainingLabel
-    : elapsedLabel;
 };
 
 const useElapsedSecondsValue = (startedAt: string): SharedValue<number> => {
@@ -536,11 +513,9 @@ function ActiveFast({
             <View style={styles.activeDurationGroup}>
               <View style={styles.timerLabelRow}>
                 <LiveTimerLabel
-                  elapsedSeconds={elapsedSeconds}
                   goalSeconds={goalSeconds}
                   timerView={timerView}
                   color={theme.textSecondary}
-                  initialElapsedSeconds={initialElapsedSeconds}
                 />
                 {goalSeconds !== null ? (
                   <Pressable
@@ -694,48 +669,20 @@ function LinearTimerProgress({
 }
 
 function LiveTimerLabel({
-  elapsedSeconds,
   goalSeconds,
   timerView,
   color,
-  initialElapsedSeconds,
 }: {
-  elapsedSeconds: SharedValue<number>;
   goalSeconds: number | null;
   timerView: TimerViewPreference;
   color: string;
-  initialElapsedSeconds: number;
 }) {
-  const elapsedLabel = t('common.elapsed');
-  const remainingLabel = t('common.remaining');
-  const animatedProps = useAnimatedProps(() => {
-    const text = getShownTimerLabelWorklet({
-      elapsedSeconds: elapsedSeconds.value,
-      goalSeconds,
-      timerView,
-      elapsedLabel,
-      remainingLabel,
-    });
-
-    return { text, defaultValue: text } satisfies AnimatedTextInputProps;
-  });
-
   return (
-    <AnimatedTextInput
-      editable={false}
-      focusable={false}
-      pointerEvents="none"
-      underlineColorAndroid="transparent"
-      animatedProps={animatedProps as never}
-      defaultValue={getShownTimerLabelWorklet({
-        elapsedSeconds: initialElapsedSeconds,
-        goalSeconds,
-        timerView,
-        elapsedLabel,
-        remainingLabel,
-      })}
-      style={[styles.timerLabel, { color }]}
-    />
+    <ThemedText type="small" style={[styles.timerLabel, { color }]}>
+      {timerView === TimerViewPreference.Remaining && goalSeconds !== null
+        ? t('common.remaining')
+        : t('common.elapsed')}
+    </ThemedText>
   );
 }
 
@@ -819,26 +766,7 @@ function EditableStartedMetric({
   onEditingChange: (editing: boolean) => void;
   onSave: (value: Date) => Promise<boolean>;
 }) {
-  const theme = useTheme();
   const [draft, setDraft] = useState(value);
-
-  const updateDate = (_event: DateTimePickerEvent, selectedDate?: Date): void => {
-    if (selectedDate === undefined) return;
-    setDraft((current) => {
-      const next = new Date(current);
-      next.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
-      return next;
-    });
-  };
-
-  const updateTime = (_event: DateTimePickerEvent, selectedDate?: Date): void => {
-    if (selectedDate === undefined) return;
-    setDraft((current) => {
-      const next = new Date(current);
-      next.setHours(selectedDate.getHours(), selectedDate.getMinutes(), 0, 0);
-      return next;
-    });
-  };
 
   if (!editing) {
     return (
@@ -864,19 +792,12 @@ function EditableStartedMetric({
   return (
     <View style={styles.startedEditor}>
       <ThemedText type="small" themeColor="textSecondary">{t('fast.started')}</ThemedText>
-      <DateTimePicker
+      <NativeDateTimeField
         value={draft}
-        mode="date"
         maximumDate={new Date()}
-        onChange={updateDate}
-        accentColor={theme.accent}
-      />
-      <DateTimePicker
-        value={draft}
-        mode="time"
-        maximumDate={new Date()}
-        onChange={updateTime}
-        accentColor={theme.accent}
+        onChange={(nextDraft) => {
+          if (nextDraft !== null) setDraft(nextDraft);
+        }}
       />
       <View style={styles.startedEditorActions}>
         <Pressable

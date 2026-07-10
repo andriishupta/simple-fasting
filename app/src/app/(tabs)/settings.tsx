@@ -516,7 +516,11 @@ export default function SettingsScreen() {
           />
           <AccentPicker
             selectedAccentName={settings.accentColorName}
-            onSelect={setAccentColorName}
+            onSelect={(accentColorName) => {
+              setAccentColorName(accentColorName);
+              refreshFastSnapshots();
+              void syncActiveFastingLiveActivity();
+            }}
           />
         </SettingsSection>
 
@@ -759,7 +763,8 @@ function ThemePicker({
             style={({ pressed }) => [
               styles.themeOption,
               {
-                backgroundColor: selected ? theme.accentBackground : 'transparent',
+                backgroundColor: selected ? theme.accentBackground : theme.backgroundElement,
+                borderColor: selected ? theme.accentBorder : theme.backgroundSelected,
               },
               pressed && styles.pressed,
             ]}>
@@ -1199,6 +1204,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.xs,
+    borderWidth: 1,
     borderRadius: Radius.control,
     borderCurve: 'continuous',
   },
