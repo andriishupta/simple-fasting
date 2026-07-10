@@ -33,9 +33,11 @@ export function TabScreenShell({
   const blurTint = colorScheme === 'dark' ? 'systemMaterialDark' : 'systemMaterialLight';
   const autoScrollEnabled = contentHeight > viewportHeight + 1;
   const canScroll = scrollEnabled === 'auto' ? autoScrollEnabled : scrollEnabled;
-  const usesScrollView = scrollEnabled !== false;
+  // NativeTabs adjusts the first iOS ScrollView automatically. On Android it
+  // only applies the bottom inset, so the status-bar inset remains explicit.
+  const topSafeAreaInset = Platform.OS === 'android' ? insets.top : 0;
   const containerInsets = {
-    paddingTop: insets.top + Spacing.three,
+    paddingTop: topSafeAreaInset + Spacing.three,
     paddingBottom: Spacing.three,
   };
   const content = <View style={[styles.content, { maxWidth }, contentStyle]}>{children}</View>;
@@ -45,24 +47,18 @@ export function TabScreenShell({
 
   return (
     <View style={styles.root}>
-      {usesScrollView ? (
-        <ScrollView
-          style={styles.scroll}
-          scrollEnabled={canScroll}
-          bounces={canScroll}
-          onLayout={updateViewportHeight}
-          onContentSizeChange={(_width, height) => setContentHeight(height)}
-          contentInsetAdjustmentBehavior="automatic"
-          keyboardShouldPersistTaps={keyboardShouldPersistTaps}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.container, containerInsets]}>
-          {content}
-        </ScrollView>
-      ) : (
-        <View style={[styles.staticContainer, styles.centeredContainer, containerInsets]}>
-          {content}
-        </View>
-      )}
+      <ScrollView
+        style={styles.scroll}
+        scrollEnabled={canScroll}
+        bounces={canScroll}
+        onLayout={updateViewportHeight}
+        onContentSizeChange={(_width, height) => setContentHeight(height)}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.container, containerInsets]}>
+        {content}
+      </ScrollView>
       {showsTopOverlay ? (
         <MaskedView
           pointerEvents="none"
@@ -101,16 +97,9 @@ function TopFadeMask() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1 },
-  staticContainer: {
-    flex: 1,
-    alignItems: 'center',
-  },
   container: {
     flexGrow: 1,
     alignItems: 'center',
-  },
-  centeredContainer: {
-    justifyContent: 'center',
   },
   content: {
     width: '100%',

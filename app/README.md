@@ -198,6 +198,15 @@ pnpm exec expo export --platform android --output-dir /tmp/simple-fasting-androi
 
 Static exports verify bundling but do not replace simulator/device testing for notifications, MMKV, gestures, and widgets.
 
+For a local Release build and install onto connected physical devices:
+
+```bash
+./release.sh android
+./release.sh ios
+```
+
+The helper syncs shared content, builds the existing native folder in Release mode, and installs only to connected phones/tablets. It does not run `expo prebuild`; run prebuild separately only after native config, plugins, or native dependencies change.
+
 ## Testing and CI
 
 - Jest unit tests cover calculations, statistics/charts, goal selection, reminders, validation, exports, and widget view models.
