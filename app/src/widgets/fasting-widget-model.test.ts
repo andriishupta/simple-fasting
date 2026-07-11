@@ -74,7 +74,12 @@ describe('fasting widget model', () => {
         goalDurationHours: 24,
       }),
     }, now, 'Extended', GoalDurationFormat.Days)).toEqual(
-      expect.objectContaining({ goalDurationLabel: '1d', goalName: 'Extended', headline: 'Extended · 1d' }),
+      expect.objectContaining({
+        displayTime: '21h 30m',
+        goalDurationLabel: '1d',
+        goalName: 'Extended',
+        headline: 'Extended · 1d',
+      }),
     );
     expect(createFastingWidgetModel(state, Date.parse('2026-06-22T10:00:00.000Z'))).toEqual(
       expect.objectContaining({

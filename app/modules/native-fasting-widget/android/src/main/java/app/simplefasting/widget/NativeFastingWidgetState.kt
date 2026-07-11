@@ -7,6 +7,7 @@ data class NativeFastingWidgetSnapshot(
   val status: String,
   val headline: String,
   val subtitle: String,
+  val durationFormat: String,
   val startedAt: Long,
   val goalEndsAt: Long,
   val hasGoal: Boolean,
@@ -31,6 +32,7 @@ object NativeFastingWidgetState {
     editor.putString("status", state.string("status", "inactive"))
     editor.putString("headline", state.string("headline", "Ready to fast"))
     editor.putString("subtitle", state.string("subtitle", "Tap to start"))
+    editor.putString("durationFormat", state.string("durationFormat", "hours"))
     editor.putLong("startedAt", state.long("startedAt", 0L))
     editor.putLong("goalEndsAt", state.long("goalEndsAt", 0L))
     editor.putBoolean("hasGoal", state.boolean("hasGoal", false))
@@ -58,6 +60,7 @@ object NativeFastingWidgetState {
       status = preferences.getString("status", "inactive") ?: "inactive",
       headline = preferences.getString("headline", "Ready to fast") ?: "Ready to fast",
       subtitle = preferences.getString("subtitle", "Tap to start") ?: "Tap to start",
+      durationFormat = preferences.getString("durationFormat", "hours") ?: "hours",
       startedAt = preferences.getLong("startedAt", 0L),
       goalEndsAt = preferences.getLong("goalEndsAt", 0L),
       hasGoal = preferences.getBoolean("hasGoal", false),

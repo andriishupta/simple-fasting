@@ -4,6 +4,7 @@ export type NativeFastingWidgetPayload = {
   status: 'active' | 'inactive';
   headline: string;
   subtitle: string;
+  durationFormat: 'hours' | 'days';
   startedAt: number;
   goalEndsAt: number;
   hasGoal: boolean;

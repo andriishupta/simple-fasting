@@ -106,7 +106,7 @@ Settings uses consistent grouped native-style surfaces.
 
 Goals is a native stack screen with a transparent large-title header.
 
-- goal time display format, defaulting to hours and optionally showing day-based labels; the preference is used consistently on Fast, Goals, History, widgets, and local fast-end reminder text;
+- duration display format, defaulting to `Hours` and optionally using compact day-based units; `Hours` keeps active timers in `00:00:00` form, while `Days + hours` omits empty units and produces values such as `5s`, `55m 5s`, or `1d 2h 3m 4s`; the preference is used consistently on Fast, Goals, History, widget snapshots, Live Activity state, and local fast-end reminder text;
 - standard goals can be enabled or disabled but not deleted;
 - custom goals can be enabled/disabled, created, edited, and deleted;
 - custom goal names are limited to 32 characters, with a visible character counter in the editor;

@@ -59,7 +59,7 @@ export const createFastingWidgetModel = (
     showsRemaining
       ? Math.max(0, goalSeconds - elapsedSeconds)
       : elapsedSeconds;
-  const displayTime = formatDuration(shownSeconds);
+  const displayTime = formatDuration(shownSeconds, goalDurationFormat);
   const goalDurationLabel = hasGoal
     ? formatGoalDuration(session.goalDurationHours, goalDurationFormat)
     : t('common.unlimited');

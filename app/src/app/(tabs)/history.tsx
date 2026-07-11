@@ -381,7 +381,7 @@ function HistorySummary({
   return (
     <FastingSummaryCard
       surface={false}
-      duration={formatDuration(durationSeconds)}
+      duration={formatDuration(durationSeconds, goalDurationFormat)}
       goalLabel={
         session.goalDurationHours <= 0
           ? t('common.openEnded')

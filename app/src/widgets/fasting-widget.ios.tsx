@@ -14,6 +14,7 @@ import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 import {
   AccentColorName,
   appStorage,
+  GoalDurationFormat,
   StorageKey,
   TimerViewPreference,
   type ActiveFastState,
@@ -24,6 +25,7 @@ import { createFastingWidgetModel } from '@/widgets/fasting-widget-model';
 type FastingWidgetProps = {
   accentColorDark: string;
   accentColorLight: string;
+  durationFormat: GoalDurationFormat;
   goalDurationLabel: string;
   goalDurationHours: number;
   goalEndsAt: number;
@@ -51,6 +53,7 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
     ? props.accentColorDark || '#D97706'
     : props.accentColorLight || '#F59E0B';
   const isMedium = environment.widgetFamily === 'systemMedium';
+  const stoppedTimerText = props.durationFormat === 'days' ? '0s' : '00:00:00';
 
   if (props.status !== 'active') {
     if (isMedium) {
@@ -175,7 +178,7 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
                 font({ size: 32, weight: 'bold', design: 'rounded' }),
                 foregroundStyle(primaryColor),
               ]}>
-              00:00:00
+              {stoppedTimerText}
             </Text>
           ) : (
             <Text
@@ -243,7 +246,7 @@ function FastingWidgetView(props: FastingWidgetProps, environment: WidgetEnviron
             font({ size: 24, weight: 'bold', design: 'rounded' }),
             foregroundStyle(primaryColor),
           ]}>
-          00:00:00
+          {stoppedTimerText}
         </Text>
       ) : (
         <Text
@@ -290,6 +293,7 @@ export const updateFastingWidget = (state: ActiveFastState): void => {
       ? {
           accentColorDark,
           accentColorLight,
+          durationFormat: settings?.goalDurationFormat ?? GoalDurationFormat.Hours,
           goalDurationLabel: '',
           goalDurationHours: 0,
           goalEndsAt: 0,
@@ -304,6 +308,7 @@ export const updateFastingWidget = (state: ActiveFastState): void => {
       : {
           accentColorDark,
           accentColorLight,
+          durationFormat: settings?.goalDurationFormat ?? GoalDurationFormat.Hours,
           goalDurationLabel: model.goalDurationLabel,
           goalDurationHours: model.goalDurationHours,
           goalEndsAt: model.goalEndsAt,

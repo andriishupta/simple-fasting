@@ -17,6 +17,7 @@ import { createLiveActivity, type LiveActivityEnvironment } from 'expo-widgets';
 import {
   AccentColorName,
   appStorage,
+  GoalDurationFormat,
   StorageKey,
   TimerViewPreference,
   type ActiveFastState,
@@ -27,6 +28,7 @@ import { createFastingWidgetModel } from '@/widgets/fasting-widget-model';
 type FastingLiveActivityProps = {
   accentColorDark: string;
   accentColorLight: string;
+  durationFormat: GoalDurationFormat;
   goalDurationLabel: string;
   goalDurationHours: number;
   goalEndsAt: number;
@@ -57,6 +59,7 @@ function FastingLiveActivityView(
   const remainingReachedGoal = showingRemaining && goalEndsAt.getTime() <= Date.now();
   const icon = showingRemaining ? '↓' : '↑';
   const compactGoalLabel = hasGoal ? props.goalDurationLabel : 'Fast';
+  const stoppedTimerText = props.durationFormat === 'days' ? '0s' : '00:00:00';
 
   const banner = (
     <VStack
@@ -112,7 +115,7 @@ function FastingLiveActivityView(
                   minimumScaleFactor(0.82),
                   lineLimit(1),
                 ]}>
-                00:00:00
+                {stoppedTimerText}
               </Text>
             ) : (
               <Text
@@ -169,7 +172,7 @@ function FastingLiveActivityView(
               minimumScaleFactor(0.82),
               lineLimit(1),
             ]}>
-            00:00:00
+            {stoppedTimerText}
           </Text>
         ) : (
           <Text
@@ -222,7 +225,7 @@ function FastingLiveActivityView(
                 minimumScaleFactor(0.82),
                 lineLimit(1),
               ]}>
-              00:00:00
+              {stoppedTimerText}
             </Text>
           ) : (
             <Text
@@ -317,6 +320,7 @@ const createProps = (state: ActiveFastState): FastingLiveActivityProps | null =>
   return {
     accentColorDark,
     accentColorLight,
+    durationFormat: settings.goalDurationFormat ?? GoalDurationFormat.Hours,
     goalDurationLabel: model.goalDurationLabel,
     goalDurationHours: model.goalDurationHours,
     goalEndsAt: model.goalEndsAt,

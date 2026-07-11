@@ -249,7 +249,7 @@ function DetailContent({ session }: { session: FastSession }) {
       />
 
       <FastingSummaryCard
-        duration={formatDuration(editedDurationSeconds)}
+        duration={formatDuration(editedDurationSeconds, settings.goalDurationFormat)}
         goalLabel={
           goalDurationHours <= 0
             ? t('common.unlimited')

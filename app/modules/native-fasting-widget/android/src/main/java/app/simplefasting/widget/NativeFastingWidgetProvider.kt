@@ -115,7 +115,10 @@ class NativeFastingWidgetProvider : AppWidgetProvider() {
         views.setChronometer(R.id.widget_timer, timerBase, null, !hasReachedGoal || !showsRemaining)
         views.setChronometerCountDown(R.id.widget_timer, showsRemaining && !hasReachedGoal)
         if (showsRemaining && hasReachedGoal) {
-          views.setTextViewText(R.id.widget_timer, "00:00:00")
+          views.setTextViewText(
+            R.id.widget_timer,
+            if (snapshot.durationFormat == "days") "0s" else "00:00:00",
+          )
         }
         views.setViewVisibility(R.id.widget_goal_check, if (hasReachedGoal) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widget_progress, if (snapshot.hasGoal) View.VISIBLE else View.GONE)

@@ -196,9 +196,9 @@
     },
     "goalDuration": {
       "hours": "Hours",
-      "hoursDescription": "Show goals as 24 hours.",
+      "hoursDescription": "Show durations as 24 hours and timers as 00:00:00.",
       "days": "Days + hours",
-      "daysDescription": "Show goals as 1d or 1d 4h.",
+      "daysDescription": "Show durations with compact units, such as 1d 4h or 55m 5s.",
       "heading": "Display format",
       "description": "Used across Fast, Goals, History, and widgets."
     },

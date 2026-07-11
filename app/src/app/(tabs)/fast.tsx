@@ -53,7 +53,7 @@ import {
   updateActiveFastStart,
   useActiveFastState,
 } from '@/storage/fasting-storage';
-import { TimerViewPreference, type GoalDurationFormat } from '@/storage/app-storage';
+import { GoalDurationFormat, TimerViewPreference } from '@/storage/app-storage';
 import {
   setLastUsedGoalDurationHours,
   useSettingsSelector,
@@ -554,6 +554,7 @@ function ActiveFast({
                 elapsedSeconds={elapsedSeconds}
                 goalSeconds={goalSeconds}
                 timerView={timerView}
+                durationFormat={goalDurationFormat}
                 color={theme.text}
                 accessibilityLabel={t('fast.timerAccessibility')}
                 initialElapsedSeconds={initialElapsedSeconds}
@@ -694,6 +695,7 @@ function LiveTimerText({
   elapsedSeconds,
   goalSeconds,
   timerView,
+  durationFormat,
   color,
   accessibilityLabel,
   initialElapsedSeconds,
@@ -701,6 +703,7 @@ function LiveTimerText({
   elapsedSeconds: SharedValue<number>;
   goalSeconds: number | null;
   timerView: TimerViewPreference;
+  durationFormat: GoalDurationFormat;
   color: string;
   accessibilityLabel: string;
   initialElapsedSeconds: number;
@@ -708,6 +711,7 @@ function LiveTimerText({
   const getText = (value: number): string =>
     formatDuration(
       getShownTimerSecondsWorklet({ elapsedSeconds: value, goalSeconds, timerView }),
+      durationFormat,
     );
   const animatedProps = useAnimatedProps(() => {
     const shownSeconds = getShownTimerSecondsWorklet({
@@ -715,9 +719,28 @@ function LiveTimerText({
       goalSeconds,
       timerView,
     });
-    const text = formatDurationWorklet(shownSeconds);
+    const text = formatDurationWorklet(shownSeconds, durationFormat);
 
     return { text, defaultValue: text } satisfies AnimatedTextInputProps;
+  });
+  const timerTypographyStyle = useAnimatedStyle(() => {
+    if (durationFormat !== 'days') {
+      return { fontSize: 38, lineHeight: 44 };
+    }
+
+    const shownSeconds = getShownTimerSecondsWorklet({
+      elapsedSeconds: elapsedSeconds.value,
+      goalSeconds,
+      timerView,
+    });
+
+    if (shownSeconds >= 86_400) {
+      return { fontSize: 24, lineHeight: 32 };
+    }
+    if (shownSeconds >= 3_600) {
+      return { fontSize: 28, lineHeight: 36 };
+    }
+    return { fontSize: 38, lineHeight: 44 };
   });
 
   return (
@@ -729,7 +752,12 @@ function LiveTimerText({
       underlineColorAndroid="transparent"
       animatedProps={animatedProps as never}
       defaultValue={getText(initialElapsedSeconds)}
-      style={[styles.timer, { color }]}
+      style={[
+        styles.timer,
+        durationFormat === GoalDurationFormat.Days && styles.timerWithUnits,
+        timerTypographyStyle,
+        { color },
+      ]}
     />
   );
 }
@@ -938,6 +966,9 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.rounded,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
+  },
+  timerWithUnits: {
+    minWidth: 0,
   },
   timerGoalReachedIcon: {
     width: 24,

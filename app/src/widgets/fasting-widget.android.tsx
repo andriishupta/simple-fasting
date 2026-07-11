@@ -7,6 +7,7 @@ import NativeFastingWidget, {
 import {
   AccentColorName,
   appStorage,
+  GoalDurationFormat,
   StorageKey,
   type ActiveFastState,
 } from '@/storage/app-storage';
@@ -59,12 +60,14 @@ const createNativeWidgetPayload = (state: ActiveFastState): NativeFastingWidgetP
     settings?.goalDurationFormat,
   );
   const colors = getWidgetColors();
+  const durationFormat = settings?.goalDurationFormat ?? GoalDurationFormat.Hours;
 
   if (model.status === 'inactive') {
     return {
       status: 'inactive',
       headline: model.headline,
       subtitle: model.subtitle,
+      durationFormat,
       startedAt: 0,
       goalEndsAt: 0,
       hasGoal: false,
@@ -79,6 +82,7 @@ const createNativeWidgetPayload = (state: ActiveFastState): NativeFastingWidgetP
     status: 'active',
     headline: model.headline,
     subtitle: model.subtitle,
+    durationFormat,
     startedAt: model.startedAt,
     goalEndsAt: model.goalEndsAt,
     hasGoal: model.hasGoal,

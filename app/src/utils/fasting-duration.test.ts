@@ -1,4 +1,4 @@
-import { FastStatus } from '@/storage/app-storage';
+import { FastStatus, GoalDurationFormat } from '@/storage/app-storage';
 import {
   formatDuration,
   formatDurationWorklet,
@@ -30,11 +30,24 @@ describe('fasting duration helpers', () => {
   test('formats duration and hours consistently', () => {
     expect(formatDuration(3661.9)).toBe('01:01:01');
     expect(formatDuration(-5)).toBe('00:00:00');
-    expect(formatDurationWorklet(3661.9)).toBe('01:01:01');
-    expect(formatDurationWorklet(-5)).toBe('00:00:00');
+    expect(formatDurationWorklet(3661.9, GoalDurationFormat.Hours)).toBe('01:01:01');
+    expect(formatDurationWorklet(-5, GoalDurationFormat.Hours)).toBe('00:00:00');
     expect(formatHours(9.25)).toBe('9.3');
     expect(formatHours(10.4)).toBe('10');
     expect(getGoalSeconds(completed)).toBe(57_600);
     expect(getGoalSeconds({ ...completed, goalDurationHours: 0 })).toBe(1);
+  });
+
+  test.each([
+    [0, '0s'],
+    [2, '2s'],
+    [60, '1m'],
+    [3_305, '55m 5s'],
+    [7_384, '2h 3m 4s'],
+    [89_440, '1d 50m 40s'],
+    [91_840, '1d 1h 30m 40s'],
+  ])('formats %s seconds with compact duration units', (seconds, expected) => {
+    expect(formatDuration(seconds, GoalDurationFormat.Days)).toBe(expected);
+    expect(formatDurationWorklet(seconds, GoalDurationFormat.Days)).toBe(expected);
   });
 });

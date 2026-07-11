@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import HistoryDetailScreen from '@/app/history/[id]';
 import {
+  GoalDurationFormat,
   StorageKey,
   appStorage,
   createDefaultAppSettings,
@@ -70,5 +71,25 @@ describe('HistoryDetailScreen validation', () => {
 
     expect(alert).toHaveBeenCalledWith('Start time cannot be in the future.');
     expect(screen.queryByText('Save failed')).not.toBeOnTheScreen();
+  });
+
+  test('uses the selected compact format for a saved fast duration', async () => {
+    saveSettings({
+      ...createDefaultAppSettings(new Date().toISOString()),
+      goalDurationFormat: GoalDurationFormat.Days,
+    });
+    refreshSettingsSnapshot();
+
+    const screen = await render(
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 390, height: 844 },
+          insets: { top: 47, right: 0, bottom: 34, left: 0 },
+        }}>
+        <HistoryDetailScreen />
+      </SafeAreaProvider>,
+    );
+
+    expect(screen.getByText('1h')).toBeOnTheScreen();
   });
 });

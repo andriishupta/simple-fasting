@@ -9,6 +9,14 @@ name: Change settings preferences
 - tapOn: Settings
 - assertVisible: Goals
 - tapOn: Days + hours
+- tapOn: Fast
+- tapOn: Start fast
+- assertVisible:
+    text: "^[0-9]+s$"
+- tapOn: Cancel fast
+- assertVisible: Cancel fast?
+- tapOn: Cancel Fast
+- tapOn: Settings
 - assertVisible: Timer view
 - tapOn: Remaining
 - scrollUntilVisible:
