@@ -2,15 +2,15 @@
 id: faq
 title: Frequently Asked Questions
 version: 1.0
-description: Answers about Simple Fasting accounts, privacy, tracking, email, local diagnostics, exports, health, availability, and future changes.
-intro: Practical answers about the current Simple Fasting app. Features described as future or planned are not part of the current release.
+description: Answers about Simple Fasting privacy, local data, diagnostics, exports, reminders, health, and availability.
+intro: Practical answers about the current Simple Fasting app.
 ---
 
 ## Does Simple Fasting need an account?
 
 No. The current app has no free or paid accounts, registration, or login. Core fasting, history, statistics, reminders, widgets, Live Activities, and settings work locally.
 
-If optional accounts are introduced later, we will explain what information they use and update the Privacy Policy before materially different collection begins.
+Accounts, login, cloud recovery, and cross-device synchronization are not planned.
 
 ## Does the free app use analytics?
 
@@ -98,9 +98,9 @@ No guarantee is made that the app is available or lawful everywhere. App-store a
 
 Restrictions can apply to particular persons and organizations regardless of country and can change over time.
 
-## Does Version 1 include accounts or paid features?
+## Does Simple Fasting include accounts or paid features?
 
-No. Version 1 does not include accounts, synchronization, integrations, subscriptions, purchases, or paid features.
+No. Simple Fasting does not include or plan accounts, synchronization, subscriptions, purchases, advertising, or paid features.
 
 Before launching functionality that materially changes data handling, we will update the Privacy Policy and relevant terms and request permission or consent where required.
 

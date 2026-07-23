@@ -1,366 +1,69 @@
-# www/AGENTS.md
+# Website Agent Guide
+
+Read the root `AGENTS.md` and `docs/dev/PRODUCT.md` before changing `www/`.
+This file contains only website-specific additions.
 
 ## Purpose
 
-This file contains instructions for AI agents working inside:
+The website supports the mobile app with accurate marketing, support, FAQ,
+legal, and release-note pages. It is not a SaaS product or dashboard.
 
-```text
-/www
+Current public routes:
+
+- `/`
+- `/faq`
+- `/privacy`
+- `/terms`
+- `/whats-new`
+- `/legal`
+
+Do not add pages or advertise features that are not in the current app.
+
+## Implementation
+
+- Use Astro, semantic HTML, and plain CSS.
+- Keep output static and client-side JavaScript at zero unless a real
+  interaction requires it.
+- Prefer existing components and styles over dependencies.
+- Preserve title, description, canonical URL, Open Graph metadata, heading
+  order, keyboard access, alt text, contrast, and responsive layouts.
+- Keep visuals calm, lightweight, and consistent with the app.
+- Avoid popups, cookie banners without a legal need, heavy animation, large
+  decorative assets, trackers, ads, or analytics.
+
+## Shared documents
+
+Privacy, Terms, FAQ, and What's New are authored in `../docs/content`.
+
+```bash
+pnpm content:sync
+pnpm content:check
 ```
 
-Read and follow:
+Never edit or commit `src/content/generated/shared-documents.json`.
+Keep synchronization in `prebuild`; the post-build verifier must compare
+rendered pages with canonical content and reject missing routes or broken
+internal links.
 
-1. `/AGENTS.md`
-2. Relevant files in `/docs`
-3. This file
+## Cloudflare Pages
 
-If instructions conflict:
+Production is <https://simplefasting.app> on Cloudflare Pages.
 
-```text
-Project Documentation
-    ↓
-Root AGENTS.md
-    ↓
-www/AGENTS.md
+- `wrangler.toml` defines the Pages project and `pages_build_output_dir`.
+- Do not add a Workers `main` entry.
+- `.github/workflows/www-release.yml` builds a reviewed ref and can deploy the
+  verified `dist/` artifact.
+- Do not enable Cloudflare Web Analytics or other tracking without explicit
+  approval and updated privacy documentation.
+
+## Verification
+
+Run from `www/`:
+
+```bash
+pnpm test
 ```
 
----
-
-# Website Purpose
-
-This website exists to support the mobile application.
-
-Primary goals:
-
-- Explain the app
-- Improve App Store SEO
-- Improve search engine visibility
-- Host privacy policy
-- Host support page
-- Host FAQ
-- Host changelog
-
-This is not a SaaS dashboard.
-
-This is not a marketing-heavy startup website.
-
-Keep it simple.
-
----
-
-# Technology
-
-Required:
-
-- Astro
-- TypeScript
-
-Preferred:
-
-- Static pages
-- Server-rendered content
-- Minimal JavaScript
-
-Avoid:
-
-- React unless necessary
-- Client-side rendering
-- Complex frameworks
-
-Use Astro first.
-
----
-
-# Design Philosophy
-
-The website should feel:
-
-- Minimal
-- Fast
-- Calm
-- Trustworthy
-
-Visual style should match the mobile application.
-
-Prefer:
-
-- White space
-- Clear typography
-- Small accents
-- Clean layouts
-
-Avoid:
-
-- Marketing gimmicks
-- Popups
-- Cookie banners (unless required)
-- Aggressive animations
-- Dark patterns
-
----
-
-# SEO
-
-SEO is a first-class concern.
-
-Every page should have:
-
-- Title
-- Description
-- Canonical URL
-- Open Graph tags
-- Structured metadata when useful
-
-Prefer semantic HTML.
-
-Use:
-
-```html
-<header>
-  <main>
-    <section>
-      <footer></footer>
-    </section>
-  </main>
-</header>
-```
-
-instead of div-heavy layouts.
-
----
-
-# Performance
-
-Performance is more important than visual complexity.
-
-Goals:
-
-- Fast page load
-- Excellent Lighthouse score
-- Minimal JavaScript
-- Small bundle size
-
-Avoid:
-
-- Large dependencies
-- Heavy animations
-- Video backgrounds
-- Unnecessary client-side code
-
----
-
-# Animations
-
-Animations should be subtle.
-
-Acceptable:
-
-- Fade in
-- Small hover effects
-- Small scale effects
-- Smooth transitions
-
-Avoid:
-
-- Parallax
-- Scroll-jacking
-- Heavy motion
-- Large animated backgrounds
-
-Animation should never distract from content.
-
----
-
-# Content Structure
-
-Expected pages:
-
-```text
-/
- /privacy
- /support
- /faq
- /changelog
-```
-
-Potential future pages:
-
-```text
-/blog
-/features
-/download
-```
-
-Only add pages when there is a clear reason.
-
----
-
-# Privacy
-
-The website should support the project's privacy-first philosophy.
-
-Avoid:
-
-- Tracking scripts
-- Advertising scripts
-- Third-party analytics
-
-Prefer:
-
-- No analytics
-- Privacy-friendly analytics if explicitly approved
-
-Privacy is part of the product.
-
-The mobile app's native-only crash reporting approach does not authorize analytics on the website. Website analytics still require separate explicit approval and documentation.
-
----
-
-# App Store Support
-
-Website should support:
-
-- Apple App Store listing
-- Google Play listing
-
-Maintain:
-
-- Support URL
-- Privacy Policy URL
-- Contact information
-
-These pages should remain stable.
-
----
-
-# Content Writing
-
-Writing style:
-
-- Clear
-- Direct
-- Short
-- Honest
-
-Avoid:
-
-- Hype
-- Fake urgency
-- Marketing buzzwords
-- AI-generated sounding copy
-
-Prefer factual descriptions.
-
----
-
-# Assets
-
-Prefer:
-
-- SVG icons
-- Optimized images
-- Responsive assets
-
-Avoid:
-
-- Large PNG files
-- Unoptimized screenshots
-- Decorative assets without purpose
-
----
-
-# Accessibility
-
-Requirements:
-
-- Semantic HTML
-- Keyboard navigation
-- Proper heading hierarchy
-- Alt text for images
-- Sufficient contrast
-
-Accessibility is not optional.
-
----
-
-# Dependencies
-
-Before adding a dependency:
-
-1. Can Astro solve this already?
-2. Can plain HTML/CSS solve it?
-3. Is JavaScript actually required?
-
-Prefer fewer dependencies.
-
----
-
-# Security
-
-Never expose:
-
-- Secrets
-- API keys
-- Tokens
-- Credentials
-
-Assume website source is public.
-
----
-
-# Future Content
-
-Future marketing and product content should align with:
-
-```text
-/docs/dev/plan/01-product-specification.md
-/docs/dev/plan/04-future-roadmap.md
-```
-
-Privacy Policy, Terms of Use, FAQ, and What's New content comes from `/docs/content`. Do not edit generated content under `src/content/generated`; edit the Markdown source and run `pnpm content:sync`.
-
-The shared-content generator in the `prebuild` lifecycle hook is mandatory. Keep automatic synchronization for `dev`, `build`, and `preview`, keep pre-build `content:sync` plus `content:check` in CI, keep post-build rendered-content verification, and commit canonical Markdown only. Generated app/website JSON files are ignored.
-
-Keep `pnpm test` as the production-build gate. Its post-build verifier must continue to require every public route, compare rendered legal/FAQ/What's New content with the generated shared source, verify homepage FAQ coverage, and reject broken internal page links. Prefer this static deterministic check over browser E2E unless real client-side behavior is introduced.
-
-Do not invent product features.
-
-Do not advertise features that do not exist.
-
----
-
-# Decision Framework
-
-When multiple solutions exist:
-
-1. Prefer Astro-native solutions.
-2. Prefer static generation.
-3. Prefer SEO-friendly solutions.
-4. Prefer simpler solutions.
-5. Prefer fewer dependencies.
-
----
-
-# Definition of Done
-
-A task is complete when:
-
-- Page renders correctly
-- SEO metadata exists
-- Accessibility is preserved
-- Lighthouse score remains high
-- Mobile layout works
-- Desktop layout works
-- No unnecessary JavaScript is added
-
----
-
-# Website Philosophy
-
-The website exists to support the application.
-
-Content is more important than effects.
-
-Speed is more important than animations.
-
-Clarity is more important than marketing.
+This must synchronize shared content, check drift, build all routes, and run the
+post-build verifier. Also inspect responsive rendering when layout or imagery
+changes.

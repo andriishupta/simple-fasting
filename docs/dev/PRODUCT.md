@@ -1,4 +1,4 @@
-# Simple Fasting — Product and Implementation Specification
+# Simple Fasting — Product Specification
 
 This document describes the current application in `/app`. The running application is the source of truth for implemented behavior; this document records that behavior and the intended product boundaries.
 
@@ -213,7 +213,7 @@ The application should feel calm, minimal, fast, and native.
 
 ## Current Product Boundaries
 
-The following are not part of the implemented app:
+The following are not part of the product and are not planned:
 
 - accounts or sync;
 - backend APIs;
@@ -222,3 +222,5 @@ The following are not part of the implemented app:
 - health-platform integrations;
 - social features or complex meal tracking;
 - advanced widget and Live Activity variants beyond the current small/active-fast surfaces.
+
+See `FUTURE.md` for the deliberately small maintenance-only future scope.

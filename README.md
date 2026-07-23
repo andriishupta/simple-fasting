@@ -1,44 +1,61 @@
 # Simple Fasting
 
-Privacy-first, offline-first fasting tracker with no account, backend, ads, subscription, analytics SDK, or installation identifier.
+Privacy-first, offline-first fasting tracker for iOS and Android.
 
-V1 uses only local app diagnostics that the user explicitly shares and native platform crash reporting available through Apple App Store Connect and Google Play Console. The app does not send fasting history, dates, durations, goals, notes, reminder schedules, export contents, contact details, advertising identifiers, or precise location to an analytics backend.
+- No account, login, or cloud backend.
+- No ads, subscriptions, analytics SDK, installation identifier, or tracking.
+- Fasting history, goals, reminders, statistics, and settings stay on the
+  device.
+- JSON and CSV import/export remain under the user's control.
+- Native Apple and Google crash/vitals reports may be available through their
+  platforms; local diagnostics are shared only after explicit user action.
 
-- `app/` — Expo React Native application for iOS and Android.
-- `www/` — static Astro website.
-- `docs/dev/how-to.md` — developer onboarding and repository manual.
-- `docs/dev/plan/` — product specification, execution plan, release guide, and roadmap.
-- `docs/content/legal/`, `docs/content/faq.md`, and `docs/content/whats-new.md` — versioned shared content for the app and website.
+## Repository
 
-Current development is focused on the mobile application. Start with [`app/README.md`](app/README.md) for setup and commands, and [`docs/dev/plan/01-product-specification.md`](docs/dev/plan/01-product-specification.md) for product behavior.
+```text
+app/          Expo React Native application
+www/          Static Astro website deployed to Cloudflare Pages
+docs/content/ Canonical Privacy, Terms, FAQ, and What's New Markdown
+docs/dev/     Product, release, and future-scope documentation
+scripts/      Shared-content and website verification scripts
+```
 
-Edit legal, FAQ, and What's New copy only in `docs/content`, then run `node scripts/sync-shared-content.mjs` when you need local generated JSON. Generated `shared-documents.json` files are ignored; source Markdown is the committed source of truth.
+Read:
 
-## Shared content workflow
+- [`docs/dev/PRODUCT.md`](docs/dev/PRODUCT.md) — current product behavior.
+- [`docs/dev/RELEASE.md`](docs/dev/RELEASE.md) — short TestFlight and Google
+  Internal Testing checklist.
+- [`docs/dev/FUTURE.md`](docs/dev/FUTURE.md) — intentionally excluded scope.
+- [`app/README.md`](app/README.md) and [`www/README.md`](www/README.md) —
+  package commands.
 
-The canonical files are:
+## Shared content
 
-- `docs/content/legal/privacy-policy.md`
-- `docs/content/legal/terms-of-use.md`
-- `docs/content/faq.md`
-- `docs/content/whats-new.md`
-
-From the repository root, synchronize both consumers with:
+Edit only the Markdown under `docs/content`, then run from the repository root:
 
 ```bash
 node scripts/sync-shared-content.mjs
+node scripts/sync-shared-content.mjs --check
 ```
 
-Use `node scripts/sync-shared-content.mjs --check` after synchronization to fail when generated content is stale. Do not edit either generated `shared-documents.json` file directly.
+Generated `shared-documents.json` files are ignored and must not be committed.
+App and website lifecycle scripts synchronize them automatically before builds.
 
-Synchronization is mandatory before builds. `www` runs it through `prebuild`; CI also runs `content:sync` and `content:check` before the website build, then verifies rendered output in `postbuild`. `app` runs synchronization through its Expo `prebuild` command and the EAS `eas-build-pre-install` hook. App start, native run, web, lint, and tests also synchronize local generated files as appropriate.
+## Verification
 
-## Automated verification
+```bash
+cd app
+pnpm exec tsc --noEmit
+pnpm lint
+pnpm test
+pnpm test:coverage
+```
 
-GitHub Actions runs on pull requests and pushes to `main`:
+```bash
+cd www
+pnpm test
+```
 
-- parallel app TypeScript, lint, unit tests, integration tests, and Jest coverage;
-- a shared-content integration job that regenerates ignored JSON, checks it before build, builds Astro, and runs the post-build verifier;
-- independent Expo bundle exports for iOS and Android.
-
-Native Maestro flows live in `app/.maestro`. The validated EAS workflow in `app/.eas/workflows/e2e.yml` builds credential-free simulator/APK binaries and runs the same fasting, history, goals, settings, legal, and cancellation flows on both iOS and Android for app-related pull requests.
+CI also exports iOS and Android JavaScript bundles. Native notifications,
+widgets, Live Activities, signing, TestFlight, and Google Play builds require
+native or EAS verification.

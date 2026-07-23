@@ -3,7 +3,7 @@ id: terms-of-use
 title: Terms of Use
 version: 1.0
 effectiveDate: 2026-07-23
-description: Terms governing Simple Fasting, including eligibility, health disclaimers, app-store terms, local data, acceptable use, sanctions, and future features.
+description: Terms governing Simple Fasting, including eligibility, health disclaimers, app-store terms, local data, acceptable use, and sanctions.
 intro: These terms govern use of the Simple Fasting app and website. They include important health, local-data, app-store, and legal-compliance provisions.
 ---
 
@@ -65,11 +65,11 @@ The Privacy Policy explains current data practices, including no analytics SDK, 
 
 You are responsible for information you choose to place in notes, emails, exports, diagnostic-report destinations, and other third-party destinations. Review files before sharing and do not submit content you lack the right to use or disclose.
 
-## 9. New functionality and separate terms
+## 9. Product boundaries
 
-The current Version 1 service does not include accounts, synchronization, integrations, subscriptions, purchases, or other paid functionality.
+Simple Fasting does not include or plan accounts, synchronization, subscriptions, purchases, advertising, or other paid functionality.
 
-If new functionality is added later, it may require additional terms, privacy disclosures, permissions, eligibility rules, prices, billing terms, or third-party agreements presented before use.
+Any later functionality that changes data handling or legal obligations may require updated terms, privacy disclosures, permissions, eligibility rules, or third-party agreements presented before use.
 
 ## 10. Third-party services and store rules
 

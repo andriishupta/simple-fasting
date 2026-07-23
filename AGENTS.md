@@ -1,463 +1,132 @@
-# AGENTS.md
+# Simple Fasting Agent Guide
 
-## Purpose
+## Read first
 
-This file contains instructions for AI agents working in this repository.
+Before changing the repository, read:
 
-Always read this file before making changes.
+1. This file.
+2. `docs/dev/PRODUCT.md` for current product behavior and boundaries.
+3. `docs/dev/RELEASE.md` for release work.
+4. `docs/dev/FUTURE.md` when evaluating new scope.
+5. The nearest directory-specific `AGENTS.md`.
 
-Goals:
+The current implementation is the source of truth for behavior that exists.
+Documentation is the source of truth for product intent and release
+requirements. Resolve conflicts by inspecting both and choosing the smallest
+consistent correction.
 
-- Simplicity
-- Maintainability
-- Security
-- Privacy
-- Consistency
-
----
-
-## Repository Structure
-
-```text
-/
-├── app/           # Expo React Native application
-├── www/           # Astro website
-├── docs/
-│   ├── content/  # Shared legal and FAQ content
-│   └── dev/      # Developer manual, plans, and release documentation
-├── AGENTS.md
-└── README.md
-```
-
----
-
-## Documentation First
-
-Before implementing features, review relevant documentation.
-
-Planning location:
+## Repository
 
 ```text
-docs/dev/plan/
+app/          Expo React Native app
+www/          Static Astro website
+docs/content/ Canonical legal, FAQ, and What's New content
+docs/dev/     Product, release, and future-scope documents
+scripts/      Shared content and website verification scripts
 ```
 
-Current planning documents:
+Simple Fasting is a local-first, offline-first fasting tracker. It intentionally
+has no account, backend, sync, advertising, subscription, analytics SDK,
+installation identifier, or cross-app tracking.
 
-```text
-01-product-specification.md
-02-execution-plan.md
-03-release-deployment-guide.md
-04-future-roadmap.md
+Keep the product small. Do not implement items from `FUTURE.md` unless the user
+explicitly changes product direction.
+
+## Shared content
+
+Canonical user-facing content lives in:
+
+- `docs/content/legal/privacy-policy.md`
+- `docs/content/legal/terms-of-use.md`
+- `docs/content/faq.md`
+- `docs/content/whats-new.md`
+
+Never edit generated `shared-documents.json` files. After editing canonical
+Markdown, run:
+
+```bash
+node scripts/sync-shared-content.mjs
+node scripts/sync-shared-content.mjs --check
 ```
 
-Use this reference table to choose the right document before starting work:
-
-| Task type                                                                                                                         | Primary document                                       | Use when                                                                                 |
-| --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| General product behavior, feature requirements, architecture, UX, privacy, data model, widgets, notifications, app store metadata | `plan/01-product-specification.md` | You need the broad source of truth or are implementing v1 app behavior.                  |
-| Implementation sequencing, task breakdown, epic scope, development order                                                          | `plan/02-execution-plan.md`        | You need to decide what to build next or keep work aligned with the execution plan.      |
-| Release, deployment, platform setup, store preparation, EAS, TestFlight, Google Play, testing strategy                            | `plan/03-release-deployment-guide.md` | You are changing deployment, release, platform configuration, or store-facing materials. |
-| V1 parking-lot scope, deferred ideas, sync, accounts, health integrations, premium features                                        | `plan/04-future-roadmap.md`        | You are evaluating whether a requested feature belongs in current V1 work or remains deferred. |
-
-When unsure, start with `plan/01-product-specification.md`, then consult the more specific document if the work is about execution order, deployment, or future evolution.
-
-Shared user-facing content lives in `docs/content/legal/*.md`, `docs/content/faq.md`, and `docs/content/whats-new.md`. These Markdown files are the source of truth for both `app` and `www`. Run `node scripts/sync-shared-content.mjs` after editing them; never edit generated `shared-documents.json` files directly. Legal documents require explicit `version` and `effectiveDate` metadata.
-
-Shared-content synchronization is a mandatory build invariant:
-
-- `www` must keep the shared-content generator in its `prebuild` lifecycle script;
-- `app` must synchronize in its Expo `prebuild` command and EAS `eas-build-pre-install` hook;
-- generated `shared-documents.json` files are ignored and must not be committed;
-- CI should run a shared-content integration check that regenerates files, runs `node scripts/sync-shared-content.mjs --check` before the website build, builds the website, and verifies rendered output;
-- changes to the Markdown schema, generator, targets, or lifecycle hooks must be reflected in the root, app, and website README and AGENTS files.
-
-Automated verification is also a repository invariant:
-
-- keep GitHub CI checks for app type/lint/unit/integration/coverage, the website shared-doc production verifier, and both iOS/Android bundle exports;
-- keep native E2E flows platform-neutral and run the same Maestro set on iOS and Android through the validated EAS workflow;
-- do not commit generated coverage output;
-- when behavior changes, update the narrowest useful unit or integration test and the relevant primary E2E flow.
-
-The current implementation in `/app` is the source of truth for behavior that already exists. Documentation is the source of truth for product intent, remaining work, release requirements, and future scope.
-
-Keep implementation and documentation synchronized. Do not silently diverge from documented requirements or describe unimplemented behavior as shipped.
-
-If documentation and implementation conflict:
-
-1. Inspect the current implementation and relevant history/context.
-2. Explain the conflict.
-3. Propose the smallest consistent solution.
-4. Update documentation when behavior intentionally changes.
-
----
-
-## Project Overview
-
-Simple Fasting is a privacy-first fasting tracker.
-
-Core principles:
-
-- Local First
-- Offline First
-- No Account Required
-- No Backend Required
-- No advertising or cross-app tracking
-- No Ads
-- No Subscription
-- Fast UX
-
-The product intentionally remains simple.
-
-Avoid feature creep.
-
----
-
-## App Directory
-
-Location:
-
-```text
-/app
-```
-
-Technology:
-
-- Expo
-- React Native
-- TypeScript
-
-Responsibilities:
-
-- Fasting timer
-- Fasting sessions
-- History
-- Statistics
-- Widgets
-- Local notifications
-- Local storage
-
-Rules:
-
-- Prefer Expo-compatible libraries
-- Avoid native code unless required
-- Prefer TypeScript
-- Prefer simple architecture
-- Keep startup fast
-- Keep battery usage low
-
----
-
-## Website Directory
-
-Location:
-
-```text
-/www
-```
-
-Technology:
-
-- Astro
-
-Responsibilities:
-
-- Landing page
-- Privacy Policy
-- Support
-- FAQ
-- Changelog
-
-Rules:
-
-- Prefer static pages
-- Prefer server-rendered content
-- Minimize JavaScript
-- Prioritize SEO
-
----
-
-## Security
-
-Never commit:
-
-- Secrets
-- API keys
-- Tokens
-- Credentials
-- Certificates
-
-Use:
-
-```text
-.env.local
-.env.production
-```
-
-for secrets.
-
-Never hardcode sensitive values.
-
----
-
-## Privacy
-
-Default assumptions:
-
-- No analytics SDK
-- No telemetry backend
-- No product-event tracking
-- No installation identifier
-- No autocaptured screens, touches, session replay, advertising, cross-app tracking, profiling, or GeoIP
-- No advertising SDKs
-- No user accounts
-- No fasting history, dates, durations, goals, notes, reminder schedules, exports, contact details, advertising identifiers, or precise location in reporting
-
-The app must not create an installation UUID or anonymous analytics profile for V1. Basic reliability reporting comes from Apple App Store Connect and Google Play Console platform crash/vitals reports, plus local diagnostics shared only after explicit user action. New remote reporting, identifiers, events, or properties require an explicit privacy review and corresponding documentation update.
-
-Any feature that collects user data requires explicit approval.
-
-Privacy is a product feature.
-
----
-
-## Architecture Principles
-
-Prefer:
-
-- Simplicity
-- Readability
-- Explicit code
-- Small abstractions
-
-Avoid:
-
-- Over-engineering
-- Premature optimization
-- Complex design patterns
-- Excessive dependencies
-
----
-
-## Storage
-
-Primary storage:
-
-```text
-MMKV
-```
-
-Requirements:
-
-- Versioned schema
-- Typed validation
-
-Until the project is explicitly declared production/public, all app work is V1 pre-release work. Breaking storage changes and local data resets are allowed when they simplify the app or improve correctness, but do not clear local data without approval.
-
-Think about future migrations when shaping data, but do not implement compatibility layers or migrations for abandoned development-only shapes unless explicitly requested. After the first public release is declared, persisted schema changes will require migrations, backward compatibility, and upgrade testing.
-
----
-
-## State Management
-
-Prefer:
-
-- React state
-- Context
-- Lightweight solutions
-
-Avoid introducing large state libraries unless justified.
-
----
-
-## TypeScript
-
-Requirements:
-
-- Strict mode
-- Explicit types
-- No unused code
-- No dead dependencies
-- Prefer functional style code.
-- Prefer immutable data updates over mutation.
-- Prefer explicit values over implicit behavior.
-- Prefer `type` aliases over `interface` unless declaration merging or class contracts are required.
-- Use `enum` for stable closed sets that are persisted, displayed, or shared across modules.
-- Avoid custom DTO layers unless they remove a real boundary mismatch.
-
-Avoid `any` unless absolutely necessary.
-
----
-
-## UI Principles
-
-The application should feel:
-
-- Fast
-- Calm
-- Native
-- Minimal
-
-Avoid:
-
-- Visual clutter
-- Excessive animations
-- Complex onboarding
-- Unnecessary screens
-
-Users should be able to start a fast within seconds.
-
-### UI/UX Workflow
-
-For meaningful UI changes:
-
-1. Inspect the current screen and neighboring screens before editing.
-2. Identify the existing shared tokens and native interaction patterns.
-3. Prefer Expo and platform-native controls, safe-area handling, navigation, gestures, and transitions.
-4. Keep cards, grouped rows, spacing, radii, typography, and icon treatment consistent across screens.
-5. Avoid divider lines between cards or grouped card rows unless explicitly requested; prefer spacing, padding, and clear grouping. Vertical dividers are acceptable between paired left/right metrics when they clarify comparison.
-6. Avoid scrolling when a normal phone viewport has enough room; retain responsive scrolling for small or expanded states.
-7. Check both idle and expanded/error/keyboard states.
-8. When a simulator is available, verify with screenshots and interaction rather than relying only on code inspection.
-9. Consider iOS and Android behavior separately while keeping product behavior consistent.
-
-Do not optimize a single screen in isolation if the result makes the application feel like multiple unrelated products.
-
----
-
-## Widgets
-
-Widgets are a first-class feature.
-
-Changes affecting:
-
-- Active fasting session
-- History
-- Statistics
-- Goals
-
-must consider widget refresh behavior.
-
----
-
-## Notifications
-
-Use:
-
-- Local notifications
-
-Avoid:
-
-- Push notifications
-- Backend notification systems
-
-unless explicitly requested.
-
----
-
-## Performance
-
-Optimize for:
-
-- Fast startup
-- Low memory usage
-- Low battery consumption
-
-Avoid unnecessary background processing.
-
----
-
-## Dependencies
-
-Before adding a dependency:
-
-1. Check if existing tools solve the problem.
-2. Prefer mature libraries.
-3. Prefer fewer dependencies.
-
-Every dependency increases maintenance cost.
-
----
-
-## Future Features
-
-Future roadmap items are documented in:
-
-```text
-docs/dev/plan/04-future-roadmap.md
-```
-
-Do not implement roadmap items unless requested.
-
----
-
-## Agent Behavior
-
-Before implementing:
-
-1. Read relevant documentation.
-2. Understand existing patterns.
-3. Inspect the current app behavior when UX or runtime behavior matters.
-4. Follow repository conventions.
-
-### Skills and Tools
-
-Use relevant provided skills when they materially improve the work. In particular:
-
-- use Expo/native UI guidance for Expo Router, controls, safe areas, tabs, sheets, animation, and platform behavior;
-- use iOS simulator/debugger tooling for native screenshots and interaction checks when an iOS simulator is available;
-- use browser/frontend testing guidance for website rendering work;
-- use focused review/audit skills when the user requests a whole-repository or over-engineering review.
-
-Read a selected skill completely and follow its workflow. Do not invoke skills mechanically when they do not apply. Explain briefly when a skill changes the work or verification approach.
-
-For significant changes:
-
-1. Explain reasoning.
-2. Explain tradeoffs.
-3. Keep changes focused.
-
-Avoid large architectural refactors unless explicitly requested.
-
----
-
-## Decision Framework
-
-When multiple solutions exist:
-
-1. Choose the simplest.
-2. Choose the most maintainable.
-3. Choose the most privacy-friendly.
-4. Choose the least surprising.
-
-Long-term simplicity is preferred over short-term convenience.
-
----
-
-## Definition of Done
-
-A task is complete when:
-
-- Requirements are implemented
-- TypeScript passes
-- Linting passes
-- Existing functionality remains intact
-- No obvious security issues exist
-- Documentation remains accurate
-- UI changes have proportional runtime or screenshot verification when available
-- Native platform changes consider iOS and Android behavior
-
----
-
-## Project Philosophy
-
-Simple Fasting is intentionally small.
-
-The project values:
-
-- User privacy
-- Local ownership of data
-- Offline-first operation
-- Reliability
-- Maintainability
-
-Every feature should support these goals.
+Generated JSON is ignored and must not be committed. Keep synchronization in
+the website `prebuild`, app Expo `prebuild`, and EAS
+`eas-build-pre-install` lifecycle hooks.
+
+## Privacy and security
+
+- Fasting history, dates, durations, goals, notes, reminders, and exports stay
+  local unless the user explicitly exports or shares them.
+- Do not add accounts, remote storage, analytics, advertising, profiling,
+  telemetry, installation IDs, push services, or reporting SDKs.
+- Native Apple/Google crash and vitals reports may be used where those platforms
+  provide them.
+- Local diagnostics may leave the app only after explicit user action.
+- Never commit secrets, credentials, certificates, provisioning profiles,
+  keystores, or tokens.
+- Any new remote data handling requires explicit approval, a privacy review, and
+  updated legal documentation.
+
+## Engineering principles
+
+- Prefer the simplest readable solution.
+- Keep TypeScript strict and explicit; prefer `type` aliases and immutable
+  updates.
+- Avoid `any`, unused code, speculative abstractions, compatibility layers for
+  abandoned pre-release data, and unnecessary dependencies.
+- Prefer Expo-compatible libraries and native platform controls.
+- Use React state, context, and small hooks instead of a large state framework.
+- Persist app data in typed, validated, versioned MMKV storage.
+- Do not clear local data without approval.
+
+The project remains pre-public until the first production release is explicitly
+declared. Before that point, approved breaking storage changes are allowed.
+Afterward, persisted schema changes require migrations and upgrade testing.
+
+## App rules
+
+- Keep startup fast and battery use low.
+- Use local notifications only.
+- Treat widgets and iOS Live Activities as first-class consumers of active fast,
+  goals, history, and display settings.
+- Native feature changes require fresh native builds; Expo Go is not sufficient.
+- Keep Fast, Data, Settings, stack screens, onboarding, and widgets visually
+  consistent.
+- Prefer native navigation, safe areas, controls, gestures, and transitions.
+- Avoid visual clutter, unnecessary animation, scrolling when content fits, and
+  divider-heavy cards.
+- Check both iOS and Android behavior.
+
+## Website rules
+
+- Keep Astro output static and minimize JavaScript.
+- Do not add analytics, ads, trackers, account cookies, or unnecessary
+  dependencies.
+- Preserve SEO metadata, semantic HTML, accessibility, responsive layouts, and
+  stable support/legal URLs.
+- Cloudflare Pages is the production host. `www/wrangler.toml` must use
+  `pages_build_output_dir` and must not define a Workers `main` entry.
+- Website claims must match the shipped app and canonical shared content.
+
+## Tests and CI
+
+Keep the existing CI gates:
+
+- app TypeScript, lint, unit, integration, and coverage checks;
+- website shared-content check and production build verification;
+- iOS and Android Expo bundle exports;
+- the same Maestro flows on iOS and Android through EAS.
+
+Do not commit generated coverage. When behavior changes, update the narrowest
+useful test and the relevant primary E2E flow. Native widget, notification, and
+store behavior still requires runtime verification.
+
+## Definition of done
+
+- Requested behavior or documentation is correct and focused.
+- App TypeScript, lint, and relevant tests pass.
+- Website verification passes when content or website files change.
+- Shared content is synchronized from canonical Markdown.
+- Documentation and website claims match the current app.
+- iOS and Android implications were considered.
+- No secrets, generated content, or unrelated files were added.

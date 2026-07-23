@@ -3,7 +3,7 @@ id: privacy-policy
 title: Privacy Policy
 version: 1.0
 effectiveDate: 2026-07-23
-description: How Simple Fasting handles local app data, native platform crash reports, website requests, support emails, exports, privacy rights, and future product changes.
+description: How Simple Fasting handles local app data, native platform crash reports, website requests, support emails, exports, and privacy rights.
 intro: Simple Fasting is built so fasting information can remain on your device. This policy describes the current app and website, what information may be handled, and the choices available to you.
 ---
 
@@ -117,9 +117,9 @@ Apple, Google, Cloudflare, other network providers, and email providers may proc
 
 Fasting history, goals, notes, settings, and other local app content remain subject to your device, platform, backup, and export choices and are not intentionally transferred to us through analytics or crash reporting.
 
-## 13. New functionality
+## 13. Product boundaries
 
-The current app is Version 1 and does not include accounts, synchronization, paid features, health integrations, analytics SDKs, or a Simple Fasting backend.
+Simple Fasting does not include or plan accounts, synchronization, paid features, health integrations, analytics SDKs, or a Simple Fasting backend.
 
 Before any new feature begins collecting or transmitting information in a materially different way, we will update this policy, describe the relevant data and purposes, and request permission or consent where required.
 

@@ -1,7 +1,9 @@
 # Simple Fasting website
 
-Static marketing and legal website for Simple Fasting, built with Astro components and plain CSS.
-It ships no client-side framework or application JavaScript.
+Static marketing and legal website for Simple Fasting, built with Astro and
+plain CSS. It ships no client-side application JavaScript.
+
+Production: <https://simplefasting.app>
 
 ## Commands
 
@@ -19,9 +21,13 @@ The production build is written to `dist/`.
 
 ## Cloudflare Pages
 
-Production is a static Cloudflare Pages project. `wrangler.toml` defines the `simple-fasting` Pages project and uses `pages_build_output_dir = "./dist"`.
+Production is a static Cloudflare Pages project. `wrangler.toml` defines the
+`simple-fasting` Pages project and uses `pages_build_output_dir = "./dist"`.
 
-The Wrangler configuration intentionally has no `main` entry. `main` is a Workers entry point and does not apply to a Pages project. The manual website release workflow checks out the selected ref, downloads the verified `dist/` artifact, and deploys it from the `www` directory using this Pages configuration.
+The Wrangler configuration intentionally has no `main` entry. `main` is a
+Workers entry point and does not apply to Pages. The website release workflow
+builds the selected ref and can deploy the verified `dist/` artifact from this
+directory.
 
 ## Pages
 
