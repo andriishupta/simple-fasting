@@ -210,10 +210,9 @@ export function FastGoalSelector({
                 maxLength={noteMaxLength}
                 placeholder={t('setup.notePlaceholder')}
                 placeholderTextColor={theme.textSecondary}
-                returnKeyType="done"
                 multiline
                 scrollEnabled
-                submitBehavior="blurAndSubmit"
+                submitBehavior="newline"
                 textAlignVertical="top"
                 style={[
                   styles.input,
@@ -446,13 +445,11 @@ function AndroidDurationWheel({
             </ThemedText>
           </View>
         )}
-        renderOverlay={({ sideInset }) => (
+        renderOverlay={() => (
           <View
-            pointerEvents="none"
             style={[
               styles.androidDurationWheelSelection,
               {
-                left: sideInset,
                 borderColor: theme.accentBorder,
               },
             ]}
@@ -581,8 +578,6 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
   },
   androidDurationWheelSelection: {
-    position: 'absolute',
-    top: 0,
     width: 48,
     height: 46,
     borderWidth: 2,

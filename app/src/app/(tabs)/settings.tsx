@@ -866,13 +866,7 @@ function AccentPicker({
   onSelect: (accentColorName: AccentColorName) => void;
 }) {
   const theme = useTheme();
-  const [previewAccentName, setPreviewAccentName] = useState(selectedAccentName);
-  const selectedIndex = accentOptions.indexOf(previewAccentName);
-
-  const selectAccent = (accentName: AccentColorName): void => {
-    setPreviewAccentName(accentName);
-    onSelect(accentName);
-  };
+  const selectedIndex = accentOptions.indexOf(selectedAccentName);
 
   return (
     <View style={styles.accentControl}>
@@ -888,7 +882,7 @@ function AccentPicker({
         viewportStyle={styles.accentViewport}
         onSelectIndex={(index) => {
           const accentName = accentOptions[index];
-          if (accentName !== undefined) selectAccent(accentName);
+          if (accentName !== undefined) onSelect(accentName);
         }}
         renderItem={(accentName) => (
           <View style={styles.accentItem}>
@@ -896,7 +890,7 @@ function AccentPicker({
               style={[styles.accentSwatch, { backgroundColor: accentColorValues[accentName] }]}
             />
             <View style={styles.accentLabelSlot}>
-              {accentName === previewAccentName ? (
+              {accentName === selectedAccentName ? (
                 <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
                   {accentColorLabels[accentName]}
                 </ThemedText>
@@ -904,14 +898,11 @@ function AccentPicker({
             </View>
           </View>
         )}
-        renderOverlay={({ sideInset }) => (
+        renderOverlay={() => (
           <View
-            pointerEvents="none"
             style={[
               styles.accentSelection,
               {
-                left: sideInset,
-                transform: [{ translateX: (accentItemWidth - 48) / 2 }],
                 borderColor: theme.accent,
                 boxShadow: `0 0 0 4px ${theme.accentBackground}`,
               },
@@ -1234,8 +1225,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   accentSelection: {
-    position: 'absolute',
-    top: 4,
+    marginTop: 4,
     width: 48,
     height: 48,
     borderWidth: 2,

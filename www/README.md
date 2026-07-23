@@ -17,6 +17,12 @@ pnpm preview
 
 The production build is written to `dist/`.
 
+## Cloudflare Pages
+
+Production is a static Cloudflare Pages project. `wrangler.toml` defines the `simple-fasting` Pages project and uses `pages_build_output_dir = "./dist"`.
+
+The Wrangler configuration intentionally has no `main` entry. `main` is a Workers entry point and does not apply to a Pages project. The manual website release workflow checks out the selected ref, downloads the verified `dist/` artifact, and deploys it from the `www` directory using this Pages configuration.
+
 ## Pages
 
 - `/` — marketing homepage with FAQ summary

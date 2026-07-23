@@ -16,7 +16,7 @@ type CenteredWheelPickerProps<Item> = {
   items: readonly Item[];
   keyExtractor?: (item: Item, index: number) => string;
   renderItem: (item: Item, state: { index: number; selected: boolean }) => ReactNode;
-  renderOverlay?: (state: { sideInset: number }) => ReactNode;
+  renderOverlay?: () => ReactNode;
   selectOnScroll?: boolean;
   selectedIndex: number;
   viewportStyle?: StyleProp<ViewStyle>;
@@ -177,7 +177,11 @@ export function CenteredWheelPicker<Item>({
           </Pressable>
         ))}
       </ScrollView>
-      {renderOverlay?.({ sideInset })}
+      {renderOverlay ? (
+        <View pointerEvents="none" style={styles.centeredOverlay}>
+          {renderOverlay()}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -185,6 +189,14 @@ export function CenteredWheelPicker<Item>({
 const styles = StyleSheet.create({
   viewport: {
     overflow: 'hidden',
+  },
+  centeredOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: 'center',
   },
   pressed: {
     opacity: 0.78,

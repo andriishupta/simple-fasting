@@ -1,5 +1,4 @@
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -11,7 +10,6 @@ export function LocalDocumentScreen({
 }: {
   document: SharedDocument;
 }) {
-  const insets = useSafeAreaInsets();
   const meta = document.effectiveDate
     ? t('documents.effectiveVersion', {
         date: document.effectiveDate,
@@ -20,7 +18,7 @@ export function LocalDocumentScreen({
     : t('documents.version', { version: document.version });
   const screenStyle = [
     styles.screen,
-    Platform.OS === 'android' ? { paddingTop: insets.top + Spacing.six } : null,
+    Platform.OS === 'android' ? { paddingTop: Spacing.two } : null,
   ];
 
   return (

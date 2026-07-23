@@ -28,7 +28,28 @@ describe('TabScreenShell', () => {
     expect(scrollView.props.keyboardDismissMode).toBe(
       Platform.OS === 'ios' ? 'interactive' : 'on-drag',
     );
+    expect(scrollView.props.nestedScrollEnabled).toBe(true);
     expect(scrollView.props.scrollsChildToFocus).toBe(true);
     expect(scrollView.props.contentInsetAdjustmentBehavior).toBe('automatic');
+  });
+
+  test('uses standard native scrolling by default', async () => {
+    const screen = await render(
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 390, height: 844 },
+          insets: { top: 47, right: 0, bottom: 34, left: 0 },
+        }}>
+        <TabScreenShell>
+          <View />
+        </TabScreenShell>
+      </SafeAreaProvider>,
+    );
+    const [scrollView] = screen.container.queryAll(
+      (instance) => instance.props.contentInsetAdjustmentBehavior === 'automatic',
+    );
+
+    expect(scrollView.props.scrollEnabled).toBe(true);
+    expect(scrollView.props.bounces).toBe(true);
   });
 });

@@ -2,7 +2,7 @@
 id: terms-of-use
 title: Terms of Use
 version: 1.0
-effectiveDate: 2026-07-07
+effectiveDate: 2026-07-23
 description: Terms governing Simple Fasting, including eligibility, health disclaimers, app-store terms, local data, acceptable use, sanctions, and future features.
 intro: These terms govern use of the Simple Fasting app and website. They include important health, local-data, app-store, and legal-compliance provisions.
 ---

@@ -76,7 +76,7 @@ The Cloudflare deploy step requires repository secrets:
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 
-The workflow uses the `cloudflare_project_name` input, defaulting to `simple-fasting`. If the Cloudflare Pages project uses a different name, provide that name when running the workflow.
+The Pages project name and static output directory are defined in `www/wrangler.toml`. The configuration intentionally uses `pages_build_output_dir` and has no Worker `main` entry. Keep the committed project name aligned with the Cloudflare Pages project.
 
 Configure the GitHub `website-production` environment with manual approval if production website deploys should require a second human confirmation.
 

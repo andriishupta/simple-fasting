@@ -69,7 +69,10 @@ describe('HistoryDetailScreen validation', () => {
 
     fireEvent.press(screen.getByRole('button', { name: 'Save fast' }));
 
-    expect(alert).toHaveBeenCalledWith('Start time cannot be in the future.');
+    expect(alert).toHaveBeenCalledWith(
+      'Check fast details',
+      'Start time cannot be in the future.',
+    );
     expect(screen.queryByText('Save failed')).not.toBeOnTheScreen();
   });
 

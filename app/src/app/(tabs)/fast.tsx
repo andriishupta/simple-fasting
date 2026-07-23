@@ -8,7 +8,6 @@ import {
   TextInput,
   unstable_batchedUpdates,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { router } from 'expo-router';
 import { ArrowDown, ArrowUp, CheckCircle2, ChevronRight } from 'lucide-react-native';
@@ -132,7 +131,6 @@ const useElapsedSecondsValue = (startedAt: string): SharedValue<number> => {
 };
 
 export default function HomeScreen() {
-  const { height } = useWindowDimensions();
   const goals = useSettingsSelector((settings) => settings.goals);
   const lastUsedGoalDurationHours = useSettingsSelector(
     (settings) => settings.lastUsedGoalDurationHours,
@@ -167,11 +165,6 @@ export default function HomeScreen() {
   const [operationError, setOperationError] = useState<string | null>(null);
   const [activeReminderUpdating, setActiveReminderUpdating] = useState(false);
   const activeSession = activeFastState.session;
-  const shouldScroll =
-    height < (activeSession === null ? 700 : 760) ||
-    noteVisible ||
-    customDurationExpanded ||
-    savedFastNotice !== null;
   const effectiveSelectedGoalId =
     selectedGoalId === customGoalId ||
     selectedGoalId === unlimitedGoalId ||
@@ -289,7 +282,6 @@ export default function HomeScreen() {
 
   return (
     <TabScreenShell
-      scrollEnabled={shouldScroll ? true : 'auto'}
       keyboardShouldPersistTaps="handled"
       maxWidth={Math.min(MaxContentWidth, 560)}
       contentStyle={styles.homeContent}>
@@ -872,7 +864,8 @@ const styles = StyleSheet.create({
     width: '100%',
     flex: 1,
     justifyContent: 'center',
-    paddingVertical: Spacing.xl,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.huge,
   },
   activeFastStateShell: {
     paddingBottom: Spacing.xl + Typography.screenTitle.lineHeight + Spacing.three,

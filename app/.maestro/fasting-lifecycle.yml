@@ -11,6 +11,9 @@ name: Complete a fasting lifecycle
 - tapOn: Note
 - tapOn: Fast note
 - inputText: Morning plan
+- scrollUntilVisible:
+    element: 12/128
+    direction: DOWN
 - hideKeyboard
 - assertVisible: Morning plan
 - tapOn: Start fast

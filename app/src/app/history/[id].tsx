@@ -7,7 +7,6 @@ import {
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/app-button';
 import { FeedbackState } from '@/components/feedback-state';
@@ -61,12 +60,11 @@ const createEditState = (session: FastSession): EditState => ({
 
 export default function HistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const insets = useSafeAreaInsets();
   useHistoryState();
   const session = typeof id === 'string' ? getFastSession(id) : undefined;
   const screenStyle = [
     styles.screen,
-    Platform.OS === 'android' ? { paddingTop: insets.top + Spacing.six } : null,
+    Platform.OS === 'android' ? { paddingTop: Spacing.two } : null,
   ];
 
   if (session === undefined) {
@@ -112,7 +110,7 @@ function DetailContent({ session }: { session: FastSession }) {
     getGoalSelectionId(enabledGoals, goalDurationHours),
   );
   const showValidationError = (message: string): void => {
-    Alert.alert(message);
+    Alert.alert(t('historyEdit.validationTitle'), message);
   };
 
   const deleteSession = (): void => {

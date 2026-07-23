@@ -22,7 +22,7 @@ export default function TabLayout() {
       backgroundColor={theme.background}
       blurEffect="systemMaterial"
       disableTransparentOnScrollEdge
-      minimizeBehavior="onScrollDown">
+      minimizeBehavior="never">
       <NativeTabs.Trigger
         name="history"
         role="history"

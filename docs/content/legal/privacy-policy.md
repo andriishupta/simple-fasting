@@ -2,7 +2,7 @@
 id: privacy-policy
 title: Privacy Policy
 version: 1.0
-effectiveDate: 2026-07-07
+effectiveDate: 2026-07-23
 description: How Simple Fasting handles local app data, native platform crash reports, website requests, support emails, exports, privacy rights, and future product changes.
 intro: Simple Fasting is built so fasting information can remain on your device. This policy describes the current app and website, what information may be handled, and the choices available to you.
 ---
@@ -44,11 +44,11 @@ Because the app does not send local fasting information to us, we cannot view, r
 
 ## 4. Website and technical delivery data
 
-The website is designed as static HTML and CSS and does not intentionally use analytics cookies, advertising pixels, fingerprinting, or account cookies.
+The website is deployed as a static Cloudflare Pages site. Simple Fasting does not directly collect visitor information through its website code and does not intentionally use analytics cookies, advertising pixels, fingerprinting, or account cookies.
 
-Hosting, content-delivery, security, and network providers necessarily process ordinary request data to deliver and protect the website. This can include IP address, user agent, requested URL, referring URL, timestamps, approximate region derived from an IP address, and security or error logs. Those providers may retain logs under their own terms and security policies.
+Cloudflare and other network providers necessarily process ordinary request data to deliver and protect the website. This can include IP address, user agent, requested URL, referring URL, timestamps, approximate region derived from an IP address, and security or error logs. Cloudflare may make limited customer logs available to us and may retain information under its own terms and privacy policy.
 
-We use this technical data only as needed to deliver, secure, troubleshoot, and maintain the website, comply with law, and prevent abuse. We do not use it to track activity across unrelated websites or apps.
+If technical delivery logs are available to us, we use them only as needed to deliver, secure, troubleshoot, and maintain the website, comply with law, and prevent abuse. We do not use them to track activity across unrelated websites or apps.
 
 ## 5. Emails and support
 
@@ -113,7 +113,7 @@ Simple Fasting is a general wellness tracking tool, not a healthcare provider, i
 
 ## 12. International processing
 
-Apple, Google, website, network, and email providers may process technical or support information in countries other than your own. Those countries may have different privacy laws. Where required, providers and we must use recognized safeguards for international transfers.
+Apple, Google, Cloudflare, other network providers, and email providers may process technical or support information in countries other than your own. Those countries may have different privacy laws. Where required, providers and we must use recognized safeguards for international transfers.
 
 Fasting history, goals, notes, settings, and other local app content remain subject to your device, platform, backup, and export choices and are not intentionally transferred to us through analytics or crash reporting.
 

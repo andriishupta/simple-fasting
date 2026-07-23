@@ -53,6 +53,7 @@ export function TabScreenShell({
         bounces={canScroll}
         automaticallyAdjustKeyboardInsets
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        nestedScrollEnabled
         scrollsChildToFocus
         onLayout={updateViewportHeight}
         onContentSizeChange={(_width, height) => setContentHeight(height)}

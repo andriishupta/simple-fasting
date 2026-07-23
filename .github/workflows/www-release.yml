@@ -12,10 +12,6 @@ on:
         required: true
         type: boolean
         default: false
-      cloudflare_project_name:
-        description: Cloudflare Pages project name
-        required: true
-        default: simple-fasting
 
 permissions:
   contents: read
@@ -58,6 +54,9 @@ jobs:
     if: inputs.deploy_to_cloudflare
     environment: website-production
     steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.git_ref }}
       - uses: actions/download-artifact@v6
         with:
           name: www-dist
@@ -66,4 +65,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy www/dist --project-name=${{ inputs.cloudflare_project_name }} --branch=main
+          workingDirectory: www
+          command: pages deploy --branch=main

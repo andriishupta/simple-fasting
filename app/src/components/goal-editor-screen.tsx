@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { router, Stack } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/app-button';
 import { AppSurface } from '@/components/app-surface';
@@ -70,7 +69,7 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
     draft.targetDurationHours !== initialDraft.targetDurationHours;
 
   const showValidationError = (message: string): void => {
-    Alert.alert(message);
+    Alert.alert(t('goals.validationTitle'), message);
   };
 
   const deleteGoal = (): void => {
@@ -281,10 +280,9 @@ export function GoalEditorScreen({ goalId }: { goalId: string | null }) {
 }
 
 function GoalEditorShell({ children }: { children: React.ReactNode }) {
-  const insets = useSafeAreaInsets();
   const screenStyle = [
     styles.screen,
-    Platform.OS === 'android' ? { paddingTop: insets.top + Spacing.six } : null,
+    Platform.OS === 'android' ? { paddingTop: Spacing.two } : null,
   ];
 
   return (

@@ -38,7 +38,7 @@ Use device access controls, review notification and widget visibility, and store
 
 ## What website information is processed?
 
-The website does not intentionally use analytics cookies, advertising pixels, or fingerprinting. Hosting and network providers still process ordinary request information such as IP address, browser or user agent, requested page, timestamp, and security logs to deliver and protect the site.
+The static website does not directly collect visitor information through its own code and does not intentionally use analytics cookies, advertising pixels, or fingerprinting. Cloudflare and other network providers still process ordinary request information such as IP address, browser or user agent, requested page, timestamp, and security logs to deliver and protect the site under their own terms and privacy policies.
 
 We do not use that information to track you across unrelated websites or apps.
 
@@ -60,7 +60,7 @@ In Settings, Report bug offers an optional local diagnostic JSON file. You can e
 
 Yes. Create a JSON or CSV export from Settings, then save or share it through the operating-system share sheet.
 
-You can later import either Simple Fasting export format on another device. Import adds valid completed sessions, skips session IDs already stored on that device, and does not replace settings or an active fast. Keep exports private because they can contain fasting dates and notes.
+You can later import either Simple Fasting export format on another device. Import preserves existing history and skips duplicate or overlapping sessions. A JSON backup also restores supported settings; CSV restores session history only. Import is unavailable while a fast is active. Keep exports private because they can contain fasting dates and notes.
 
 The file leaves Simple Fasting when you choose a destination. You are responsible for its recipients, storage, security, and deletion after export.
 

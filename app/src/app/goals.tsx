@@ -28,7 +28,7 @@ export default function GoalsScreen() {
   const [draggingGoalId, setDraggingGoalId] = useState<string | null>(null);
   const screenStyle = [
     styles.screen,
-    Platform.OS === 'android' ? { paddingTop: insets.top + Spacing.six } : null,
+    Platform.OS === 'android' ? { paddingTop: Spacing.two } : null,
   ];
 
   return (

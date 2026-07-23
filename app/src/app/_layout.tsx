@@ -1,6 +1,6 @@
 import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider, usePathname } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, AppState, StatusBar, StyleSheet } from 'react-native';
+import { Alert, AppState, Platform, StatusBar, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -212,15 +212,6 @@ function RootLayoutContent({
   );
 }
 
-const documentScreenOptions = {
-  headerShown: true,
-  headerLargeTitle: false,
-  headerTransparent: true,
-  headerShadowVisible: false,
-  headerBlurEffect: 'none' as const,
-  headerBackButtonDisplayMode: 'minimal' as const,
-};
-
 function AppStack({
   onboardingRequired,
   legalConsentAccepted,
@@ -228,6 +219,18 @@ function AppStack({
   onboardingRequired: boolean;
   legalConsentAccepted: boolean;
 }) {
+  const theme = useTheme();
+  const documentScreenOptions = {
+    headerShown: true,
+    headerLargeTitle: false,
+    headerTransparent: Platform.OS === 'ios',
+    headerShadowVisible: false,
+    headerBlurEffect: 'none' as const,
+    headerBackButtonDisplayMode: 'minimal' as const,
+    headerStyle:
+      Platform.OS === 'android' ? { backgroundColor: theme.background } : undefined,
+  };
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={onboardingRequired && !legalConsentAccepted}>
