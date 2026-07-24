@@ -37,8 +37,14 @@ directory.
 - `/terms` — terms of use
 - `/whats-new` — version history and release notes
 - `/legal` — legal overview
+- `/robots.txt` — crawler rules and sitemap location
+- `/sitemap.xml` — canonical public page inventory
+- `/llms.txt` — concise product and documentation index for language models
 
-The canonical production origin is configured in `astro.config.mjs`.
+The canonical production origin is configured in `astro.config.mjs`. Every
+HTML page includes a canonical URL, crawler directives, Open Graph and Twitter
+metadata, and an indexable social preview image. The homepage and FAQ also
+include relevant Schema.org JSON-LD.
 
 ## Shared legal and FAQ content
 
@@ -48,4 +54,8 @@ The website itself does not install analytics. The shared Privacy Policy and FAQ
 
 `dev`, `build`, and `preview` synchronize automatically. The `prebuild` lifecycle hook is mandatory and must remain attached to `pnpm build`. CI runs `content:sync` and `content:check` before build so Astro uses current generated JSON. `postbuild` verifies rendered content and routes. Commit canonical Markdown only; generated app and website JSON files are ignored.
 
-`pnpm test` regenerates shared content, checks it, then performs a production build. The post-build verifier requires all public routes, compares the full rendered Privacy Policy, Terms, FAQ, and What's New with the generated shared source, checks homepage FAQ headings, and rejects broken internal page links.
+`pnpm test` regenerates shared content, checks it, then performs a production
+build. The post-build verifier requires all public routes and discovery files,
+checks canonical and social metadata, compares the full rendered Privacy
+Policy, Terms, FAQ, and What's New with the generated shared source, checks
+homepage FAQ headings, and rejects broken internal page links.

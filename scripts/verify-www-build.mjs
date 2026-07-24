@@ -11,6 +11,8 @@ const documents = JSON.parse(
 );
 
 const routes = ['/', '/faq', '/legal', '/privacy', '/terms', '/whats-new'];
+const siteUrl = 'https://simplefasting.app';
+const requiredRobots = 'index, follow, max-image-preview:large';
 const documentRoutes = {
   '/faq': documents.faq,
   '/privacy': documents.privacy,
@@ -35,6 +37,22 @@ const decodeHtml = (value) =>
     .trim();
 
 const normalize = (value) => value.replace(/\s+/g, ' ').trim();
+const attributeValue = (tag, attribute) => {
+  const match = tag.match(new RegExp(`\\b${attribute}="([^"]*)"`));
+  return match ? decodeHtml(match[1]) : undefined;
+};
+const metaContent = (html, attribute, value) => {
+  const tag = [...html.matchAll(/<meta\b[^>]*>/g)]
+    .map((match) => match[0])
+    .find((candidate) => attributeValue(candidate, attribute) === value);
+  return tag ? attributeValue(tag, 'content') : undefined;
+};
+const linkHref = (html, relation) => {
+  const tag = [...html.matchAll(/<link\b[^>]*>/g)]
+    .map((match) => match[0])
+    .find((candidate) => attributeValue(candidate, 'rel') === relation);
+  return tag ? attributeValue(tag, 'href') : undefined;
+};
 const failures = [];
 const htmlByRoute = new Map();
 
@@ -72,6 +90,63 @@ for (const [route, document] of Object.entries(documentRoutes)) {
 }
 
 for (const [route, html] of htmlByRoute) {
+  const canonicalPath = route === '/' ? route : `${route}/`;
+  const expectedUrl = new URL(canonicalPath, siteUrl).toString();
+  const titleMarkup = html.match(/<title>([^<]+)<\/title>/)?.[1];
+  const title = titleMarkup ? decodeHtml(titleMarkup) : undefined;
+  const description = metaContent(html, 'name', 'description');
+  const canonical = linkHref(html, 'canonical');
+  const socialImage = metaContent(html, 'property', 'og:image');
+
+  if (!title) failures.push(`${route}: missing a non-empty title`);
+  if (!description) failures.push(`${route}: missing a meta description`);
+  if (canonical !== expectedUrl) {
+    failures.push(`${route}: canonical URL is ${canonical ?? 'missing'}, expected ${expectedUrl}`);
+  }
+  if (metaContent(html, 'name', 'robots') !== requiredRobots) {
+    failures.push(`${route}: missing expected index/follow crawler directives`);
+  }
+  if (metaContent(html, 'property', 'og:type') !== 'website') {
+    failures.push(`${route}: missing Open Graph page type`);
+  }
+  if (metaContent(html, 'property', 'og:title') !== title) {
+    failures.push(`${route}: Open Graph title does not match the page title`);
+  }
+  if (metaContent(html, 'property', 'og:description') !== description) {
+    failures.push(`${route}: Open Graph description does not match the meta description`);
+  }
+  if (metaContent(html, 'property', 'og:url') !== canonical) {
+    failures.push(`${route}: Open Graph URL does not match the canonical URL`);
+  }
+  if (!socialImage?.startsWith(`${siteUrl}/`)) {
+    failures.push(`${route}: Open Graph image is missing or not an absolute site URL`);
+  }
+  if (
+    metaContent(html, 'property', 'og:image:type') !== 'image/png' ||
+    metaContent(html, 'property', 'og:image:width') !== '1200' ||
+    metaContent(html, 'property', 'og:image:height') !== '630'
+  ) {
+    failures.push(`${route}: Open Graph image type or dimensions are missing or incorrect`);
+  }
+  if (!metaContent(html, 'property', 'og:image:alt')) {
+    failures.push(`${route}: Open Graph image alt text is missing`);
+  }
+  if (metaContent(html, 'name', 'twitter:card') !== 'summary_large_image') {
+    failures.push(`${route}: missing large Twitter card metadata`);
+  }
+  if (metaContent(html, 'name', 'twitter:title') !== title) {
+    failures.push(`${route}: Twitter title does not match the page title`);
+  }
+  if (metaContent(html, 'name', 'twitter:description') !== description) {
+    failures.push(`${route}: Twitter description does not match the meta description`);
+  }
+  if (metaContent(html, 'name', 'twitter:image') !== socialImage) {
+    failures.push(`${route}: Twitter image does not match the Open Graph image`);
+  }
+  if (!metaContent(html, 'name', 'twitter:image:alt')) {
+    failures.push(`${route}: Twitter image alt text is missing`);
+  }
+
   const links = [...html.matchAll(/<a\b[^>]*href="([^"]+)"/g)].map((match) => match[1]);
   for (const href of links) {
     if (!href.startsWith('/') || href.startsWith('//') || href.startsWith('/_astro/')) continue;
@@ -80,6 +155,75 @@ for (const [route, html] of htmlByRoute) {
       failures.push(`${route}: internal link does not map to a built route: ${href}`);
     }
   }
+}
+
+const readBuiltFile = async (relativePath) => {
+  const file = path.join(distRoot, relativePath);
+  try {
+    return await readFile(file, 'utf8');
+  } catch {
+    failures.push(`missing ${path.relative(root, file)}`);
+    return '';
+  }
+};
+
+const robots = await readBuiltFile('robots.txt');
+if (!robots.includes('User-agent: *') || !robots.includes('Allow: /')) {
+  failures.push('robots.txt: missing permissive crawler rules');
+}
+if (!robots.includes(`Sitemap: ${siteUrl}/sitemap.xml`)) {
+  failures.push('robots.txt: missing the absolute sitemap URL');
+}
+
+const sitemap = await readBuiltFile('sitemap.xml');
+const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+const expectedSitemapUrls = routes.map((route) =>
+  new URL(route === '/' ? route : `${route}/`, siteUrl).toString(),
+);
+if (
+  sitemapUrls.length !== expectedSitemapUrls.length ||
+  expectedSitemapUrls.some((url) => !sitemapUrls.includes(url))
+) {
+  failures.push('sitemap.xml: URLs do not exactly match the canonical public HTML routes');
+}
+if (new Set(sitemapUrls).size !== sitemapUrls.length) {
+  failures.push('sitemap.xml: contains duplicate URLs');
+}
+
+const llms = await readBuiltFile('llms.txt');
+if (!llms.startsWith('# Simple Fasting')) {
+  failures.push('llms.txt: missing the product heading');
+}
+for (const url of expectedSitemapUrls) {
+  if (!llms.includes(`](${url})`)) {
+    failures.push(`llms.txt: missing public page link ${url}`);
+  }
+}
+for (const statement of ['no account', 'no account, backend, cloud sync', 'does not provide medical advice']) {
+  if (!llms.includes(statement)) {
+    failures.push(`llms.txt: missing important product boundary: ${statement}`);
+  }
+}
+
+await readBuiltFile('favicon.svg');
+await readBuiltFile('images/og-image.png');
+
+const homeStructuredData = [...(htmlByRoute.get('/') ?? '').matchAll(
+  /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g,
+)].map((match) => match[1]);
+if (
+  !homeStructuredData.some(
+    (value) => value.includes('"@type":"WebSite"') && value.includes('"@type":"MobileApplication"'),
+  )
+) {
+  failures.push('/: missing WebSite and MobileApplication structured data');
+}
+
+const faqStructuredData = [...(htmlByRoute.get('/faq') ?? '').matchAll(
+  /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g,
+)].map((match) => match[1]);
+if (!faqStructuredData.some((value) => value.includes('"@type":"FAQPage"'))) {
+  failures.push('/faq: missing FAQPage structured data');
 }
 
 const homeText = decodeHtml(htmlByRoute.get('/') ?? '');
@@ -94,4 +238,6 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Website verification passed: ${routes.length} routes and shared documents match.`);
+console.log(
+  `Website verification passed: ${routes.length} routes, discovery files, metadata, and shared documents match.`,
+);

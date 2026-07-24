@@ -6,17 +6,21 @@ type Props = {
   description: string;
   canonicalPath?: string;
   image?: string;
+  imageAlt?: string;
   legal?: boolean;
   structuredData?: Record<string, unknown>;
+  robots?: string;
 };
 
 const {
   title,
   description,
   canonicalPath = Astro.url.pathname,
-  image = '/images/main-screen.webp',
+  image = '/images/og-image.png',
+  imageAlt = 'Simple Fasting private, offline fasting timer',
   legal = false,
   structuredData,
+  robots = 'index, follow, max-image-preview:large',
 } = Astro.props;
 const canonicalUrl = new URL(canonicalPath, Astro.site ?? Astro.url.origin);
 const imageUrl = new URL(image, Astro.site ?? Astro.url.origin);
@@ -31,19 +35,30 @@ const year = new Date().getFullYear();
     <meta name="description" content={description} />
     <meta name="theme-color" content="#ffffff" />
     <meta name="color-scheme" content="light" />
+    <meta name="application-name" content="Simple Fasting" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="robots" content={robots} />
+    <meta name="generator" content={Astro.generator} />
     <link rel="canonical" href={canonicalUrl} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="any" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Simple Fasting" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={imageUrl} />
-    <meta property="og:image:alt" content="Simple Fasting app screens" />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image:secure_url" content={imageUrl} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={imageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imageUrl} />
+    <meta name="twitter:image:alt" content={imageAlt} />
     <title>{title}</title>
     {structuredData && (
       <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />

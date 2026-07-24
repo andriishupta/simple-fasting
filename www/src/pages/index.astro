@@ -32,23 +32,40 @@ const description =
   "A private, offline fasting timer for iOS and Android with history, statistics, widgets, local reminders, and data export.";
 const structuredData = {
   "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "Simple Fasting",
-  applicationCategory: "HealthApplication",
-  operatingSystem: "iOS, Android",
-  description,
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
-  },
-  featureList: [
-    "Fasting timer",
-    "Fasting history",
-    "Statistics",
-    "Local notifications",
-    "Home screen widgets",
-    "JSON and CSV export",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://simplefasting.app/#website",
+      url: "https://simplefasting.app/",
+      name: "Simple Fasting",
+      description,
+      inLanguage: "en",
+    },
+    {
+      "@type": "MobileApplication",
+      "@id": "https://simplefasting.app/#app",
+      url: "https://simplefasting.app/",
+      name: "Simple Fasting",
+      applicationCategory: "HealthApplication",
+      operatingSystem: "iOS, Android",
+      softwareVersion: documents.whatsNew.version,
+      description,
+      image: "https://simplefasting.app/images/og-image.png",
+      isAccessibleForFree: true,
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+      },
+      featureList: [
+        "Fasting timer",
+        "Fasting history",
+        "Statistics",
+        "Local notifications",
+        "Home screen widgets",
+        "JSON and CSV export",
+      ],
+    },
   ],
 };
 const releaseIntroBlock = documents.whatsNew.sections[0]?.blocks[0];

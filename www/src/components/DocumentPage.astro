@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 
 type Block = { type: 'paragraph'; text: string } | { type: 'list'; items: string[] };
 type Document = {
+  id: string;
   title: string;
   version: string;
   effectiveDate?: string;
@@ -18,9 +19,31 @@ const effectiveDate = document.effectiveDate
       timeZone: 'UTC',
     }).format(new Date(`${document.effectiveDate}T00:00:00Z`))
   : undefined;
+const structuredData =
+  document.id === 'faq'
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: document.sections.map((section) => ({
+          '@type': 'Question',
+          name: section.title,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: section.blocks
+              .flatMap((block) => (block.type === 'paragraph' ? [block.text] : block.items))
+              .join(' '),
+          },
+        })),
+      }
+    : undefined;
 ---
 
-<Layout title={`${document.title} — Simple Fasting`} description={document.description} legal>
+<Layout
+  title={`${document.title} — Simple Fasting`}
+  description={document.description}
+  structuredData={structuredData}
+  legal
+>
   <header class="legal-hero">
     <div class="shell">
       <p class="legal-meta">
