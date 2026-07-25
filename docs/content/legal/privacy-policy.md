@@ -131,4 +131,4 @@ We may update this policy to reflect product, legal, security, or operational ch
 
 Continued use after an effective date is subject to the updated policy, but consent will be requested separately when law requires it. Earlier app releases retain the policy copy bundled with that release unless updated.
 
-Privacy, support, and rights requests can be sent to support@simplefasting.app. Bug reports can be sent to bugs@simplefasting.app.
+Privacy, support, rights requests, and bug reports can be sent to support@simplefasting.app.

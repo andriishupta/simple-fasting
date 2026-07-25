@@ -252,7 +252,7 @@
     "emailFailedMessage": "The local diagnostic email could not be created.",
     "emailWithDiagnostics": "Email with diagnostics",
     "getDiagnosticsFile": "Get diagnostics file",
-    "reportBugMessage": "You can email bugs@simplefasting.app directly, attach local diagnostics to an email, or get the diagnostic file. Diagnostics never include history or notes.",
+    "reportBugMessage": "You can email %{email} directly, attach local diagnostics to an email, or get the diagnostic file. Diagnostics never include history or notes.",
     "importUnavailableTitle": "Import unavailable",
     "importUnavailableMessage": "End or cancel the active fast before importing history. This protects your data from overlapping sessions.",
     "fileTooLargeTitle": "File too large",
@@ -388,7 +388,6 @@
   "exports": {
     "shareDialogTitle": "Export Simple Fasting data",
     "diagnosticShareTitle": "Share Simple Fasting diagnostics",
-    "diagnosticEmailSubject": "Simple Fasting bug report",
     "diagnosticNotice": "Created locally by Simple Fasting and shared only after explicit user action. No history, notes, settings, account data, or device identifiers are included.",
     "diagnosticEmailPrompt": "Describe what happened and what you expected.",
     "diagnosticEmailBody": "A local diagnostic JSON file is attached. It is created only after your action and does not intentionally include history, notes, settings, account data, or device identifiers."

@@ -1,5 +1,9 @@
 ---
 import '../styles/global.css';
+import {
+  createSupportMailto,
+  supportRequestSubject,
+} from '../constants/contact';
 
 type Props = {
   title: string;
@@ -10,6 +14,7 @@ type Props = {
   legal?: boolean;
   structuredData?: Record<string, unknown>;
   robots?: string;
+  pageClass?: string;
 };
 
 const {
@@ -21,6 +26,7 @@ const {
   legal = false,
   structuredData,
   robots = 'index, follow, max-image-preview:large',
+  pageClass,
 } = Astro.props;
 const canonicalUrl = new URL(canonicalPath, Astro.site ?? Astro.url.origin);
 const imageUrl = new URL(image, Astro.site ?? Astro.url.origin);
@@ -64,7 +70,7 @@ const year = new Date().getFullYear();
       <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
     )}
   </head>
-  <body class:list={{ 'legal-page': legal }}>
+  <body class:list={[pageClass, { 'legal-page': legal }]}>
     <a class="skip-link" href="#main-content">Skip to content</a>
     <header class="site-header">
       <div class="site-header__inner shell">
@@ -88,14 +94,20 @@ const year = new Date().getFullYear();
 
     <footer class="site-footer">
       <div class="shell site-footer__inner">
-        <p>© {year} Simple Fasting</p>
+        <p>
+          © {year} Simple Fasting
+          <span aria-hidden="true">·</span>
+          Created by <a href="https://andriishupta.dev">Andrii Shupta</a>
+        </p>
         <nav aria-label="Legal and support">
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
           <a href="/legal">Legal</a>
           <a href="/faq">FAQ</a>
           <a href="/whats-new">What's New</a>
-          <a href="mailto:support@simplefasting.app">Support</a>
+          <a href={createSupportMailto(supportRequestSubject)}>
+            Support
+          </a>
         </nav>
       </div>
     </footer>

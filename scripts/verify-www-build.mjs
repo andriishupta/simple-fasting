@@ -205,6 +205,17 @@ for (const statement of ['no account', 'no account, backend, cloud sync', 'does 
   }
 }
 
+const notFound = await readBuiltFile('404.html');
+if (!notFound.includes('Oops, something went wrong.')) {
+  failures.push('404.html: missing the not-found message');
+}
+if (metaContent(notFound, 'name', 'robots') !== 'noindex, nofollow') {
+  failures.push('404.html: missing noindex/nofollow crawler directives');
+}
+if (!notFound.includes('class="site-header"') || !notFound.includes('class="site-footer"')) {
+  failures.push('404.html: missing the shared site header or footer');
+}
+
 await readBuiltFile('favicon.svg');
 await readBuiltFile('images/og-image.png');
 

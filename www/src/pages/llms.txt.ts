@@ -1,4 +1,10 @@
 import documents from '../content/generated/shared-documents.json';
+import {
+  bugReportSubject,
+  createSupportMailto,
+  supportEmailAddress,
+  supportRequestSubject,
+} from '../constants/contact';
 
 const siteUrl = 'https://simplefasting.app';
 
@@ -31,8 +37,8 @@ Simple Fasting is a small mobile app for starting and tracking fasts, reviewing 
 
 ## Contact
 
-- Support: [support@simplefasting.app](mailto:support@simplefasting.app)
-- Bug reports: [bugs@simplefasting.app](mailto:bugs@simplefasting.app)
+- Support: [${supportEmailAddress}](${createSupportMailto(supportRequestSubject)})
+- Bug reports: [${supportEmailAddress}](${createSupportMailto(bugReportSubject)})
 `;
 
   return new Response(content, {

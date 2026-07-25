@@ -44,7 +44,7 @@ We do not use that information to track you across unrelated websites or apps.
 
 ## What happens when I email support?
 
-If you email support@simplefasting.app or bugs@simplefasting.app, we and the relevant email providers receive your email address, message, attachments, and information you choose to include. We use it to respond, investigate issues, provide support, and maintain necessary security or legal records.
+If you email support@simplefasting.app, we and the relevant email providers receive your email address, message, attachments, and information you choose to include. We use it to respond, investigate issues, provide support, and maintain necessary security or legal records.
 
 Do not email medical records, passwords, government identifiers, payment information, or full fasting exports. Send only what is needed to explain the issue. You may ask us to delete a support conversation, subject to legal and security retention requirements.
 

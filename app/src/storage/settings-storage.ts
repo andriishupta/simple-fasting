@@ -5,6 +5,11 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as WebBrowser from 'expo-web-browser';
 
+import {
+  bugReportSubject,
+  createSupportMailto,
+  supportRequestSubject,
+} from '@/constants/contact';
 import { t } from '@/locales/i18n';
 import {
   appStorage,
@@ -830,8 +835,6 @@ export {
 };
 
 const websiteUrl = 'https://simplefasting.app';
-const supportEmail = 'support@simplefasting.app';
-const bugReportEmail = 'bugs@simplefasting.app';
 
 type StoreLinksExtra = {
   storeLinks?: {
@@ -886,7 +889,7 @@ export const openPrivacyPolicy = async (): Promise<void> => openWebsitePath('/pr
 export const openTerms = async (): Promise<void> => openWebsitePath('/terms');
 
 export const openSupportEmail = async (): Promise<void> =>
-  Linking.openURL(`mailto:${supportEmail}?subject=%5BSUPPORT%5D%20Simple%20Fasting%3A%20Support%20request`);
+  Linking.openURL(createSupportMailto(supportRequestSubject));
 
 export const openBugReportEmail = async (): Promise<void> =>
-  Linking.openURL(`mailto:${bugReportEmail}?subject=%5BBUG%5D%20Simple%20Fasting%3A%20Bug%20report`);
+  Linking.openURL(createSupportMailto(bugReportSubject));

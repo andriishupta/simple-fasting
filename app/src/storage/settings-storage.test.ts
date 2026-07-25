@@ -519,10 +519,10 @@ describe('settings storage integration', () => {
     await openTerms();
 
     expect(openUrl).toHaveBeenCalledWith(
-      'mailto:support@simplefasting.app?subject=%5BSUPPORT%5D%20Simple%20Fasting%3A%20Support%20request',
+      'mailto:support@simplefasting.app?subject=%5BSimple%20Fasting%5D%20Support%20request',
     );
     expect(openUrl).toHaveBeenCalledWith(
-      'mailto:bugs@simplefasting.app?subject=%5BBUG%5D%20Simple%20Fasting%3A%20Bug%20report',
+      'mailto:support@simplefasting.app?subject=%5BSimple%20Fasting%5D%20Bug%20report',
     );
     expect(openBrowser).toHaveBeenCalledWith('https://simplefasting.app');
     expect(openBrowser).toHaveBeenCalledWith('https://simplefasting.app/faq');

@@ -151,8 +151,8 @@ describe('privacy-safe local diagnostics', () => {
     await emailDiagnosticReport();
 
     expect(compose).toHaveBeenCalledWith(expect.objectContaining({
-      recipients: ['bugs@simplefasting.app'],
-      subject: 'Simple Fasting bug report',
+      recipients: ['support@simplefasting.app'],
+      subject: '[Simple Fasting] Bug report',
       body: expect.stringContaining('A local diagnostic JSON file is attached'),
       attachments: [expect.stringContaining('simple-fasting-diagnostics-2026-06-21.json')],
     }));

@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import generatedDocuments from "../content/generated/shared-documents.json";
+import { createSupportMailto } from "../constants/contact";
 
 type SharedDocumentBlock =
   { type: "paragraph"; text: string } | { type: "list"; items: string[] };
@@ -277,7 +278,7 @@ const releaseIntro =
       </div>
       <a
         class="button"
-        href="mailto:support@simplefasting.app?subject=Simple%20Fasting%20release"
+        href={createSupportMailto("Simple Fasting release")}
       >
         Ask about the release
       </a>

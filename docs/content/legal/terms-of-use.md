@@ -125,4 +125,4 @@ Changes apply prospectively from their effective date. If law requires affirmati
 
 If a provision is unenforceable, it will be limited to the minimum extent necessary and the remaining provisions will continue. Failure to enforce a provision is not a waiver. You may not transfer these terms without Provider’s consent; Provider may transfer them as part of a lawful reorganization, sale, or transfer of the service, subject to applicable rights.
 
-These terms, the Privacy Policy, applicable store rules, and any feature-specific terms form the agreement concerning the service. Questions, complaints, and claims can be sent to support@simplefasting.app. Bug reports can be sent to bugs@simplefasting.app.
+These terms, the Privacy Policy, applicable store rules, and any feature-specific terms form the agreement concerning the service. Questions, complaints, claims, and bug reports can be sent to support@simplefasting.app.

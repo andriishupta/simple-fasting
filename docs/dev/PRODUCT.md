@@ -140,7 +140,7 @@ No push-notification backend is used.
 
 - Website opens the external website;
 - FAQ has an external action and an offline local copy;
-- Report bug opens the device email flow for `bugs@simplefasting.app`, offers email with diagnostics only when a native mail composer is available, and always offers the local diagnostic file;
+- Report bug opens the device email flow for `support@simplefasting.app` with a bug-report subject, offers email with diagnostics only when a native mail composer is available, and always offers the local diagnostic file;
 - Support email opens the device email flow for `support@simplefasting.app`;
 - Privacy Policy and Terms of Use have external actions and offline local copies;
 - app version/build is displayed locally.

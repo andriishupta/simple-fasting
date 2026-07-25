@@ -50,6 +50,7 @@ import { CenteredWheelPicker } from '@/components/centered-wheel-picker';
 import { ScreenHeading } from '@/components/screen-heading';
 import { TabScreenShell } from '@/components/tab-screen-shell';
 import { TimerViewToggle } from '@/components/timer-view-toggle';
+import { supportEmailAddress } from '@/constants/contact';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { t } from '@/locales/i18n';
 import {
@@ -327,7 +328,7 @@ export default function SettingsScreen() {
 
     Alert.alert(
       t('settings.reportBug'),
-      t('settings.reportBugMessage'),
+      t('settings.reportBugMessage', { email: supportEmailAddress }),
       buttons,
     );
   };
@@ -586,13 +587,13 @@ export default function SettingsScreen() {
           <SettingsActionRow
             icon={Bug}
             title={t('settings.reportBug')}
-            description="bugs@simplefasting.app"
+            description={supportEmailAddress}
             onPress={reportBug}
           />
           <SettingsActionRow
             icon={Mail}
             title={t('settings.supportEmail')}
-            description="support@simplefasting.app"
+            description={supportEmailAddress}
             onPress={() => openExternalAction(openSupportEmail)}
           />
           <SettingsRow

@@ -4,6 +4,7 @@ import * as MailComposer from 'expo-mail-composer';
 import * as Sharing from 'expo-sharing';
 import { Platform, Share } from 'react-native';
 
+import { bugReportSubject, supportEmailAddress } from '@/constants/contact';
 import { t } from '@/locales/i18n';
 import {
   DiagnosticEventKind,
@@ -17,7 +18,6 @@ import {
 const maximumDiagnosticEvents = 50;
 const maximumMessageLength = 1_000;
 const maximumContextLength = 2_000;
-const bugReportEmail = 'bugs@simplefasting.app';
 
 const repeatedFailurePromptRules = [
   { threshold: 3, windowMs: 60_000 },
@@ -202,8 +202,8 @@ export const emailDiagnosticReport = async (): Promise<void> => {
   const file = createDiagnosticReportFile();
 
   await MailComposer.composeAsync({
-    recipients: [bugReportEmail],
-    subject: t('exports.diagnosticEmailSubject'),
+    recipients: [supportEmailAddress],
+    subject: bugReportSubject,
     body: `${t('exports.diagnosticEmailPrompt')}\n\n${t('exports.diagnosticEmailBody')}`,
     attachments: [file.uri],
   });
