@@ -10,7 +10,7 @@ const documents = JSON.parse(
   await readFile(path.join(websiteRoot, 'src/content/generated/shared-documents.json'), 'utf8'),
 );
 
-const routes = ['/', '/faq', '/legal', '/privacy', '/terms', '/whats-new'];
+const routes = ['/', '/faq', '/privacy', '/terms', '/whats-new'];
 const siteUrl = 'https://simplefasting.app';
 const requiredRobots = 'index, follow, max-image-preview:large';
 const documentRoutes = {

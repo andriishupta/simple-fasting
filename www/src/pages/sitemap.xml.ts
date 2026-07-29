@@ -1,5 +1,5 @@
 const siteUrl = 'https://simplefasting.app';
-const routes = ['/', '/faq/', '/legal/', '/privacy/', '/terms/', '/whats-new/'];
+const routes = ['/', '/faq/', '/privacy/', '/terms/', '/whats-new/'];
 
 export function GET() {
   const urls = routes

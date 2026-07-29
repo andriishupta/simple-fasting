@@ -22,7 +22,6 @@ Simple Fasting is a small mobile app for starting and tracking fasts, reviewing 
 - [Home](${page('/')}): Product overview, features, privacy model, and release availability.
 - [Frequently Asked Questions](${page('/faq/')}): ${documents.faq.description}
 - [What's New](${page('/whats-new/')}): ${documents.whatsNew.description}
-- [Legal](${page('/legal/')}): Current legal documents for the app and website.
 - [Privacy Policy](${page('/privacy/')}): ${documents.privacy.description}
 - [Terms of Use](${page('/terms/')}): ${documents.terms.description}
 
