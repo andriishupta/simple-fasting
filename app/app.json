@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "simple-fasting",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "app.simplefasting",
@@ -20,6 +19,9 @@
     "android": {
       "package": "app.simplefasting",
       "versionCode": 1,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -99,7 +101,8 @@
             ]
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "locales": {
       "en": "./src/locales/native/en.json"

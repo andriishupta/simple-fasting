@@ -2,7 +2,7 @@
 
 import NativeFastingWidget, {
   type NativeFastingWidgetPayload,
-} from 'native-fasting-widget';
+} from '../../modules/native-fasting-widget/src';
 
 import {
   AccentColorName,
