@@ -65,7 +65,6 @@ export default function DataScreen() {
 
   return (
     <TabScreenShell
-      scrollEnabled="auto"
       maxWidth={Math.min(MaxContentWidth, 640)}>
       <ScreenHeading>{t('data.title')}</ScreenHeading>
       <DataPanel
