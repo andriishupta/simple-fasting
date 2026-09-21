@@ -59,3 +59,9 @@ pnpm test
 CI also exports iOS and Android JavaScript bundles. Native notifications,
 widgets, Live Activities, signing, TestFlight, and Google Play builds require
 native or EAS verification.
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE). It is open
+source and permits reuse, modification, and redistribution under its terms;
+copyright and license notices must be preserved.
